@@ -20,7 +20,9 @@ import {
   Ghost,
   Loader,
   X,
-  HelpCircle
+  HelpCircle,
+  Repeat,
+  BarChart3
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Tooltip } from '../shared';
@@ -33,13 +35,16 @@ import { AddRosterPlayerModal } from './AddRosterPlayerModal';
 import { EditPlayerModal } from './EditPlayerModal';
 import { DeletePlayerConfirmModal } from './DeletePlayerConfirmModal';
 import { PlayerMatchingModal } from './PlayerMatchingModal';
+import { PlayerLoanModal } from './PlayerLoanModal';
+import PlayerLoansView from './PlayerLoansView';
 import { RosterConnectorOnboarding } from './RosterConnectorOnboarding';
 import { ConnectorsSection } from '../connectors/ConnectorsSection';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { getPlayerConnectionDetails, acceptGhostPlayer, dismissGhostPlayer } from '../../services/connectorService';
-import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
+import { recordPlayerLoans } from '../../services/playerLoanService';
+import { formatPlayerDisplayName, shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { DEFAULT_PREFERENCES } from '../../types/preferences';
@@ -110,6 +115,12 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
         label: 'Roster', 
         icon: Rows4,
         description: 'Manage team players'
+      } : null,
+      canManageTeam ? {
+        id: TAB_VIEWS.LOANS,
+        label: 'Loans',
+        icon: Repeat,
+        description: 'Track player loan matches'
       } : null,
       isTeamAdmin ? {
         id: TAB_VIEWS.ACCESS,
@@ -316,6 +327,13 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
             onNavigateToConnectors={() => setActiveTab('connectors')}
             activeTab={activeTab}
             openAddPlayerModal={openAddRosterPlayerModal}
+          />
+        );
+      case TAB_VIEWS.LOANS:
+        return (
+          <PlayerLoansView
+            currentTeam={currentTeam}
+            canManageTeam={canManageTeam}
           />
         );
       case TAB_VIEWS.CONNECTORS:
@@ -646,6 +664,8 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
   const [deletingPlayer, setDeletingPlayer] = useState(null);
   const [deletingPlayerHasGameHistory, setDeletingPlayerHasGameHistory] = useState(false);
   const [matchingPlayer, setMatchingPlayer] = useState(null); // For player matching modal
+  const [loanModalPlayer, setLoanModalPlayer] = useState(null);
+  const [loanModalOpen, setLoanModalOpen] = useState(false);
   const [connectionDetails, setConnectionDetails] = useState({
     matchedConnections: new Map(),
     unmatchedExternalPlayers: [],
@@ -932,6 +952,40 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     }
   };
 
+  const handleOpenLoanModal = (player) => {
+    setLoanModalPlayer(player);
+    setLoanModalOpen(true);
+  };
+
+  const handleCloseLoanModal = () => {
+    setLoanModalOpen(false);
+    setLoanModalPlayer(null);
+  };
+
+  const handleSaveLoan = async ({ playerIds, receivingTeamName, loanDate }) => {
+    if (!team?.id) {
+      throw new Error('Team ID is required');
+    }
+
+    const result = await recordPlayerLoans(playerIds, {
+      teamId: team.id,
+      receivingTeamName,
+      loanDate
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to record loan');
+    }
+
+    if (playerIds.length === 1) {
+      const playerName = formatPlayerDisplayName(roster.find(player => player.id === playerIds[0]) || loanModalPlayer);
+      setSuccessMessage(`${playerName} loan match recorded.`);
+      return;
+    }
+
+    setSuccessMessage(`${playerIds.length} players loan match recorded.`);
+  };
+
 
   if (loading && roster.length === 0) {
     return (
@@ -1216,6 +1270,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => handleOpenLoanModal(player)}
+                          className="p-1 text-slate-400 hover:text-emerald-400 transition-colors"
+                          title="Record Loan"
+                        >
+                          <Repeat className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeletePlayer(player)}
                           className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
                           title="Remove player"
@@ -1278,6 +1339,16 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
           unmatchedExternalPlayers={connectionDetails.unmatchedExternalPlayers}
           onClose={() => setMatchingPlayer(null)}
           onMatched={handlePlayerMatched}
+        />
+      )}
+
+      {loanModalOpen && (
+        <PlayerLoanModal
+          isOpen={loanModalOpen}
+          onClose={handleCloseLoanModal}
+          onSave={handleSaveLoan}
+          players={roster}
+          defaultPlayerId={loanModalPlayer?.id || ''}
         />
       )}
     </div>
@@ -1797,6 +1868,34 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Statistics Settings */}
+      <div className="space-y-4">
+        <h4 className="text-md font-medium text-slate-300 flex items-center">
+          <BarChart3 className="w-4 h-4 mr-2" />
+          Statistics
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Loan Match Weight
+            </label>
+            <Select
+              value={String(preferences.loanMatchWeight)}
+              onChange={(value) => setPreferences(prev => ({ ...prev, loanMatchWeight: parseFloat(value) }))}
+              options={[
+                { value: '1.0', label: 'Full Match (1.0)' },
+                { value: '0.5', label: 'Half Match (0.5)' },
+                { value: '0.0', label: 'No Credit (0.0)' }
+              ]}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Controls how loan matches count toward season statistics.
+            </p>
+          </div>
         </div>
       </div>
     </div>

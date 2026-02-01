@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Calendar, MapPin, Trophy, History, PlusCircle } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
@@ -8,6 +8,7 @@ import { getOutcomeBadgeClasses, getMatchTypeBadgeClasses, getFormatBadgeClasses
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
 import { Button } from '../shared/UI';
+import { BREAKPOINTS } from '../../constants/layoutConstants';
 
 export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endDate, refreshKey = 0 }) {
   const { currentTeam } = useTeam();
@@ -29,8 +30,11 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
     setFormatFilter,
     clearFilters
   } = useStatsFilters();
+  const isAtLeastSmBreakpoint = useCallback(() => {
+    return typeof window !== 'undefined' && window.innerWidth >= BREAKPOINTS.SM;
+  }, []);
   const [isAtLeastSm, setIsAtLeastSm] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth >= 640; // sm breakpoint
+    return isAtLeastSmBreakpoint();
   });
 
   // Fetch match data from database
@@ -62,13 +66,13 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
   // Detect screen size for responsive layout
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsAtLeastSm(window.innerWidth >= 640);
+      setIsAtLeastSm(isAtLeastSmBreakpoint());
     };
 
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  }, [isAtLeastSmBreakpoint]);
 
   const clearAllFilters = clearFilters;
 

@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { User, Award, Clock, Users, Target } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getFinishedMatches, getPlayerStats } from '../../services/matchStateManager';
+import { getTeamLoans, getDefaultLoanMatchWeight } from '../../services/playerLoanService';
 import { formatMinutesAsTime, formatSecondsAsTime } from '../../utils/formatUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
@@ -27,17 +28,21 @@ const SORT_COLUMNS = {
   ATTACKER: 'percentTimeAsAttacker',
   GOALKEEPER: 'percentTimeAsGoalkeeper',
   CAPTAIN: 'matchesAsCaptain',
-  FAIR_PLAY: 'fairPlayAwards'
+  FAIR_PLAY: 'fairPlayAwards',
+  LOAN_MATCHES: 'loanMatches'
 };
 
 export function PlayerStatsView({ startDate, endDate }) {
-  const { currentTeam } = useTeam();
+  const { currentTeam, loadTeamPreferences } = useTeam();
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [matchesError, setMatchesError] = useState(null);
+  const [loanWeight, setLoanWeight] = useState(getDefaultLoanMatchWeight());
+  const [loanMap, setLoanMap] = useState(new Map());
+  const [loanError, setLoanError] = useState(null);
   const {
     typeFilter,
     outcomeFilter,
@@ -53,6 +58,11 @@ export function PlayerStatsView({ startDate, endDate }) {
     setFormatFilter,
     clearFilters
   } = useStatsFilters();
+
+  const formatMatchCount = useCallback((value) => {
+    if (!Number.isFinite(value)) return '0';
+    return value % 1 === 0 ? value.toString() : value.toFixed(1);
+  }, []);
 
   // Fetch matches for populating filter options
   useEffect(() => {
@@ -81,6 +91,52 @@ export function PlayerStatsView({ startDate, endDate }) {
 
     fetchMatches();
   }, [currentTeam?.id, startDate, endDate]);
+
+  // Fetch loan data and loan weight preference
+  useEffect(() => {
+    async function fetchLoanData() {
+      if (!currentTeam?.id) {
+        setLoanMap(new Map());
+        setLoanWeight(getDefaultLoanMatchWeight());
+        setLoanError(null);
+        return;
+      }
+
+      setLoanError(null);
+
+      try {
+        const [loanResult, prefResult] = await Promise.all([
+          getTeamLoans(currentTeam.id, { startDate, endDate }),
+          loadTeamPreferences ? loadTeamPreferences(currentTeam.id) : Promise.resolve({})
+        ]);
+
+        if (loanResult.success) {
+          const nextMap = new Map();
+          (loanResult.loans || []).forEach((loan) => {
+            if (!loan?.player_id) return;
+            const existing = nextMap.get(loan.player_id) || [];
+            existing.push(loan);
+            nextMap.set(loan.player_id, existing);
+          });
+          setLoanMap(nextMap);
+        } else {
+          setLoanMap(new Map());
+          setLoanError(loanResult.error || 'Failed to load loan matches');
+        }
+
+        const weightValue = prefResult?.loanMatchWeight;
+        const parsedWeight = typeof weightValue === 'number' ? weightValue : parseFloat(weightValue);
+        setLoanWeight(Number.isNaN(parsedWeight) ? getDefaultLoanMatchWeight() : parsedWeight);
+      } catch (err) {
+        console.error('Failed to load loan data:', err);
+        setLoanMap(new Map());
+        setLoanError('Failed to load loan matches');
+        setLoanWeight(getDefaultLoanMatchWeight());
+      }
+    }
+
+    fetchLoanData();
+  }, [currentTeam?.id, startDate, endDate, loadTeamPreferences]);
 
   // Fetch player stats from database
   useEffect(() => {
@@ -124,6 +180,50 @@ export function PlayerStatsView({ startDate, endDate }) {
     playerFilter,
     formatFilter
   ]);
+
+  const enhancedPlayers = useMemo(() => {
+    const weight = Number.isFinite(loanWeight) ? loanWeight : getDefaultLoanMatchWeight();
+    const playersById = new Map(players.map(player => [player.id, player]));
+    const supplementalPlayers = [];
+
+    loanMap.forEach((loans, playerId) => {
+      if (playersById.has(playerId)) return;
+      const loanPlayer = loans.find((loan) => loan?.player)?.player;
+      const displayName = loanPlayer?.display_name || loanPlayer?.first_name || 'Unnamed Player';
+
+      supplementalPlayers.push({
+        id: playerId,
+        displayName,
+        matchesPlayed: 0,
+        goalsScored: 0,
+        totalFieldTimeSeconds: 0,
+        averageTimePerMatch: 0,
+        percentStartedAsSubstitute: 0,
+        percentTimeAsDefender: 0,
+        percentTimeAsMidfielder: 0,
+        percentTimeAsAttacker: 0,
+        percentTimeAsGoalkeeper: 0,
+        matchesAsCaptain: 0,
+        fairPlayAwards: 0
+      });
+    });
+
+    return [...players, ...supplementalPlayers].map((player) => {
+      const loans = loanMap.get(player.id) || [];
+      const loanMatches = loans.length;
+      const weightedLoanMatches = loanMatches * weight;
+      const totalWeightedMatches = player.matchesPlayed + weightedLoanMatches;
+
+      return {
+        ...player,
+        regularMatches: player.matchesPlayed,
+        loanMatches,
+        weightedLoanMatches,
+        matchesPlayed: totalWeightedMatches,
+        loanWeight: weight
+      };
+    });
+  }, [players, loanMap, loanWeight]);
 
   const filteredMatches = useMemo(() => {
     return filterMatchesByCriteria(matches, {
@@ -171,7 +271,25 @@ export function PlayerStatsView({ startDate, endDate }) {
         sortable: true,
         className: 'text-center',
         render: (player) => (
-          <span className="text-slate-300 font-mono">{player.matchesPlayed}</span>
+          <div className="flex flex-col items-center">
+            <span className="text-slate-300 font-mono">{formatMatchCount(player.matchesPlayed)}</span>
+            {player.loanMatches > 0 && (
+              <span className="text-xs text-slate-400">
+                {player.regularMatches} + {formatMatchCount(player.weightedLoanMatches)}
+              </span>
+            )}
+          </div>
+        )
+      },
+      {
+        key: SORT_COLUMNS.LOAN_MATCHES,
+        label: 'Loan Matches',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">
+            {player.loanMatches > 0 ? player.loanMatches : '-'}
+          </span>
         )
       },
       {
@@ -267,7 +385,7 @@ export function PlayerStatsView({ startDate, endDate }) {
         )
       }
     ],
-    []
+    [formatMatchCount]
   );
 
   // Use column order persistence hook
@@ -282,11 +400,11 @@ export function PlayerStatsView({ startDate, endDate }) {
     sortBy,
     handleSort,
     renderSortIndicator
-  } = useTableSort(players, SORT_COLUMNS.NAME, 'asc', dragDropHandlers.isReordering);
+  } = useTableSort(enhancedPlayers, SORT_COLUMNS.NAME, 'asc', dragDropHandlers.isReordering);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
-    if (players.length === 0) {
+    if (enhancedPlayers.length === 0) {
       return {
         totalPlayers: 0,
         averageFieldTime: 0,
@@ -296,12 +414,12 @@ export function PlayerStatsView({ startDate, endDate }) {
       };
     }
 
-    const totalPlayers = players.length;
-    const totalFieldTime = players.reduce((sum, player) => sum + player.averageTimePerMatch, 0);
+    const totalPlayers = enhancedPlayers.length;
+    const totalFieldTime = enhancedPlayers.reduce((sum, player) => sum + player.averageTimePerMatch, 0);
     const averageFieldTime = totalFieldTime / totalPlayers;
-    const totalGoals = players.reduce((sum, player) => sum + player.goalsScored, 0);
+    const totalGoals = enhancedPlayers.reduce((sum, player) => sum + player.goalsScored, 0);
     const averageGoalsPerPlayer = totalGoals / totalPlayers;
-    const topScorer = players.reduce((top, player) =>
+    const topScorer = enhancedPlayers.reduce((top, player) =>
       player.goalsScored > top.goalsScored ? player : top
     );
 
@@ -312,7 +430,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       totalGoals,
       topScorer
     };
-  }, [players]);
+  }, [enhancedPlayers]);
 
   // Show loading state
   if (loading) {
@@ -325,8 +443,8 @@ export function PlayerStatsView({ startDate, endDate }) {
   }
 
   const hasPlayerData = sortedPlayers.length > 0;
-  const noMatchesAvailable = !matchesLoading && matches.length === 0;
-  const noMatchesForFilters = !matchesLoading && matches.length > 0 && filteredMatches.length === 0;
+  const noMatchesAvailable = !matchesLoading && matches.length === 0 && loanMap.size === 0;
+  const noMatchesForFilters = !matchesLoading && matches.length > 0 && filteredMatches.length === 0 && loanMap.size === 0;
 
   return (
     <div className="space-y-6">
@@ -352,6 +470,12 @@ export function PlayerStatsView({ startDate, endDate }) {
       {matchesError && (
         <div className="bg-amber-900/40 border border-amber-600/50 text-amber-200 text-sm rounded-lg p-4">
           {matchesError}
+        </div>
+      )}
+
+      {loanError && (
+        <div className="bg-amber-900/40 border border-amber-600/50 text-amber-200 text-sm rounded-lg p-4">
+          {loanError}
         </div>
       )}
 
@@ -418,7 +542,7 @@ export function PlayerStatsView({ startDate, endDate }) {
             renderSortIndicator={renderSortIndicator}
             headerIcon={Users}
             headerTitle="Player Statistics"
-            headerSubtitle="Click column headers to sort or drag to reorder. Statistics are calculated across all matches."
+            headerSubtitle={`Click column headers to sort or drag to reorder. Loan matches are weighted at ${formatMatchCount(loanWeight)}.`}
             idKey="id"
           />
         </>

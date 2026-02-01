@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Filter, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
 import { MultiSelect, Button } from '../shared/UI';
+import { BREAKPOINTS } from '../../constants/layoutConstants';
 
 const MATCH_TYPES = MATCH_TYPE_OPTIONS.map(({ value, label }) => ({ value, label }));
 
@@ -38,18 +39,21 @@ export function MatchFiltersPanel({
   onFormatFilterChange,
   onClearAllFilters
 }) {
+  const isBelowLgBreakpoint = useCallback(() => {
+    return typeof window !== 'undefined' && window.innerWidth < BREAKPOINTS.LG;
+  }, []);
   // Screen size detection and filter collapse state
   const [needsCollapse, setNeedsCollapse] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
+    return isBelowLgBreakpoint();
   });
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
+    return isBelowLgBreakpoint();
   });
 
   // Detect screen size that requires filter collapsing
   useEffect(() => {
     const checkScreenSize = () => {
-      const shouldCollapse = window.innerWidth < 1024; // lg breakpoint - when filters wrap to multiple rows
+      const shouldCollapse = isBelowLgBreakpoint(); // lg breakpoint - when filters wrap to multiple rows
 
       setNeedsCollapse(prevNeedsCollapse => {
         // Only update collapse state if needsCollapse actually changed
@@ -75,7 +79,7 @@ export function MatchFiltersPanel({
 
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []); // Remove needsCollapse dependency to prevent race condition
+  }, [isBelowLgBreakpoint]); // Remove needsCollapse dependency to prevent race condition
 
   // Get unique opponents from matches
   const opponents = useMemo(() => {

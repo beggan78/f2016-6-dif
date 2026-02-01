@@ -876,6 +876,33 @@ describe('connectorService', () => {
       return { matchStatsSelect };
     };
 
+    const buildLoanChain = (data, error = null) => {
+      const resolved = { data, error };
+
+      // Build chainable mock that can be awaited at any point
+      const loanLte = jest.fn(() => Promise.resolve(resolved));
+      const loanGte = jest.fn(() => ({
+        lte: loanLte,
+        then: (resolve) => Promise.resolve(resolved).then(resolve) // Make it thenable
+      }));
+      const loanEqTeam = jest.fn(() => ({
+        gte: loanGte,
+        lte: loanLte,
+        then: (resolve) => Promise.resolve(resolved).then(resolve) // Make it thenable
+      }));
+      const loanIn = jest.fn(() => ({ eq: loanEqTeam }));
+      const loanSelect = jest.fn(() => ({ in: loanIn }));
+      return { loanSelect, loanGte, loanLte };
+    };
+
+    const buildWeightChain = (data, error = null) => {
+      const weightMaybeSingle = jest.fn().mockResolvedValue({ data, error });
+      const weightEqKey = jest.fn(() => ({ maybeSingle: weightMaybeSingle }));
+      const weightEqTeam = jest.fn(() => ({ eq: weightEqKey }));
+      const weightSelect = jest.fn(() => ({ eq: weightEqTeam }));
+      return { weightSelect };
+    };
+
     const setupSupabase = ({
       connectorsData = mockConnectors,
       connectorsError = null,
@@ -884,12 +911,18 @@ describe('connectorService', () => {
       playersData = mockPlayers,
       playersError = null,
       matchStatsData = mockMatchStats,
-      matchStatsError = null
+      matchStatsError = null,
+      loanData = [],
+      loanError = null,
+      weightData = null,
+      weightError = null
     } = {}) => {
       const connectorChain = buildConnectorsChain(connectorsData, connectorsError);
       attendanceChain = buildAttendanceChain(attendanceData, attendanceError);
       const playersChain = buildPlayersChain(playersData, playersError);
       const matchStatsChain = buildMatchStatsChain(matchStatsData, matchStatsError);
+      const loanChain = buildLoanChain(loanData, loanError);
+      const weightChain = buildWeightChain(weightData, weightError);
 
       supabase.from.mockImplementation((table) => {
         if (table === 'connector') {
@@ -903,6 +936,12 @@ describe('connectorService', () => {
         }
         if (table === 'player_match_stats') {
           return { select: matchStatsChain.matchStatsSelect };
+        }
+        if (table === 'player_loan') {
+          return { select: loanChain.loanSelect };
+        }
+        if (table === 'team_preference') {
+          return { select: weightChain.weightSelect };
         }
         return { select: jest.fn() };
       });
@@ -955,6 +994,8 @@ describe('connectorService', () => {
         totalAttendance: 16, // 4 + 5 + 7
         attendanceRate: 66.7,
         matchesPlayed: 2,
+        loanMatches: 0,
+        weightedMatches: 2.0,
         practicesPerMatch: 8.0,
         attendanceRecords: expect.arrayContaining([
           { date: '2025-01-05', year: 2025, month: 1, day: 5, practices: 5, attendance: 4 },
@@ -971,6 +1012,8 @@ describe('connectorService', () => {
         totalAttendance: 8,
         attendanceRate: 33.3,
         matchesPlayed: 1,
+        loanMatches: 0,
+        weightedMatches: 1.0,
         practicesPerMatch: 8.0,
         attendanceRecords: [{ date: '2025-01-15', year: 2025, month: 1, day: 15, practices: 10, attendance: 8 }]
       });
@@ -1197,6 +1240,116 @@ describe('connectorService', () => {
       setupSupabase({ matchStatsData: null, matchStatsError: { message: 'match error' } });
 
       await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load match statistics');
+    });
+
+    // Loan match weight integration tests
+    it('integrates loan matches with regular matches using default weight', async () => {
+      const loanData = [
+        { player_id: 'player-1', loan_date: '2025-01-10' },
+        { player_id: 'player-1', loan_date: '2025-01-25' }
+      ];
+
+      setupSupabase({ loanData });
+
+      const result = await getAttendanceStats(teamId);
+      const alice = result.find(p => p.playerId === 'player-1');
+
+      expect(alice.matchesPlayed).toBe(2); // Regular matches
+      expect(alice.loanMatches).toBe(2); // Loan matches
+      expect(alice.weightedMatches).toBe(3.0); // 2 + (2 * 0.5)
+      expect(alice.practicesPerMatch).toBe(5.33); // 16 / 3.0
+    });
+
+    it('calculates correctly when player has only loan matches', async () => {
+      const loanData = [
+        { player_id: 'player-2', loan_date: '2025-01-10' },
+        { player_id: 'player-2', loan_date: '2025-01-20' }
+      ];
+
+      setupSupabase({
+        matchStatsData: [mockMatchStats[0], mockMatchStats[1]], // Only player-1 matches
+        loanData
+      });
+
+      const result = await getAttendanceStats(teamId);
+      const bob = result.find(p => p.playerId === 'player-2');
+
+      expect(bob.matchesPlayed).toBe(0); // No regular matches
+      expect(bob.loanMatches).toBe(2);
+      expect(bob.weightedMatches).toBe(1.0); // 0 + (2 * 0.5)
+      expect(bob.practicesPerMatch).toBe(8.0); // 8 / 1.0
+    });
+
+    it('maintains backward compatibility when no loan matches exist', async () => {
+      setupSupabase({ loanData: [] });
+
+      const result = await getAttendanceStats(teamId);
+      const alice = result.find(p => p.playerId === 'player-1');
+
+      expect(alice.matchesPlayed).toBe(2);
+      expect(alice.loanMatches).toBe(0);
+      expect(alice.weightedMatches).toBe(2.0); // Same as matchesPlayed
+      expect(alice.practicesPerMatch).toBe(8.0); // Same calculation as before
+    });
+
+    it('filters loan matches by date range', async () => {
+      // Mock should return already filtered data (only Jan loans, not Feb)
+      const loanData = [
+        { player_id: 'player-1', loan_date: '2025-01-10' } // Within range
+      ];
+
+      setupSupabase({ loanData });
+
+      const result = await getAttendanceStats(teamId, startDate, endDate);
+      const alice = result.find(p => p.playerId === 'player-1');
+
+      expect(alice.loanMatches).toBe(1); // Only Jan loan counted
+      expect(alice.weightedMatches).toBe(2.5); // 2 + (1 * 0.5)
+    });
+
+    it('uses custom loan match weight when preference is set', async () => {
+      const loanData = [
+        { player_id: 'player-1', loan_date: '2025-01-10' }
+      ];
+      const weightData = { value: '1.0' };
+
+      setupSupabase({ loanData, weightData });
+
+      const result = await getAttendanceStats(teamId);
+      const alice = result.find(p => p.playerId === 'player-1');
+
+      expect(alice.loanMatches).toBe(1);
+      expect(alice.weightedMatches).toBe(3.0); // 2 + (1 * 1.0)
+      expect(alice.practicesPerMatch).toBe(5.33); // 16 / 3.0
+    });
+
+    it('falls back to default weight when preference is missing', async () => {
+      const loanData = [
+        { player_id: 'player-1', loan_date: '2025-01-10' }
+      ];
+
+      setupSupabase({ loanData, weightData: null });
+
+      const result = await getAttendanceStats(teamId);
+      const alice = result.find(p => p.playerId === 'player-1');
+
+      expect(alice.weightedMatches).toBe(2.5); // 2 + (1 * 0.5) - default weight
+    });
+
+    it('throws when loan data fetch fails', async () => {
+      setupSupabase({ loanData: null, loanError: { message: 'loan error' } });
+
+      await expect(getAttendanceStats(teamId)).rejects.toThrow('Failed to load loan match data');
+    });
+
+    it('includes new fields in returned stats', async () => {
+      const result = await getAttendanceStats(teamId);
+      const alice = result.find(p => p.playerId === 'player-1');
+
+      expect(alice).toHaveProperty('loanMatches');
+      expect(alice).toHaveProperty('weightedMatches');
+      expect(typeof alice.loanMatches).toBe('number');
+      expect(typeof alice.weightedMatches).toBe('number');
     });
   });
 

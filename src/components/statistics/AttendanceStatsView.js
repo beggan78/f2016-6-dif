@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { User, Calendar, TrendingUp, Users as UsersIcon, Award } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getAttendanceStats, getTeamConnectors } from '../../services/connectorService';
+import { getTeamLoans } from '../../services/playerLoanService';
 import { Button } from '../shared/UI';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
@@ -19,7 +20,8 @@ const SORT_COLUMNS = {
   PRACTICES_PER_MATCH: 'practicesPerMatch',
   ATTENDANCE: 'totalAttendance',
   RATE: 'attendanceRate',
-  MATCHES: 'matchesPlayed'
+  MATCHES: 'matchesPlayed',
+  LOAN_MATCHES: 'loanMatches'
 };
 
 const teamManagementTabCacheManager = createPersistenceManager(
@@ -34,6 +36,8 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
   const [loading, setLoading] = useState(false);
   const [connectorsLoading, setConnectorsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [loanMap, setLoanMap] = useState(new Map());
+  const [loanError, setLoanError] = useState(null);
 
   // Fetch connectors to check if team has any connected
   useEffect(() => {
@@ -85,6 +89,56 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
 
     fetchAttendanceStats();
   }, [currentTeam?.id, startDate, endDate]);
+
+  // Fetch loan data for the date range
+  useEffect(() => {
+    async function fetchLoanData() {
+      if (!currentTeam?.id) {
+        setLoanMap(new Map());
+        setLoanError(null);
+        return;
+      }
+
+      setLoanError(null);
+
+      try {
+        const loanResult = await getTeamLoans(currentTeam.id, { startDate, endDate });
+
+        if (loanResult.success) {
+          const nextMap = new Map();
+          (loanResult.loans || []).forEach((loan) => {
+            if (!loan?.player_id) return;
+            const existing = nextMap.get(loan.player_id) || [];
+            existing.push(loan);
+            nextMap.set(loan.player_id, existing);
+          });
+          setLoanMap(nextMap);
+        } else {
+          setLoanMap(new Map());
+          setLoanError(loanResult.error || 'Failed to load loan matches');
+        }
+      } catch (err) {
+        console.error('Failed to load loan data:', err);
+        setLoanMap(new Map());
+        setLoanError('Failed to load loan matches');
+      }
+    }
+
+    fetchLoanData();
+  }, [currentTeam?.id, startDate, endDate]);
+
+  // Enhance attendance data with loan counts
+  const enhancedAttendanceData = useMemo(() => {
+    return attendanceData.map((player) => {
+      const loans = loanMap.get(player.playerId) || [];
+      const loanMatches = loans.length;
+
+      return {
+        ...player,
+        loanMatches
+      };
+    });
+  }, [attendanceData, loanMap]);
 
   // Define table columns
   const baseColumns = useMemo(
@@ -138,6 +192,17 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
         render: (player) => (
           <span className="text-slate-300 font-mono">{player.matchesPlayed}</span>
         )
+      },
+      {
+        key: SORT_COLUMNS.LOAN_MATCHES,
+        label: 'Matches loaned',
+        sortable: true,
+        className: 'text-center',
+        render: (player) => (
+          <span className="text-slate-300 font-mono">
+            {player.loanMatches > 0 ? player.loanMatches : '-'}
+          </span>
+        )
       }
     ],
     []
@@ -155,7 +220,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
     sortBy,
     handleSort,
     renderSortIndicator
-  } = useTableSort(attendanceData, SORT_COLUMNS.NAME, 'asc', dragDropHandlers.isReordering);
+  } = useTableSort(enhancedAttendanceData, SORT_COLUMNS.NAME, 'asc', dragDropHandlers.isReordering);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
@@ -249,6 +314,12 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
 
   return (
     <div className="space-y-6">
+      {loanError && (
+        <div className="bg-amber-900/40 border border-amber-600/50 text-amber-200 text-sm rounded-lg p-4 mb-4">
+          {loanError}
+        </div>
+      )}
+
       {!hasAttendanceData && (
         <StatsEmptyState
           title="No attendance data available for the selected time range"

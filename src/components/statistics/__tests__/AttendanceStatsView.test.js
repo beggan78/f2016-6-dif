@@ -28,6 +28,8 @@ describe('AttendanceStatsView', () => {
       totalAttendance: 18,
       attendanceRate: 90.0,
       matchesPlayed: 8,
+      loanMatches: 0,
+      weightedMatches: 8.0,
       practicesPerMatch: 2.25
     },
     {
@@ -37,6 +39,8 @@ describe('AttendanceStatsView', () => {
       totalAttendance: 15,
       attendanceRate: 75.0,
       matchesPlayed: 7,
+      loanMatches: 0,
+      weightedMatches: 7.0,
       practicesPerMatch: 2.14
     },
     {
@@ -46,6 +50,8 @@ describe('AttendanceStatsView', () => {
       totalAttendance: 12,
       attendanceRate: 60.0,
       matchesPlayed: 6,
+      loanMatches: 0,
+      weightedMatches: 6.0,
       practicesPerMatch: 2.0
     }
   ];
@@ -423,7 +429,7 @@ describe('AttendanceStatsView', () => {
       });
 
       const callArgs = mockUseColumnOrderPersistence.useColumnOrderPersistence.mock.calls[0];
-      expect(callArgs[0]).toHaveLength(5); // 5 columns (total practices column removed)
+      expect(callArgs[0]).toHaveLength(6); // 6 columns (includes loanMatches column)
       expect(callArgs[1]).toBe('sport-wizard-stats-attendance-column-order');
     });
   });

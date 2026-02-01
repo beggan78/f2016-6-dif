@@ -1855,10 +1855,12 @@ export const TeamProvider = ({ children }) => {
           display_name,
           jersey_number,
           on_roster,
+          match_id,
           created_at,
           updated_at
         `)
         .eq('team_id', teamId)
+        .is('match_id', null)
         .order('jersey_number', { ascending: true });
 
       if (error) {
@@ -2152,6 +2154,7 @@ export const TeamProvider = ({ children }) => {
     if (['periodLength', 'numPeriods'].includes(key)) return PREFERENCE_CATEGORIES.TIME;
     if (['substitutionLogic', 'alternateRoles'].includes(key)) return PREFERENCE_CATEGORIES.SUBSTITUTION;
     if (['trackGoalScorer', 'fairPlayAward', 'teamCaptain'].includes(key)) return PREFERENCE_CATEGORIES.FEATURES;
+    if (['loanMatchWeight'].includes(key)) return PREFERENCE_CATEGORIES.STATISTICS;
     return null;
   }, []);
 
