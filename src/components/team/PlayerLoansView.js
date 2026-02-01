@@ -10,18 +10,10 @@ import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { TIME_PRESETS } from '../../constants/timePresets';
 import { BREAKPOINTS } from '../../constants/layoutConstants';
-
-const formatRosterName = (player) => {
-  if (!player) return 'Unknown Player';
-  if (player.display_name) return player.display_name;
-  if (player.first_name || player.last_name) {
-    return `${player.first_name || ''}${player.last_name ? ` ${player.last_name}` : ''}`.trim();
-  }
-  return 'Unknown Player';
-};
+import { formatPlayerDisplayName } from '../../utils/playerUtils';
 
 const buildPlayerLabel = (player) => {
-  const name = formatRosterName(player);
+  const name = formatPlayerDisplayName(player);
   return player?.jersey_number ? `#${player.jersey_number} ${name}` : name;
 };
 
@@ -87,7 +79,7 @@ const groupLoansByMatch = (loans, rosterLookup) => {
 
     const match = matchMap.get(matchKey);
     const playerSource = loan.player || rosterLookup.get(loan.player_id);
-    const displayName = playerSource ? formatRosterName(playerSource) : 'Unknown Player (deleted)';
+    const displayName = playerSource ? formatPlayerDisplayName(playerSource) : 'Unknown Player (deleted)';
     const jerseyNumber = playerSource?.jersey_number ?? null;
     const isDeleted = !playerSource;
 

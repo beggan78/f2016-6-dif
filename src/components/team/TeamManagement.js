@@ -44,7 +44,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { getPlayerConnectionDetails, acceptGhostPlayer, dismissGhostPlayer } from '../../services/connectorService';
 import { recordPlayerLoans } from '../../services/playerLoanService';
-import { shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
+import { formatPlayerDisplayName, shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { DEFAULT_PREFERENCES } from '../../types/preferences';
@@ -675,15 +675,6 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
   const [dismissingGhostPlayerId, setDismissingGhostPlayerId] = useState(null);
   const hasOpenedAddModalRef = useRef(false);
 
-  const formatRosterName = useCallback((player) => {
-    if (!player) return 'Unknown Player';
-    if (player.display_name) return player.display_name;
-    if (player.first_name || player.last_name) {
-      return `${player.first_name || ''}${player.last_name ? ` ${player.last_name}` : ''}`.trim();
-    }
-    return 'Unknown Player';
-  }, []);
-
   // Load roster data
   const loadRoster = useCallback(async () => {
     if (!team?.id) return;
@@ -987,7 +978,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     }
 
     if (playerIds.length === 1) {
-      const playerName = formatRosterName(roster.find(player => player.id === playerIds[0]) || loanModalPlayer);
+      const playerName = formatPlayerDisplayName(roster.find(player => player.id === playerIds[0]) || loanModalPlayer);
       setSuccessMessage(`${playerName} loan match recorded.`);
       return;
     }

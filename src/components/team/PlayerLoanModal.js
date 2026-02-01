@@ -1,15 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
 import { Button, Input, MultiSelect } from '../shared/UI';
-
-const formatRosterName = (player) => {
-  if (!player) return 'Unknown Player';
-  if (player.display_name) return player.display_name;
-  if (player.first_name || player.last_name) {
-    return `${player.first_name || ''}${player.last_name ? ` ${player.last_name}` : ''}`.trim();
-  }
-  return 'Unknown Player';
-};
+import { formatPlayerDisplayName } from '../../utils/playerUtils';
 
 export function PlayerLoanModal({
   isOpen,
@@ -52,7 +44,7 @@ export function PlayerLoanModal({
   const playerOptions = useMemo(() => {
     const options = players.map(player => ({
       value: player.id,
-      label: formatRosterName(player)
+      label: formatPlayerDisplayName(player)
     }));
 
     // Sort: selected players first, then alphabetically within each group
