@@ -990,6 +990,10 @@ describe('PlayerLoansView', () => {
         );
       });
 
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load roster for loans')).toBeInTheDocument();
+      });
+
       // Should still work with empty roster
       expect(screen.getByText('Player Loans')).toBeInTheDocument();
     });

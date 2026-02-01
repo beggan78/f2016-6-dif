@@ -208,8 +208,15 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       setRoster(rosterData || []);
     } catch (err) {
       console.error('Failed to load roster for loans:', err);
+      setRoster([]);
+      setError('Failed to load roster for loans');
     }
   }, [currentTeam?.id, getTeamRoster]);
+
+  const handleRetry = useCallback(() => {
+    fetchLoans();
+    fetchRoster();
+  }, [fetchLoans, fetchRoster]);
 
   const handleTimeRangeChange = (startDate, endDate, presetId = 'all-time') => {
     const normalizeDate = (value) => {
@@ -569,7 +576,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       {error && (
         <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3 flex items-center justify-between gap-4">
           <p className="text-rose-200 text-sm">{error}</p>
-          <Button onClick={fetchLoans} variant="secondary" size="sm">
+          <Button onClick={handleRetry} variant="secondary" size="sm">
             Retry
           </Button>
         </div>
