@@ -9,6 +9,7 @@ import { TimeFilter } from '../statistics/TimeFilter';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { TIME_PRESETS } from '../../constants/timePresets';
+import { BREAKPOINTS } from '../../constants/layoutConstants';
 
 const formatRosterName = (player) => {
   if (!player) return 'Unknown Player';
@@ -115,6 +116,9 @@ const groupLoansByMatch = (loans, rosterLookup) => {
 export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   const { getTeamRoster } = useTeam();
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept();
+  const isBelowLgBreakpoint = useCallback(() => {
+    return typeof window !== 'undefined' && window.innerWidth < BREAKPOINTS.LG;
+  }, []);
   const [loans, setLoans] = useState([]);
   const [roster, setRoster] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -129,10 +133,10 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
 
   // Screen size detection and filter collapse state
   const [needsCollapse, setNeedsCollapse] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024; // lg breakpoint
+    return isBelowLgBreakpoint();
   });
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(() => {
-    return typeof window !== 'undefined' && window.innerWidth < 1024;
+    return isBelowLgBreakpoint();
   });
 
   // Create persistence manager
@@ -253,7 +257,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   // Detect screen size that requires filter collapsing
   useEffect(() => {
     const checkScreenSize = () => {
-      const shouldCollapse = window.innerWidth < 1024; // lg breakpoint
+      const shouldCollapse = isBelowLgBreakpoint();
 
       setNeedsCollapse(prevNeedsCollapse => {
         if (prevNeedsCollapse !== shouldCollapse) {
@@ -274,7 +278,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  }, [isBelowLgBreakpoint]);
 
   const playerOptions = useMemo(() => {
     return roster.map(player => ({
