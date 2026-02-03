@@ -291,6 +291,24 @@ export function PlanMatchesScreen({
     );
   }, [matches, selectedPlayersByMatch]);
 
+  const isPlayerSelectedAndOnlyAvailableHere = useCallback((matchId, playerId) => {
+    // Only applies when planning 2+ matches
+    if (matches.length < 2) {
+      return false;
+    }
+
+    // Player must be selected for this match
+    const selectedForCurrentMatch = (selectedPlayersByMatch[matchId] || []).includes(playerId);
+    if (!selectedForCurrentMatch) {
+      return false;
+    }
+
+    // Player must be unavailable in at least one other match
+    return matches.some(other =>
+      other.id !== matchId && (unavailablePlayersByMatch[other.id] || []).includes(playerId)
+    );
+  }, [matches, selectedPlayersByMatch, unavailablePlayersByMatch]);
+
   const handleAutoSelect = () => {
     setAutoSelectMatchId(null);
     setShowAutoSelectModal(true);
@@ -456,6 +474,7 @@ export function PlanMatchesScreen({
               onToggleUnavailable={(playerId) => togglePlayerUnavailable(match.id, playerId)}
               formatSchedule={formatSchedule}
               isSelectedInOtherMatch={(playerId) => isPlayerSelectedInOtherMatch(match.id, playerId)}
+              isSelectedAndOnlyAvailableHere={(playerId) => isPlayerSelectedAndOnlyAvailableHere(match.id, playerId)}
               isPlayerInMultipleMatches={isPlayerInMultipleMatches}
               onReorderSelectedPlayers={handleReorderSelectedPlayers}
             />

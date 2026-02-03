@@ -15,6 +15,7 @@ export function MatchCard({
   planningStatus,
   canPlan,
   isSelectedInOtherMatch,
+  isSelectedAndOnlyAvailableHere,
   onPlanMatch,
   onToggleSelect,
   onToggleUnavailable,
@@ -106,6 +107,7 @@ export function MatchCard({
             onToggleSelect={onToggleSelect}
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}
+            isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere}
             practicesTooltip={PRACTICES_TOOLTIP}
           />
         </div>
@@ -130,6 +132,7 @@ export function MatchCard({
                   onToggleSelect(player.id);
                 }}
                 isInMultipleMatches={isPlayerInMultipleMatches(player.id)}
+                isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(player.id)}
                 isDragActivating={isItemDragActivating(player.id)}
               />
             ))}
@@ -154,6 +157,7 @@ export function MatchCard({
                     isDragging={false}
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(ghostPlayer.id)}
+                    isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(ghostPlayer.id)}
                   />
                 </div>
               </Portal>

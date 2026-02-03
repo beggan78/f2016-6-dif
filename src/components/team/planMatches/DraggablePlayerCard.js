@@ -9,6 +9,7 @@ const DraggablePlayerCardComponent = ({
   onPointerStart,
   onClick,
   isInMultipleMatches,
+  isSelectedAndOnlyAvailableHere,
   isDragActivating
 }) => {
   if (!player) {
@@ -28,9 +29,11 @@ const DraggablePlayerCardComponent = ({
         }
       }}
       className={`player-card-draggable flex items-center justify-between gap-2 rounded px-2 py-1 text-xs ${
-        isInMultipleMatches
-          ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
-          : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
+        isSelectedAndOnlyAvailableHere
+          ? 'border-2 border-orange-400 bg-orange-900/20 text-orange-100'
+          : isInMultipleMatches
+            ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
+            : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
       } ${isDragActivating ? 'drag-activating' : ''}`}
       style={{
         transform: shift ? `translateY(${shift}px)` : undefined,
@@ -63,6 +66,7 @@ export const DraggablePlayerCard = React.memo(
     prevProps.isDragging === nextProps.isDragging &&
     prevProps.isDragActivating === nextProps.isDragActivating &&
     prevProps.isInMultipleMatches === nextProps.isInMultipleMatches &&
+    prevProps.isSelectedAndOnlyAvailableHere === nextProps.isSelectedAndOnlyAvailableHere &&
     prevProps.player?.id === nextProps.player?.id &&
     prevProps.player?.displayName === nextProps.player?.displayName &&
     prevProps.player?.jerseyNumber === nextProps.player?.jerseyNumber &&
