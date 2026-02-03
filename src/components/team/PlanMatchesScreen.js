@@ -231,6 +231,13 @@ export function PlanMatchesScreen({
     }
   }, [setSelectedPlayersByMatch, setUnavailablePlayersByMatch, unavailablePlayersByMatch]);
 
+  const handleReorderSelectedPlayers = useCallback((matchId, newOrderedIds) => {
+    setSelectedPlayersByMatch((prev) => ({
+      ...prev,
+      [matchId]: newOrderedIds
+    }));
+  }, [setSelectedPlayersByMatch]);
+
   const updateTargetCount = (matchId, value) => {
     const parsed = Number(value);
     const safeValue = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -450,6 +457,7 @@ export function PlanMatchesScreen({
               formatSchedule={formatSchedule}
               isSelectedInOtherMatch={(playerId) => isPlayerSelectedInOtherMatch(match.id, playerId)}
               isPlayerInMultipleMatches={isPlayerInMultipleMatches}
+              onReorderSelectedPlayers={handleReorderSelectedPlayers}
             />
           );
         })}
