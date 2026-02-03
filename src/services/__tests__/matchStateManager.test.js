@@ -416,7 +416,7 @@ describe('matchStateManager', () => {
 
     it('should update match to finished successfully without player stats', async () => {
       // Mock successful match update (only one call to supabase.from)
-      const chain = createUpdateChain();
+      const chain = createUpdateChain({ selectResult: { data: [{ id: 'match-123' }], error: null } });
       supabase.from.mockReturnValue({ update: chain.update });
 
       // Call without allPlayers to avoid internal stats update calls

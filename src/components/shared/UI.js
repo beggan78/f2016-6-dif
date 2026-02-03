@@ -258,7 +258,18 @@ export function Button({
   );
 }
 
-export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message, confirmText = "Confirm", cancelText = "Cancel", variant = "danger" }) {
+export function ConfirmationModal({
+  isOpen,
+  onConfirm,
+  onCancel,
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = "danger",
+  confirmDisabled = false,
+  cancelDisabled = false
+}) {
   if (!isOpen) return null;
 
   return (
@@ -275,10 +286,10 @@ export function ConfirmationModal({ isOpen, onConfirm, onCancel, title, message,
         <div className="p-4">
           <p className="text-slate-200 mb-6">{message}</p>
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
-            <Button onClick={onCancel} variant="secondary" className="sm:order-1">
+            <Button onClick={onCancel} variant="secondary" className="sm:order-1" disabled={cancelDisabled}>
               {cancelText}
             </Button>
-            <Button onClick={onConfirm} variant={variant} className="sm:order-2">
+            <Button onClick={onConfirm} variant={variant} className="sm:order-2" disabled={confirmDisabled}>
               {confirmText}
             </Button>
           </div>
