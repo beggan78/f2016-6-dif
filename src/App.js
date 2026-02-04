@@ -95,6 +95,13 @@ const clearDismissedModals = () => {
 function AppContent() {
   // Create the main gameState instance without circular dependencies
   const gameState = useGameState();
+  const {
+    retryMatchPersistence,
+    continueWithoutSavingMatch,
+    showMatchPersistenceError,
+    persistenceErrorMessage,
+    isMatchPersistenceRetrying
+  } = gameState;
   const matchIdRef = useRef(gameState.currentMatchId);
   useEffect(() => {
     matchIdRef.current = gameState.currentMatchId;
@@ -278,6 +285,7 @@ function AppContent() {
   const [showTeamAdminModal, setShowTeamAdminModal] = useState(false);
   const [selectedTeamForAdmin, setSelectedTeamForAdmin] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const matchPersistenceNavigationActiveRef = useRef(false);
 
   // Enhanced success message function with built-in auto-dismiss (defined early to prevent initialization errors)
   const showSuccessMessage = useCallback((message) => {
@@ -700,6 +708,37 @@ function AppContent() {
     setShowConfirmModal(false);
     removeFromNavigationStack();
   };
+
+  const handleRetryMatchPersistence = useCallback(async () => {
+    await retryMatchPersistence();
+  }, [retryMatchPersistence]);
+
+  const handleContinueWithoutSaving = useCallback((options = {}) => {
+    const { removeNavigationState = true } = options;
+    if (removeNavigationState && matchPersistenceNavigationActiveRef.current) {
+      removeFromNavigationStack();
+      matchPersistenceNavigationActiveRef.current = false;
+    }
+    continueWithoutSavingMatch();
+  }, [continueWithoutSavingMatch, removeFromNavigationStack]);
+
+  useEffect(() => {
+    if (showMatchPersistenceError && !matchPersistenceNavigationActiveRef.current) {
+      matchPersistenceNavigationActiveRef.current = true;
+      pushNavigationState(() => {
+        matchPersistenceNavigationActiveRef.current = false;
+        handleContinueWithoutSaving({ removeNavigationState: false });
+      }, 'App-MatchPersistenceErrorModal');
+    } else if (!showMatchPersistenceError && matchPersistenceNavigationActiveRef.current) {
+      removeFromNavigationStack();
+      matchPersistenceNavigationActiveRef.current = false;
+    }
+  }, [
+    showMatchPersistenceError,
+    handleContinueWithoutSaving,
+    pushNavigationState,
+    removeFromNavigationStack
+  ]);
 
   const handleRestartMatch = (options = {}) => {
     const { preserveConfiguration = false } = options;
@@ -1344,6 +1383,19 @@ function AppContent() {
         message="You have a match currently running. Signing out now may stop tracking this match. Are you sure you want to sign out?"
         confirmText="Sign Out"
         cancelText="Stay Logged In"
+      />
+
+      <ConfirmationModal
+        isOpen={showMatchPersistenceError}
+        onConfirm={handleRetryMatchPersistence}
+        onCancel={handleContinueWithoutSaving}
+        title="Unable to Save Match"
+        message={persistenceErrorMessage}
+        confirmText={isMatchPersistenceRetrying ? 'Retrying...' : 'Retry'}
+        cancelText="Continue without saving"
+        variant="primary"
+        confirmDisabled={isMatchPersistenceRetrying}
+        cancelDisabled={isMatchPersistenceRetrying}
       />
       
       <AddPlayerModal

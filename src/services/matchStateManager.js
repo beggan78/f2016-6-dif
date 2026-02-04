@@ -59,6 +59,23 @@ function formatDatabaseRoleForDisplay(dbRole) {
 }
 
 /**
+ * Validates that all required final stats fields are present and non-null
+ * @param {Object} finalStats - Final match statistics object
+ * @returns {{valid: boolean, missingFields?: string[]}} Validation result
+ */
+export function validateFinalStats(finalStats) {
+  const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
+  const missingFields = requiredFields.filter(field =>
+    finalStats[field] === undefined || finalStats[field] === null
+  );
+
+  return {
+    valid: missingFields.length === 0,
+    missingFields: missingFields.length > 0 ? missingFields : undefined
+  };
+}
+
+/**
  * Create a new match record when the first period starts and insert initial player stats
  * @param {Object} matchData - Match configuration and team data
  * @param {string} matchData.teamId - Team ID (required)
@@ -410,18 +427,16 @@ export async function updateMatchToRunning(matchId) {
  * @param {Array} allPlayers - Array of all players from game state (optional)
  * @param {Object} goalScorers - Goal scorers data { eventId: playerId } (optional)
  * @param {Array} matchEvents - Array of match events for goal counting (optional)
- * @returns {Promise<{success: boolean, playerStatsUpdated?: number, error?: string}>}
+ * @returns {Promise<{success: boolean, matchUpdated?: boolean, playerStatsUpdated?: number, playerStats?: {success: boolean, updated: number, total: number, failures: Array<{playerId: string, error: string}>}, error?: string}>}
  */
 export async function updateMatchToFinished(matchId, finalStats, allPlayers = [], goalScorers = {}, matchEvents = []) {
   try {
     // Validate required fields
-    const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
-    const missingFields = requiredFields.filter(field => finalStats[field] === undefined || finalStats[field] === null);
-    
-    if (missingFields.length > 0) {
+    const validation = validateFinalStats(finalStats);
+    if (!validation.valid) {
       return {
         success: false,
-        error: `Missing required final stats: ${missingFields.join(', ')}`
+        error: `Missing required final stats: ${validation.missingFields.join(', ')}`
       };
     }
 
@@ -435,39 +450,59 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
       fair_play_award: finalStats.fairPlayAwardId || null
     };
 
+    let playerStatsResult = {
+      success: true,
+      updated: 0,
+      total: 0,
+      failures: []
+    };
 
-    const { error } = await supabase
+    // Update player match statistics before finalizing match state
+    if (allPlayers && allPlayers.length > 0) {
+      playerStatsResult = await updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers, matchEvents);
+      if (!playerStatsResult.success) {
+        console.warn('⚠️  Failed to update player stats before finishing match:', playerStatsResult.error);
+        return {
+          success: false,
+          matchUpdated: false,
+          playerStats: playerStatsResult,
+          error: playerStatsResult.error || 'Failed to update player match stats'
+        };
+      }
+    }
+
+    const { data: updatedMatches, error } = await supabase
       .from('match')
       .update(updateData)
       .eq('id', matchId)
       .is('deleted_at', null)
-      .eq('state', 'running'); // Only update if currently running
+      .eq('state', 'running') // Only update if currently running
+      .select('id');
 
     if (error) {
       console.error('❌ Failed to update match to finished:', error);
       return {
         success: false,
+        matchUpdated: false,
+        playerStats: playerStatsResult,
         error: `Database error: ${error.message}`
       };
     }
 
-    // Update player match statistics with performance data when match finishes
-    let playerStatsUpdated = 0;
-    if (allPlayers && allPlayers.length > 0) {
-      
-      const playerStatsResult = await updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers, matchEvents);
-      
-      if (playerStatsResult.success) {
-        playerStatsUpdated = playerStatsResult.updated;
-      } else {
-        console.warn('⚠️  Match finished but failed to update player stats:', playerStatsResult.error);
-        // Don't fail the entire operation if player stats fail - the match state update was successful
-      }
+    if (!updatedMatches || updatedMatches.length === 0) {
+      return {
+        success: false,
+        matchUpdated: false,
+        playerStats: playerStatsResult,
+        error: 'Match update failed: Match not in running state or not found'
+      };
     }
 
-    return { 
-      success: true, 
-      playerStatsUpdated 
+    return {
+      success: true,
+      matchUpdated: true,
+      playerStatsUpdated: playerStatsResult.updated,
+      playerStats: playerStatsResult
     };
 
   } catch (error) {
@@ -2373,7 +2408,7 @@ export async function updatePlayerMatchStatsBatch(matchId, playerStats = []) {
  * @param {Array} allPlayers - Array of all players from game state
  * @param {Object} goalScorers - Goal scorers data { eventId: playerId }
  * @param {Array} matchEvents - Array of match events for goal counting
- * @returns {Promise<{success: boolean, updated: number, error?: string}>}
+ * @returns {Promise<{success: boolean, updated: number, total?: number, failures?: Array<{playerId: string, error: string}>, error?: string}>}
  */
 export async function updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalScorers = {}, matchEvents = []) {
   try {
@@ -2386,12 +2421,15 @@ export async function updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalSc
       console.warn('⚠️  No player stats to update - no players participated?');
       return {
         success: true,
-        updated: 0
+        updated: 0,
+        total: 0,
+        failures: []
       };
     }
 
 
     let updatedCount = 0;
+    const failedPlayers = [];
     
     // Update each player's performance stats individually
     for (const player of participatingPlayers) {
@@ -2418,17 +2456,24 @@ export async function updatePlayerMatchStatsOnFinish(matchId, allPlayers, goalSc
         .eq('player_id', player.id);
 
       if (error) {
-        console.error(`❌ Failed to update player match stats for ${player.id}:`, error);
-        // Continue with other players instead of failing completely
+        failedPlayers.push({ playerId: player.id, error: error.message });
       } else {
         updatedCount++;
       }
     }
 
-    
+    if (failedPlayers.length > 0) {
+      console.warn(
+        `⚠️  Failed to update ${failedPlayers.length} of ${participatingPlayers.length} player stats.`,
+        { failures: failedPlayers }
+      );
+    }
+
     return {
-      success: true,
-      updated: updatedCount
+      success: failedPlayers.length === 0,
+      updated: updatedCount,
+      total: participatingPlayers.length,
+      failures: failedPlayers
     };
 
   } catch (error) {
