@@ -87,27 +87,30 @@ jest.mock('../../game/logic/positionUtils', () => ({
   getPositionRole: jest.fn(() => 'defender')
 }));
 
-const mockValidateFinalStats = jest.fn((finalStats) => {
-  const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
-  const missingFields = requiredFields.filter(field =>
-    finalStats[field] === undefined || finalStats[field] === null
-  );
-  return {
-    valid: missingFields.length === 0,
-    missingFields: missingFields.length > 0 ? missingFields : undefined
-  };
-});
-
 jest.mock('../../services/matchStateManager', () => ({
   createMatch: jest.fn(),
   formatMatchDataFromGameState: jest.fn(() => ({})),
   updateMatchToFinished: jest.fn(),
   updateMatchToRunning: jest.fn(),
-  formatFinalStatsFromGameState: jest.fn(() => ({})),
+  formatFinalStatsFromGameState: jest.fn(() => ({
+    matchDurationSeconds: 0,
+    goalsScored: 0,
+    goalsConceded: 0,
+    outcome: 'tie'
+  })),
   updateExistingMatch: jest.fn(() => Promise.resolve({ success: true })),
   upsertPlayerMatchStats: jest.fn(() => Promise.resolve({ success: true })),
   saveInitialMatchConfig: jest.fn(() => Promise.resolve({ success: true })),
-  validateFinalStats: mockValidateFinalStats
+  validateFinalStats: (finalStats) => {
+    const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
+    const missingFields = requiredFields.filter(field =>
+      finalStats[field] === undefined || finalStats[field] === null
+    );
+    return {
+      valid: missingFields.length === 0,
+      missingFields: missingFields.length > 0 ? missingFields : undefined
+    };
+  }
 }));
 
 jest.mock('../../utils/formationGenerator', () => ({
