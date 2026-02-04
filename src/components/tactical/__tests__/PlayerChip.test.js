@@ -130,7 +130,7 @@ describe('PlayerChip', () => {
     });
 
     it('should handle touch-based double-tap for deletion', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ shouldClearNativeTimers: true });
       render(<PlayerChip {...defaultProps} />);
       
       const chip = screen.getByText('5').parentElement;
@@ -150,7 +150,7 @@ describe('PlayerChip', () => {
     });
 
     it('should not trigger double-tap with slow taps', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ shouldClearNativeTimers: true });
       render(<PlayerChip {...defaultProps} />);
       
       const chip = screen.getByText('5').parentElement;

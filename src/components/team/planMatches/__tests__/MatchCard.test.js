@@ -8,7 +8,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MatchCard } from '../MatchCard';
 
 // Mock child components
-jest.mock('../../shared/UI', () => ({
+jest.mock('../../../shared/UI', () => ({
   Button: ({ children, onClick, disabled, className }) => (
     <button onClick={onClick} disabled={disabled} className={className}>
       {children}
@@ -16,12 +16,12 @@ jest.mock('../../shared/UI', () => ({
   )
 }));
 
-jest.mock('../../shared', () => ({
+jest.mock('../../../shared', () => ({
   Portal: ({ children }) => <div data-testid="portal">{children}</div>,
   Tooltip: ({ children }) => <div data-testid="tooltip">{children}</div>
 }));
 
-jest.mock('./PlayerSelector', () => ({
+jest.mock('../PlayerSelector', () => ({
   PlayerSelector: ({ players, selectedIds }) => (
     <div data-testid="player-selector">
       <div>Roster: {players?.length || 0}</div>
@@ -31,6 +31,12 @@ jest.mock('./PlayerSelector', () => ({
 }));
 
 // Mock useListDragAndDrop hook
+jest.mock('../../../../hooks/useListDragAndDrop', () => ({
+  useListDragAndDrop: jest.fn()
+}));
+
+const { useListDragAndDrop } = require('../../../../hooks/useListDragAndDrop');
+
 const mockDragHook = {
   isDragging: false,
   draggedItemId: null,
@@ -43,12 +49,6 @@ const mockDragHook = {
   shouldSuppressClick: jest.fn(() => false)
 };
 
-jest.mock('../../../../hooks/useListDragAndDrop', () => ({
-  useListDragAndDrop: jest.fn(() => mockDragHook)
-}));
-
-const { useListDragAndDrop } = require('../../../../hooks/useListDragAndDrop');
-
 describe('MatchCard', () => {
   let defaultProps;
   let mockRoster;
@@ -57,7 +57,10 @@ describe('MatchCard', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
+    jest.useFakeTimers({ shouldClearNativeTimers: true });
+
+    // Set up the drag hook mock implementation
+    useListDragAndDrop.mockReturnValue(mockDragHook);
 
     mockRoster = [
       {

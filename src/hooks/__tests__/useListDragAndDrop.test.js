@@ -15,10 +15,12 @@ describe('useListDragAndDrop', () => {
   let mockItems;
   let mockOnReorder;
   let mockContainerRef;
+  let originalRAF;
+  let originalCAF;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
+    jest.useFakeTimers({ shouldClearNativeTimers: true });
 
     mockItems = [
       { id: '1', name: 'Item 1' },
@@ -57,13 +59,17 @@ describe('useListDragAndDrop', () => {
 
     mockContainerRef = { current: mockContainer };
 
+    // Save original implementations
+    originalRAF = global.requestAnimationFrame;
+    originalCAF = global.cancelAnimationFrame;
+
     // Override RAF to execute synchronously in tests
-    jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+    global.requestAnimationFrame = jest.fn((cb) => {
       cb(Date.now());
       return 1;
     });
 
-    jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(() => {});
+    global.cancelAnimationFrame = jest.fn();
 
     // Mock pointer capture methods
     Element.prototype.setPointerCapture = jest.fn();
@@ -72,6 +78,9 @@ describe('useListDragAndDrop', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+    // Restore RAF/CAF before restoring all mocks
+    if (originalRAF) global.requestAnimationFrame = originalRAF;
+    if (originalCAF) global.cancelAnimationFrame = originalCAF;
     jest.restoreAllMocks();
   });
 

@@ -621,7 +621,7 @@ describe('TeamManagement', () => {
 
   describe('Success Messages', () => {
     it('should display success message after team creation', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ shouldClearNativeTimers: true });
       user = setupUserEvent({ advanceTimers: jest.advanceTimersByTime });
       const mockGetTeamMembersAfterCreate = jest.fn(() => Promise.resolve(mockMembers));
 
@@ -653,7 +653,7 @@ describe('TeamManagement', () => {
     });
 
     it('should auto-clear success messages after 3 seconds', async () => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ shouldClearNativeTimers: true });
       user = setupUserEvent({ advanceTimers: jest.advanceTimersByTime });
       const mockGetTeamMembersAfterCreate = jest.fn(() => Promise.resolve(mockMembers));
 

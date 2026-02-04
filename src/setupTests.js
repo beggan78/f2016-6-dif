@@ -19,19 +19,20 @@ if (typeof globalThis.Deno === 'undefined') {
 }
 
 // Mock requestAnimationFrame and cancelAnimationFrame for tests
+// Keep it simple to avoid conflicts with Jest fake timers
 if (typeof global.requestAnimationFrame === 'undefined') {
   let rafId = 0;
   global.requestAnimationFrame = (callback) => {
     const id = ++rafId;
-    setTimeout(() => callback(Date.now()), 0);
+    // Use queueMicrotask instead of setTimeout to avoid fake timer conflicts
+    queueMicrotask(() => callback(Date.now()));
     return id;
   };
 }
 
 if (typeof global.cancelAnimationFrame === 'undefined') {
-  global.cancelAnimationFrame = (id) => {
-    clearTimeout(id);
-  };
+  // No-op implementation - microtasks can't be cancelled
+  global.cancelAnimationFrame = () => {};
 }
 
 // Mock PointerEvent for tests (not available in jsdom)

@@ -76,7 +76,7 @@ describe('useTimers', () => {
     calculateMatchTime.mockReturnValue('00:00');
     
     // Mock setInterval and clearInterval
-    jest.useFakeTimers();
+    jest.useFakeTimers({ shouldClearNativeTimers: true });
     
     // Mock Date.now to have consistent timing
     jest.spyOn(Date, 'now').mockImplementation(() => 1000000); // Fixed timestamp

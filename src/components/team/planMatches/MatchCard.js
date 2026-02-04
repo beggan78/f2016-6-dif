@@ -98,7 +98,7 @@ export function MatchCard({
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>Roster</span>
-            <span>{roster.length}</span>
+            <span>{roster?.length || 0}</span>
           </div>
           <PlayerSelector
             players={displayRoster}

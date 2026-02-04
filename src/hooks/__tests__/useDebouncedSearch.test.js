@@ -22,7 +22,7 @@ function TestComponent({ callback, delay = 300 }) {
 
 describe('useDebouncedSearch', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    jest.useFakeTimers({ shouldClearNativeTimers: true });
   });
 
   afterEach(() => {
