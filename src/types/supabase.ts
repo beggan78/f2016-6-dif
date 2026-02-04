@@ -964,7 +964,7 @@ export type Database = {
           match_date: string
           match_time: string | null
           opponent: string
-ı          planned_match_id: string | null
+          planned_match_id: string | null
           synced_at: string
           updated_at: string
           venue: string | null

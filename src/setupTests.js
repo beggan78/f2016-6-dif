@@ -17,3 +17,30 @@ if (typeof globalThis.Deno === 'undefined') {
     }
   };
 }
+
+// Mock requestAnimationFrame and cancelAnimationFrame for tests
+if (typeof global.requestAnimationFrame === 'undefined') {
+  let rafId = 0;
+  global.requestAnimationFrame = (callback) => {
+    const id = ++rafId;
+    setTimeout(() => callback(Date.now()), 0);
+    return id;
+  };
+}
+
+if (typeof global.cancelAnimationFrame === 'undefined') {
+  global.cancelAnimationFrame = (id) => {
+    clearTimeout(id);
+  };
+}
+
+// Mock PointerEvent for tests (not available in jsdom)
+if (typeof global.PointerEvent === 'undefined') {
+  global.PointerEvent = class PointerEvent extends MouseEvent {
+    constructor(type, props = {}) {
+      super(type, props);
+      Object.defineProperty(this, 'pointerId', { value: props.pointerId || 0, writable: false });
+      Object.defineProperty(this, 'pointerType', { value: props.pointerType || 'mouse', writable: false });
+    }
+  };
+}
