@@ -13,7 +13,7 @@ import { VALIDATION_MESSAGES } from './authValidation';
 export const AUTH_ERROR_MESSAGES = {
   // Supabase auth errors
   'Invalid login credentials': 'Invalid email or password. Please check your credentials and try again.',
-  'Email not confirmed': 'Please check your email and click the confirmation link before signing in.',
+  'Email not confirmed': 'Please verify your email with the 6-digit code we sent you.',
   'User already registered': 'An account with this email already exists. Please sign in instead.',
   'Password should be at least 6 characters': 'Password must be at least 6 characters long.',
   'Signup requires a valid password': 'Please enter a valid password.',
