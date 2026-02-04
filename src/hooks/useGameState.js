@@ -6,7 +6,7 @@ import { generateIndividualFormationRecommendation } from '../utils/formationGen
 import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
-import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig, validateFinalStats } from '../services/matchStateManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
@@ -849,10 +849,9 @@ export function useGameState(navigateToView = null) {
       allPlayers: context.updatedPlayers
     }, matchDurationSeconds);
 
-    const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
-    const missingFields = requiredFields.filter(field => finalStats[field] === undefined || finalStats[field] === null);
-    if (missingFields.length > 0) {
-      return { error: `Cannot save match: Incomplete match data (${missingFields.join(', ')})` };
+    const validation = validateFinalStats(finalStats);
+    if (!validation.valid) {
+      return { error: `Cannot save match: Incomplete match data (${validation.missingFields.join(', ')})` };
     }
 
     const participatingPlayers = context.updatedPlayers.filter(player =>

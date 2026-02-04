@@ -59,6 +59,23 @@ function formatDatabaseRoleForDisplay(dbRole) {
 }
 
 /**
+ * Validates that all required final stats fields are present and non-null
+ * @param {Object} finalStats - Final match statistics object
+ * @returns {{valid: boolean, missingFields?: string[]}} Validation result
+ */
+export function validateFinalStats(finalStats) {
+  const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
+  const missingFields = requiredFields.filter(field =>
+    finalStats[field] === undefined || finalStats[field] === null
+  );
+
+  return {
+    valid: missingFields.length === 0,
+    missingFields: missingFields.length > 0 ? missingFields : undefined
+  };
+}
+
+/**
  * Create a new match record when the first period starts and insert initial player stats
  * @param {Object} matchData - Match configuration and team data
  * @param {string} matchData.teamId - Team ID (required)
@@ -415,13 +432,11 @@ export async function updateMatchToRunning(matchId) {
 export async function updateMatchToFinished(matchId, finalStats, allPlayers = [], goalScorers = {}, matchEvents = []) {
   try {
     // Validate required fields
-    const requiredFields = ['matchDurationSeconds', 'goalsScored', 'goalsConceded', 'outcome'];
-    const missingFields = requiredFields.filter(field => finalStats[field] === undefined || finalStats[field] === null);
-    
-    if (missingFields.length > 0) {
+    const validation = validateFinalStats(finalStats);
+    if (!validation.valid) {
       return {
         success: false,
-        error: `Missing required final stats: ${missingFields.join(', ')}`
+        error: `Missing required final stats: ${validation.missingFields.join(', ')}`
       };
     }
 
