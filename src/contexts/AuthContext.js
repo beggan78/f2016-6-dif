@@ -4,6 +4,7 @@ import { getCachedUserProfile, cacheUserProfile, clearAllCache, cacheAuthUser, g
 import { cleanupAbandonedMatches } from '../services/matchCleanupService';
 import { cleanupPreviousSession } from '../utils/sessionCleanupUtils';
 import { detectSessionType, shouldCleanupSession, clearAllSessionData, markPendingSignIn, markSignOutGuard, DETECTION_TYPES } from '../services/sessionDetectionService';
+import { setOtpSentTime, clearOtpSentTime } from '../utils/timeUtils';
 
 // Feature flag to control session expiry warnings
 const ENABLE_SESSION_EXPIRY_WARNINGS = false;
@@ -356,10 +357,13 @@ export function AuthProvider({ children }) {
       // Check if email confirmation is required
       if (data.user && !data.session) {
         // User was created but no session - email confirmation required
-        return { 
-          user: null, 
-          error: null, 
-          message: "Please check your email for confirmation link" 
+        // Use server timestamp for accuracy (eliminates client clock skew)
+        setOtpSentTime(email, data.user.confirmation_sent_at);
+
+        return {
+          user: null,
+          error: null,
+          message: "Please check your email for confirmation link"
         };
       }
 
@@ -451,6 +455,8 @@ export function AuthProvider({ children }) {
 
       if (error) throw error;
 
+      clearOtpSentTime(email); // Clear timestamp on successful verification
+
       return { user: data.user, error: null };
     } catch (error) {
       const errorMessage = error.message || 'Verification failed';
@@ -472,6 +478,9 @@ export function AuthProvider({ children }) {
       });
 
       if (error) throw error;
+
+      // Note: Supabase resend() API does not return user object, so we fall back to client timestamp
+      setOtpSentTime(email); // Uses Date.now() fallback
 
       return {
         data,
