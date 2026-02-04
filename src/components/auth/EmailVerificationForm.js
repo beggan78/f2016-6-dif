@@ -23,9 +23,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
   const [errors, setErrors] = useState({});
   const [resendCooldown, setResendCooldown] = useState(0);
   const [showHelpSection, setShowHelpSection] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes in seconds
-  const [isExpired, setIsExpired] = useState(false);
-  const { verifyOtp, loading, authError, clearAuthError } = useAuth();
+  const { verifyOtp, resendOtp, loading, authError, clearAuthError } = useAuth();
   const codeInputRef = useRef(null);
 
   // Auto-focus the code input when component mounts
@@ -50,31 +48,6 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
     }
     return () => clearTimeout(timer);
   }, [resendCooldown]);
-
-  // Handle OTP expiry countdown
-  useEffect(() => {
-    let timer;
-    if (timeRemaining > 0 && !isExpired) {
-      timer = setTimeout(() => {
-        setTimeRemaining(timeRemaining - 1);
-      }, 1000);
-    } else if (timeRemaining === 0 && !isExpired) {
-      setIsExpired(true);
-    }
-    return () => clearTimeout(timer);
-  }, [timeRemaining, isExpired]);
-
-  // Format time remaining as MM:SS
-  const formatTimeRemaining = (seconds) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  // Check if resend should be available (after 3 minutes or if expired)
-  const isResendAvailable = () => {
-    return isExpired || timeRemaining <= 120; // Show resend after 3 minutes (300-180=120 remaining)
-  };
 
   const handleCodeChange = (e) => {
     let value = e.target.value;
@@ -109,20 +82,14 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check if code is expired
-    if (isExpired) {
-      setErrors({ general: 'Verification code has expired. Please request a new code.' });
-      return;
-    }
-    
+
     if (!validateForm()) {
       return;
     }
 
     try {
       const { user, error } = await verifyOtp(email, code);
-      
+
       if (error) {
         setErrors({ general: error.message });
       } else if (user) {
@@ -136,14 +103,18 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
 
   const handleResendCode = async () => {
     if (resendCooldown > 0) return;
-    
+
     try {
-      // TODO: Implement resend functionality in AuthContext
-      // await resendEmailOtp(email);
-      setResendCooldown(60); // 60 second cooldown
-      setTimeRemaining(300); // Reset to 5 minutes
-      setIsExpired(false); // Reset expired state
-      setErrors({}); // Clear any errors
+      const { error } = await resendOtp(email, 'signup');
+
+      if (error) {
+        setErrors({ general: error.message });
+      } else {
+        // Success - reset cooldown and clear input
+        setCode('');
+        setResendCooldown(60); // 60 second cooldown
+        setErrors({}); // Clear any errors
+      }
     } catch (error) {
       setErrors({ general: 'Failed to resend code. Please try again.' });
     }
@@ -170,22 +141,6 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         <p className="text-slate-400 mt-2">
           We sent a 6-digit code to <span className="text-slate-300 font-medium">{email}</span>
         </p>
-        
-        {/* Countdown Timer */}
-        <div className="mt-3">
-          {isExpired ? (
-            <p className="text-rose-400 text-sm font-medium" aria-live="assertive">
-              Code expired
-            </p>
-          ) : (
-            <p className="text-slate-300 text-sm" aria-live="polite" aria-describedby="timer-description">
-              Code expires in <span className="font-mono font-medium">{formatTimeRemaining(timeRemaining)}</span>
-            </p>
-          )}
-          <span id="timer-description" className="sr-only">
-            Verification code countdown timer
-          </span>
-        </div>
       </div>
 
       {/* Error Message */}
@@ -211,7 +166,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
             onChange={handleCodeChange}
             onKeyDown={handleKeyDown}
             placeholder="Enter 6-digit code"
-            disabled={loading || isExpired}
+            disabled={loading}
             className={`text-center text-lg tracking-widest ${getErrorDisplayClasses(!!errors.code, 'field').container}`}
             maxLength={6}
             autoComplete="one-time-code"
@@ -232,31 +187,12 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
           onClick={handleSubmit}
           variant="primary"
           size="lg"
-          disabled={loading || isExpired || code.length !== 6}
+          disabled={loading || code.length !== 6}
           className="w-full"
         >
           {loading ? 'Verifying...' : 'Verify Email'}
         </Button>
       </form>
-
-      {/* Smart Resend Button */}
-      {isResendAvailable() && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={handleResendCode}
-            disabled={resendCooldown > 0 || loading}
-            className="text-sky-400 hover:text-sky-300 font-medium transition-colors disabled:text-slate-500 disabled:cursor-not-allowed"
-            aria-live="polite"
-          >
-            {resendCooldown > 0 
-              ? `Resend code again in ${resendCooldown}s` 
-              : 'Resend verification code'
-            }
-          </button>
-        </div>
-      )}
-
 
       {/* Expandable Help Section */}
       <div className="text-center">

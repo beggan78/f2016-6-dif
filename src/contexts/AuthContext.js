@@ -38,6 +38,7 @@ const AuthContext = createContext({
   signIn: async () => {},
   signOut: async () => {},
   verifyOtp: async () => {},
+  resendOtp: async () => {},
   resetPassword: async () => {},
   updatePassword: async () => {},
   changePassword: async () => {},
@@ -460,6 +461,35 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const resendOtp = async (email, type = 'signup') => {
+    try {
+      setLoading(true);
+      setAuthError(null);
+
+      const { data, error } = await supabase.auth.resend({
+        type: type,
+        email: email
+      });
+
+      if (error) throw error;
+
+      return {
+        data,
+        error: null,
+        message: 'Verification code sent! Please check your email.'
+      };
+    } catch (error) {
+      const errorMessage = error.message || 'Failed to resend verification code';
+      setAuthError(errorMessage);
+      return {
+        data: null,
+        error: { message: errorMessage }
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetPassword = async (email) => {
     try {
       setLoading(true);
@@ -631,6 +661,7 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     verifyOtp,
+    resendOtp,
     resetPassword,
     updatePassword,
     changePassword,

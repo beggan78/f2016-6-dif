@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { validateLoginForm } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
 
-export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose, initialEmail = '' }) {
+export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify, onClose, initialEmail = '' }) {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -39,8 +39,13 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onClose, initialE
 
     try {
       const { user, error } = await signIn(email, password);
-      
+
       if (error) {
+        // Check for unverified email error
+        if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+          onSwitchToVerify(email);
+          return;
+        }
         setErrors({ general: error.message });
       } else if (user) {
         // Success - close the modal
