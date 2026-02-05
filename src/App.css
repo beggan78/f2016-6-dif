@@ -88,3 +88,35 @@
 .animate-dynamic-down {
   animation: dynamic-down 1s ease-in-out;
 }
+
+@keyframes drag-activation-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.player-card-draggable {
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.player-card-draggable:active {
+  cursor: grabbing;
+}
+
+.player-card-draggable.drag-activating {
+  animation: drag-activation-pulse 150ms ease-out;
+}
+
+.ghost-card {
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+    0 16px 48px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
+}

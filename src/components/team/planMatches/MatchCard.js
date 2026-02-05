@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Button } from '../../shared/UI';
-import { Tooltip } from '../../shared';
+import { Portal } from '../../shared';
 import { PlayerSelector } from './PlayerSelector';
 import { PRACTICES_TOOLTIP } from '../../../constants/planMatchesConstants';
+import { useListDragAndDrop } from '../../../hooks/useListDragAndDrop';
+import { DraggablePlayerCard } from './DraggablePlayerCard';
 
 export function MatchCard({
   match,
@@ -13,11 +15,13 @@ export function MatchCard({
   planningStatus,
   canPlan,
   isSelectedInOtherMatch,
+  isSelectedAndOnlyAvailableHere,
   onPlanMatch,
   onToggleSelect,
   onToggleUnavailable,
   formatSchedule,
-  isPlayerInMultipleMatches
+  isPlayerInMultipleMatches,
+  onReorderSelectedPlayers
 }) {
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
   const displayRoster = useMemo(() => {
@@ -36,6 +40,36 @@ export function MatchCard({
       .map((playerId) => rosterById.get(playerId))
       .filter(Boolean);
   }, [rosterById, selectedIds]);
+
+  const listContainerRef = useRef(null);
+  const {
+    isDragging,
+    draggedItemId,
+    ghostPosition,
+    handlePointerStart,
+    isItemBeingDragged,
+    isItemDragActivating,
+    getItemShift,
+    shouldSuppressClick
+  } = useListDragAndDrop({
+    items: selectedPlayers,
+    onReorder: (reorderedPlayers) => {
+      if (!onReorderSelectedPlayers) {
+        return;
+      }
+      const newOrderedIds = reorderedPlayers.map((player) => player.id);
+      onReorderSelectedPlayers(match.id, newOrderedIds);
+    },
+    containerRef: listContainerRef,
+    activationThreshold: { time: 300, distance: 10 }
+  });
+
+  const ghostPlayer = useMemo(() => {
+    if (!draggedItemId) {
+      return null;
+    }
+    return selectedPlayers.find((player) => String(player.id) === String(draggedItemId)) || null;
+  }, [draggedItemId, selectedPlayers]);
 
   return (
     <div className="bg-slate-800/70 border border-slate-700 rounded-lg p-3 space-y-3">
@@ -64,7 +98,7 @@ export function MatchCard({
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>Roster</span>
-            <span>{roster.length}</span>
+            <span>{roster?.length || 0}</span>
           </div>
           <PlayerSelector
             players={displayRoster}
@@ -73,6 +107,7 @@ export function MatchCard({
             onToggleSelect={onToggleSelect}
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}
+            isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere}
             practicesTooltip={PRACTICES_TOOLTIP}
           />
         </div>
@@ -82,42 +117,50 @@ export function MatchCard({
             <span>Selected</span>
             <span>{selectedIds.length}</span>
           </div>
-          <div className="space-y-1 pr-1">
+          <div ref={listContainerRef} className="space-y-1 pr-1">
             {selectedPlayers.map((player) => (
-              <div
+              <DraggablePlayerCard
                 key={player.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => onToggleSelect(player.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    onToggleSelect(player.id);
+                player={player}
+                isDragging={isItemBeingDragged(player.id)}
+                shift={getItemShift(player.id)}
+                onPointerStart={(event) => handlePointerStart(player.id, event)}
+                onClick={() => {
+                  if (shouldSuppressClick(player.id)) {
+                    return;
                   }
+                  onToggleSelect(player.id);
                 }}
-                className={`flex items-center justify-between gap-2 rounded px-2 py-1 text-xs cursor-pointer ${
-                  isPlayerInMultipleMatches(player.id)
-                    ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
-                    : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="truncate">{player.displayName}</span>
-                  {player.jerseyNumber && (
-                    <span className="text-[10px] text-sky-200/70">#{player.jerseyNumber}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-mono text-sky-100/80">
-                  <Tooltip content={PRACTICES_TOOLTIP} position="top" trigger="hover" className="inline-flex">
-                    <span>{player.practicesPerMatch.toFixed(2)}</span>
-                  </Tooltip>
-                  <span>{player.attendanceRate.toFixed(1)}%</span>
-                </div>
-              </div>
+                isInMultipleMatches={isPlayerInMultipleMatches(player.id)}
+                isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(player.id)}
+                isDragActivating={isItemDragActivating(player.id)}
+              />
             ))}
             {selectedPlayers.length === 0 && (
               <div className="rounded border border-slate-700 bg-slate-900/30 px-2 py-2 text-xs text-slate-400">
                 Empty.
               </div>
+            )}
+            {isDragging && ghostPosition && ghostPlayer && (
+              <Portal>
+                <div
+                  className="fixed pointer-events-none z-[1000] ghost-card"
+                  style={{
+                    left: ghostPosition.x,
+                    top: ghostPosition.y,
+                    transform: 'translate(-50%, -50%) scale(1.05)',
+                    opacity: 0.9
+                  }}
+                >
+                  <DraggablePlayerCard
+                    player={ghostPlayer}
+                    isDragging={false}
+                    shift={0}
+                    isInMultipleMatches={isPlayerInMultipleMatches(ghostPlayer.id)}
+                    isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(ghostPlayer.id)}
+                  />
+                </div>
+              </Portal>
             )}
           </div>
         </div>

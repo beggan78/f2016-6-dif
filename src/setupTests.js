@@ -17,3 +17,39 @@ if (typeof globalThis.Deno === 'undefined') {
     }
   };
 }
+
+// Mock requestAnimationFrame and cancelAnimationFrame for tests
+// Keep it simple to avoid conflicts with Jest fake timers
+if (typeof global.requestAnimationFrame === 'undefined') {
+  let rafId = 0;
+  global.requestAnimationFrame = (callback) => {
+    const id = ++rafId;
+    // Use queueMicrotask instead of setTimeout to avoid fake timer conflicts
+    queueMicrotask(() => callback(Date.now()));
+    return id;
+  };
+}
+
+if (typeof global.cancelAnimationFrame === 'undefined') {
+  // No-op implementation - microtasks can't be cancelled
+  global.cancelAnimationFrame = () => {};
+}
+
+// Mock PointerEvent for tests (ensure it's always compatible with user-event)
+// Always override to ensure properties are writable for @testing-library/user-event
+global.PointerEvent = class PointerEvent extends MouseEvent {
+  constructor(type, props = {}) {
+    super(type, props);
+    // Make properties writable so user-event can modify them
+    Object.defineProperty(this, 'pointerId', {
+      value: props.pointerId || 0,
+      writable: true,
+      configurable: true
+    });
+    Object.defineProperty(this, 'pointerType', {
+      value: props.pointerType || 'mouse',
+      writable: true,
+      configurable: true
+    });
+  }
+};

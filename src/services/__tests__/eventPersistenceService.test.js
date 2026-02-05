@@ -761,7 +761,7 @@ describe('EventPersistenceService', () => {
 
   describe('retry logic', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ shouldClearNativeTimers: true });
     });
 
     afterEach(() => {
@@ -1021,7 +1021,7 @@ describe('EventPersistenceService', () => {
 
   describe('clearAllRetryTimers', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      jest.useFakeTimers({ shouldClearNativeTimers: true });
     });
 
     afterEach(() => {

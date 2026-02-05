@@ -17,7 +17,7 @@ import {
 } from '../authErrorHandling';
 
 // Mock timers for debounce testing
-jest.useFakeTimers();
+jest.useFakeTimers({ shouldClearNativeTimers: true });
 
 describe('Authentication Error Handling Utilities', () => {
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('Authentication Error Handling Utilities', () => {
   afterEach(() => {
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
-    jest.useFakeTimers();
+    jest.useFakeTimers({ shouldClearNativeTimers: true });
   });
 
   describe('AUTH_ERROR_MESSAGES', () => {

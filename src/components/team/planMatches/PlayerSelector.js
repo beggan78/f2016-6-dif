@@ -9,6 +9,7 @@ export function PlayerSelector({
   onToggleSelect,
   onToggleUnavailable,
   isSelectedInOtherMatch,
+  isSelectedAndOnlyAvailableHere,
   practicesTooltip,
   emptyMessage
 }) {

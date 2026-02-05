@@ -16,7 +16,7 @@ jest.mock('../../contexts/AuthContext');
 jest.mock('../../contexts/TeamContext');
 
 // Mock setTimeout for navigation delay testing
-jest.useFakeTimers();
+jest.useFakeTimers({ shouldClearNativeTimers: true });
 
 describe('useInvitationNotifications', () => {
   // Mock callback functions

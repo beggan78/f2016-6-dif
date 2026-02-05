@@ -37,7 +37,7 @@ function TestComponent({ initialValue = '', blurCloseDelay }) {
 
 describe('useTypeaheadDropdown', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    jest.useFakeTimers({ shouldClearNativeTimers: true });
   });
 
   afterEach(() => {
