@@ -146,6 +146,20 @@ export const getPlayerDisplayName = (player, fallback = 'Unknown Player') => {
 };
 
 /**
+ * Formats a roster player display name (snake_case fields) with a stable fallback.
+ * @param {Object|null|undefined} player - Roster player object
+ * @returns {string} Display name for roster entries
+ */
+export const formatPlayerDisplayName = (player) => {
+  if (!player) return 'Unknown Player';
+  if (player.display_name) return player.display_name;
+  if (player.first_name || player.last_name) {
+    return `${player.first_name || ''}${player.last_name ? ` ${player.last_name}` : ''}`.trim();
+  }
+  return 'Unknown Player';
+};
+
+/**
  * Resolves a player's display name by ID using the provided roster
  * @param {Array} allPlayers - Array of all players
  * @param {string} playerId - Player ID to look up

@@ -40,7 +40,7 @@ describe('Authentication Error Handling Utilities', () => {
     it('should have user-friendly messages for common Supabase errors', () => {
       expect(AUTH_ERROR_MESSAGES['Invalid login credentials']).toContain('Invalid email or password');
       expect(AUTH_ERROR_MESSAGES['User already registered']).toContain('account with this email already exists');
-      expect(AUTH_ERROR_MESSAGES['Email not confirmed']).toContain('confirmation link');
+      expect(AUTH_ERROR_MESSAGES['Email not confirmed']).toContain('6-digit code');
     });
   });
 

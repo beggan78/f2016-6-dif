@@ -383,13 +383,14 @@ describe('TeamManagement', () => {
       expect(screen.getByRole('button', { name: /Overview/i })).toBeInTheDocument();
     });
 
-    it('should show Roster tab only when canManageTeam is true', () => {
+    it('should show Roster and Loans tabs only when canManageTeam is true', () => {
       render(<TeamManagement {...defaultProps} />);
 
       expect(screen.getByRole('button', { name: /Roster/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Loans/i })).toBeInTheDocument();
     });
 
-    it('should NOT show Roster tab when canManageTeam is false', () => {
+    it('should NOT show Roster or Loans tabs when canManageTeam is false', () => {
       mockUseTeam.mockReturnValue({
         ...mockTeamContext,
         canManageTeam: false,
@@ -399,6 +400,7 @@ describe('TeamManagement', () => {
       render(<TeamManagement {...defaultProps} />);
 
       expect(screen.queryByRole('button', { name: /Roster/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Loans/i })).not.toBeInTheDocument();
     });
 
     it('should show Access Management tab only when isTeamAdmin is true', () => {
@@ -535,11 +537,12 @@ describe('TeamManagement', () => {
         });
       });
 
-      it('should see all 5 tabs', () => {
+      it('should see all 6 tabs', () => {
         render(<TeamManagement {...defaultProps} />);
 
         expect(screen.getByRole('button', { name: /Overview/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Roster/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Loans/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Access Management/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Connectors/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Preferences/i })).toBeInTheDocument();
@@ -577,11 +580,12 @@ describe('TeamManagement', () => {
         });
       });
 
-      it('should see 3 tabs (Overview, Roster, Preferences)', () => {
+      it('should see 4 tabs (Overview, Roster, Loans, Preferences)', () => {
         render(<TeamManagement {...defaultProps} />);
 
         expect(screen.getByRole('button', { name: /Overview/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Roster/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Loans/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Preferences/i })).toBeInTheDocument();
       });
 
@@ -612,6 +616,7 @@ describe('TeamManagement', () => {
 
         expect(screen.getByRole('button', { name: /Overview/i })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Roster/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Loans/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Access Management/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Connectors/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /Preferences/i })).not.toBeInTheDocument();

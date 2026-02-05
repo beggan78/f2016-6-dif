@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { PasswordReset } from './PasswordReset';
+import { EmailVerificationForm } from './EmailVerificationForm';
 
 // Auth modes
 export const AUTH_MODES = {
   LOGIN: 'login',
   SIGNUP: 'signup',
-  RESET: 'reset'
+  RESET: 'reset',
+  VERIFY: 'verify'
 };
 
 export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, initialEmail = '' }) {
   const [currentMode, setCurrentMode] = useState(initialMode);
   const [emailContext, setEmailContext] = useState(initialEmail); // Email to carry between modes
+  const [verificationEmail, setVerificationEmail] = useState(''); // Email for verification mode
 
   // Reset to initial mode when modal opens
   useEffect(() => {
@@ -78,6 +81,11 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
     setCurrentMode(AUTH_MODES.SIGNUP);
   };
 
+  const handleSwitchToVerify = (email = '') => {
+    setVerificationEmail(email);
+    setCurrentMode(AUTH_MODES.VERIFY);
+  };
+
   const renderForm = () => {
     switch (currentMode) {
       case AUTH_MODES.LOGIN:
@@ -85,6 +93,7 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
           <LoginForm
             onSwitchToSignup={handleSwitchToSignup}
             onSwitchToReset={handleSwitchToReset}
+            onSwitchToVerify={handleSwitchToVerify}
             onClose={onClose}
             initialEmail={emailContext}
           />
@@ -104,6 +113,15 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
             initialEmail={emailContext}
           />
         );
+      case AUTH_MODES.VERIFY:
+        return (
+          <EmailVerificationForm
+            email={verificationEmail}
+            onSuccess={onClose}
+            onSwitchToLogin={handleSwitchToLogin}
+            onClose={onClose}
+          />
+        );
       default:
         return null;
     }
@@ -121,6 +139,7 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
             {currentMode === AUTH_MODES.LOGIN && 'Sign In'}
             {currentMode === AUTH_MODES.SIGNUP && 'Create Account'}
             {currentMode === AUTH_MODES.RESET && 'Reset Password'}
+            {currentMode === AUTH_MODES.VERIFY && 'Verify Email'}
           </div>
           <button
             onClick={onClose}

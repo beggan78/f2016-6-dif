@@ -28,6 +28,7 @@ export const STORAGE_KEYS = {
   STATISTICS_PLAYER_COLUMN_ORDER: 'sport-wizard-stats-player-column-order',
   STATISTICS_ATTENDANCE_COLUMN_ORDER: 'sport-wizard-stats-attendance-column-order',
   TEAM_MANAGEMENT_ACTIVE_TAB: 'sport-wizard-team-management-active-tab',
+  PLAYER_LOANS_TIME_RANGE: 'sport-wizard-player-loans-time-range',
   DISMISSED_MODALS: 'sport-wizard-dismissed-modals',
   PLAN_MATCH_UNAVAILABLE_PLAYERS: 'sport-wizard-plan-match-unavailable-players',
   PLAN_MATCH_AUTO_SELECT_SETTINGS: 'sport-wizard-plan-match-auto-select-settings',

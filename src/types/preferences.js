@@ -9,6 +9,7 @@ export const PREFERENCE_KEYS = {
   TRACK_GOAL_SCORER: 'trackGoalScorer',
   FAIR_PLAY_AWARD: 'fairPlayAward',
   TEAM_CAPTAIN: 'teamCaptain',
+  LOAN_MATCH_WEIGHT: 'loanMatchWeight',
 };
 
 // Categories for grouping
@@ -17,7 +18,10 @@ export const PREFERENCE_CATEGORIES = {
   TIME: 'time',
   SUBSTITUTION: 'substitution',
   FEATURES: 'features',
+  STATISTICS: 'statistics',
 };
+
+const DEFAULT_LOAN_MATCH_WEIGHT = 0.5;
 
 // Fair Play Award options
 export const FAIR_PLAY_AWARD_OPTIONS = {
@@ -38,6 +42,7 @@ export const DEFAULT_PREFERENCES = {
   [PREFERENCE_KEYS.TRACK_GOAL_SCORER]: true,
   [PREFERENCE_KEYS.FAIR_PLAY_AWARD]: 'none',
   [PREFERENCE_KEYS.TEAM_CAPTAIN]: 'none',
+  [PREFERENCE_KEYS.LOAN_MATCH_WEIGHT]: 0.5,
 };
 
 // Value converters
@@ -49,6 +54,8 @@ export const parsePreferenceValue = (key, value) => {
     case PREFERENCE_KEYS.TRACK_GOAL_SCORER:
     case PREFERENCE_KEYS.ALTERNATE_ROLES:
       return value === 'true';
+    case PREFERENCE_KEYS.LOAN_MATCH_WEIGHT:
+      return Number.isNaN(parseFloat(value)) ? DEFAULT_LOAN_MATCH_WEIGHT : parseFloat(value);
     default:
       return value;
   }

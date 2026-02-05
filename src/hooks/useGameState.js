@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
@@ -6,7 +6,7 @@ import { generateIndividualFormationRecommendation } from '../utils/formationGen
 import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
-import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig } from '../services/matchStateManager';
+import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig, validateFinalStats } from '../services/matchStateManager';
 import { saveMatchConfiguration as saveMatchConfigurationService } from '../services/matchConfigurationService';
 import { createRotationQueue } from '../game/queue/rotationQueue';
 import { getPositionRole } from '../game/logic/positionUtils';
@@ -243,6 +243,11 @@ export function useGameState(navigateToView = null) {
   const [currentMatchId, setCurrentMatchId] = useState(initialState.currentMatchId || null);
   const [matchCreated, setMatchCreated] = useState(initialState.matchCreated || false);
   const [matchState, setMatchState] = useState(initialState.matchState || 'not_started');
+  const [showMatchPersistenceError, setShowMatchPersistenceError] = useState(false);
+  const [persistenceErrorMessage, setPersistenceErrorMessage] = useState('');
+  const [isMatchPersistenceRetrying, setIsMatchPersistenceRetrying] = useState(false);
+  const [matchPersistenceRetryAttempt, setMatchPersistenceRetryAttempt] = useState(0);
+  const pendingMatchCompletionRef = useRef(null);
   // Configuration activity tracking - prevents accidental clearing during active configuration
   const [hasActiveConfiguration, setHasActiveConfiguration] = useState(initialState.hasActiveConfiguration || false);
   const [trackGoalScorer, setTrackGoalScorer] = useState(
@@ -747,7 +752,203 @@ export function useGameState(navigateToView = null) {
     }
   };
 
-  const handleEndPeriod = (isSubTimerPaused = false) => {
+  const getMatchPersistenceErrorDetails = useCallback((result, players) => {
+    const details = [];
+
+    if (result?.error) {
+      details.push(result.error);
+    }
+
+    const failures = result?.playerStats?.failures;
+    if (Array.isArray(failures) && failures.length > 0) {
+      const names = failures
+        .map(failure => findPlayerById(players, failure.playerId))
+        .map(player => player?.displayName || player?.firstName || player?.lastName)
+        .filter(Boolean);
+
+      if (names.length > 0) {
+        details.push(`Player stats failed for: ${names.join(', ')}`);
+      } else {
+        details.push(`Player stats failed for ${failures.length} player(s)`);
+      }
+    }
+
+    return details.join(' ');
+  }, []);
+
+  const buildMatchPersistenceErrorMessage = useCallback((result, players, prefix = 'Failed to save match') => {
+    const details = getMatchPersistenceErrorDetails(result, players);
+    if (!details) {
+      return `${prefix}.`;
+    }
+    return `${prefix}: ${details}`;
+  }, [getMatchPersistenceErrorDetails]);
+
+  const openMatchPersistenceError = useCallback((message, context) => {
+    setPersistenceErrorMessage(message);
+    setShowMatchPersistenceError(true);
+    setIsMatchPersistenceRetrying(false);
+    setMatchPersistenceRetryAttempt(0);
+    if (context) {
+      pendingMatchCompletionRef.current = context;
+    }
+  }, []);
+
+  const clearMatchPersistenceError = useCallback(() => {
+    setShowMatchPersistenceError(false);
+    setPersistenceErrorMessage('');
+    setIsMatchPersistenceRetrying(false);
+    setMatchPersistenceRetryAttempt(0);
+  }, []);
+
+  const finalizeMatchCompletion = useCallback(() => {
+    setMatchState('finished');
+    setView(VIEWS.STATS);
+  }, [setMatchState, setView]);
+
+  const continueWithoutSavingMatch = useCallback(() => {
+    clearMatchPersistenceError();
+    pendingMatchCompletionRef.current = null;
+    finalizeMatchCompletion();
+  }, [clearMatchPersistenceError, finalizeMatchCompletion]);
+
+  const buildMatchCompletionContext = useCallback((currentTimeEpoch, updatedPlayersWithFinalStats) => {
+    return {
+      matchId: currentMatchId,
+      matchStartTime,
+      matchEndTimeEpoch: currentTimeEpoch,
+      updatedPlayers: updatedPlayersWithFinalStats,
+      goalScorers,
+      matchEvents,
+      ownScore,
+      opponentScore
+    };
+  }, [currentMatchId, matchStartTime, goalScorers, matchEvents, ownScore, opponentScore]);
+
+  const resolveMatchCompletionPayload = useCallback((context) => {
+    if (!context?.matchId) {
+      return { error: 'Cannot save match: No match ID.' };
+    }
+
+    if (!Array.isArray(context.updatedPlayers) || context.updatedPlayers.length === 0) {
+      return { error: 'Cannot save match: No player data available.' };
+    }
+
+    let matchDurationSeconds = context.matchDurationSeconds;
+    if (matchDurationSeconds === undefined || matchDurationSeconds === null) {
+      const startTime = context.matchStartTime ?? matchStartTime;
+      if (!startTime) {
+        return { error: 'Cannot save match: Missing start time.' };
+      }
+      matchDurationSeconds = Math.floor((context.matchEndTimeEpoch - startTime) / 1000);
+    }
+
+    const finalStats = context.finalStats || formatFinalStatsFromGameState({
+      ownScore: context.ownScore,
+      opponentScore: context.opponentScore,
+      allPlayers: context.updatedPlayers
+    }, matchDurationSeconds);
+
+    const validation = validateFinalStats(finalStats);
+    if (!validation.valid) {
+      return { error: `Cannot save match: Incomplete match data (${validation.missingFields.join(', ')})` };
+    }
+
+    const participatingPlayers = context.updatedPlayers.filter(player =>
+      player.stats?.startedMatchAs || player.stats?.startedAtPosition
+    );
+    if (participatingPlayers.length === 0) {
+      return { error: 'Cannot save match: No participating players found.' };
+    }
+
+    return {
+      payload: {
+        ...context,
+        finalStats,
+        matchDurationSeconds
+      }
+    };
+  }, [matchStartTime]);
+
+  const persistMatchCompletion = useCallback(async (context) => {
+    const { payload, error } = resolveMatchCompletionPayload(context);
+    if (error) {
+      openMatchPersistenceError(error, context);
+      return { success: false, error };
+    }
+
+    const result = await updateMatchToFinished(
+      payload.matchId,
+      payload.finalStats,
+      payload.updatedPlayers,
+      payload.goalScorers,
+      payload.matchEvents
+    );
+
+    if (!result.success) {
+      const message = buildMatchPersistenceErrorMessage(result, payload.updatedPlayers);
+      openMatchPersistenceError(message, payload);
+      return result;
+    }
+
+    clearMatchPersistenceError();
+    pendingMatchCompletionRef.current = null;
+    finalizeMatchCompletion();
+    return result;
+  }, [resolveMatchCompletionPayload, openMatchPersistenceError, buildMatchPersistenceErrorMessage, clearMatchPersistenceError, finalizeMatchCompletion]);
+
+  const retryMatchPersistence = useCallback(async (maxAttempts = 3) => {
+    const pendingContext = pendingMatchCompletionRef.current;
+    if (!pendingContext) {
+      openMatchPersistenceError('Cannot retry: No pending match data found.');
+      return { success: false, error: 'No pending match data' };
+    }
+
+    const { payload, error } = resolveMatchCompletionPayload(pendingContext);
+    if (error) {
+      openMatchPersistenceError(error, pendingContext);
+      return { success: false, error };
+    }
+
+    setIsMatchPersistenceRetrying(true);
+    let lastResult = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      setMatchPersistenceRetryAttempt(attempt);
+      setPersistenceErrorMessage(`Retrying save (attempt ${attempt}/${maxAttempts})...`);
+
+      lastResult = await updateMatchToFinished(
+        payload.matchId,
+        payload.finalStats,
+        payload.updatedPlayers,
+        payload.goalScorers,
+        payload.matchEvents
+      );
+
+      if (lastResult.success) {
+        setIsMatchPersistenceRetrying(false);
+        clearMatchPersistenceError();
+        pendingMatchCompletionRef.current = null;
+        finalizeMatchCompletion();
+        return lastResult;
+      }
+
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+
+    setIsMatchPersistenceRetrying(false);
+    const finalMessage = buildMatchPersistenceErrorMessage(
+      lastResult,
+      payload.updatedPlayers,
+      `Failed to save match after ${maxAttempts} attempts`
+    );
+    openMatchPersistenceError(finalMessage, payload);
+    return lastResult || { success: false, error: 'Failed after retries' };
+  }, [resolveMatchCompletionPayload, openMatchPersistenceError, clearMatchPersistenceError, buildMatchPersistenceErrorMessage, finalizeMatchCompletion]);
+
+  const handleEndPeriod = async (isSubTimerPaused = false) => {
     // Auto-backup disabled to prevent localStorage quota issues
     const currentTimeEpoch = Date.now();
     const selectedSquadPlayers = getSelectedSquadPlayers(allPlayers, selectedSquadIds);
@@ -801,37 +1002,29 @@ export function useGameState(navigateToView = null) {
       setView(VIEWS.PERIOD_SETUP);
     } else {
       // COMPLETE MATCH RECORD when last period ends
-      if (currentMatchId && matchStartTime) {
-        // Calculate total match duration
-        const matchDurationSeconds = Math.floor((currentTimeEpoch - matchStartTime) / 1000);
-        
-        // Format final stats for database
-        const finalStats = formatFinalStatsFromGameState({
+      // Release wake lock when game ends regardless of persistence outcome
+      releaseWakeLock();
+
+      const completionContext = buildMatchCompletionContext(currentTimeEpoch, updatedPlayersWithFinalStats);
+      pendingMatchCompletionRef.current = completionContext;
+
+      const matchDurationSeconds = matchStartTime
+        ? Math.floor((currentTimeEpoch - matchStartTime) / 1000)
+        : null;
+
+      if (matchDurationSeconds !== null) {
+        completionContext.matchDurationSeconds = matchDurationSeconds;
+        completionContext.finalStats = formatFinalStatsFromGameState({
           ownScore,
           opponentScore,
           allPlayers: updatedPlayersWithFinalStats
         }, matchDurationSeconds);
-
-        // Update match to finished state and save player stats in background (non-blocking)
-        updateMatchToFinished(currentMatchId, finalStats, updatedPlayersWithFinalStats, goalScorers, matchEvents)
-          .then((result) => {
-            if (!result.success) {
-              console.warn('⚠️  Failed to update match to finished:', result.error);
-            }
-          })
-          .catch((error) => {
-            console.warn('⚠️  Exception during match completion:', error);
-          });
-      } else if (currentMatchId && !matchStartTime) {
-        console.warn('⚠️  Cannot complete match: missing match start time');
       }
-      
-      // Set match state to finished when last period ends
-      setMatchState('finished');
 
-      // Release wake lock when game ends
-      releaseWakeLock();
-      setView(VIEWS.STATS);
+      const persistResult = await persistMatchCompletion(completionContext);
+      if (!persistResult.success) {
+        return;
+      }
     }
   };
 
@@ -1481,6 +1674,10 @@ export function useGameState(navigateToView = null) {
     setMatchState,
     hasActiveConfiguration,
     setHasActiveConfiguration,
+    showMatchPersistenceError,
+    persistenceErrorMessage,
+    isMatchPersistenceRetrying,
+    matchPersistenceRetryAttempt,
 
     // Actions
     preparePeriod,
@@ -1490,6 +1687,8 @@ export function useGameState(navigateToView = null) {
     handleActualMatchStart,
     handleSubstitution,
     handleEndPeriod,
+    retryMatchPersistence,
+    continueWithoutSavingMatch,
     addTemporaryPlayer,
     clearStoredState,
     togglePlayerInactive,

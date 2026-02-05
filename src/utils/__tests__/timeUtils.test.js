@@ -9,7 +9,10 @@ import {
   getTimeTrackingParams,
   TIMEOUT_CONSTANTS,
   formatTimeMMSS,
-  calculateDurationInSeconds
+  calculateDurationInSeconds,
+  setOtpSentTime,
+  checkOtpExpiry,
+  clearOtpSentTime
 } from '../timeUtils';
 
 // Mock Date.now() for consistent testing
@@ -231,6 +234,413 @@ describe('timeUtils', () => {
       const params = getTimeTrackingParams(true);
       expect(params.isTimerPaused).toBe(true);
       expect(params.currentTimeEpoch).toBe(1640995200000); // Still gets timestamp
+    });
+  });
+
+  describe('OTP Timestamp Management', () => {
+    const testEmail = 'test@example.com';
+    const testEmail2 = 'another@example.com';
+
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear();
+      jest.clearAllMocks();
+      mockDateNow.mockImplementation(() => 1640995200000); // Fixed timestamp: 2022-01-01 00:00:00 UTC
+    });
+
+    afterEach(() => {
+      localStorage.clear();
+    });
+
+    describe('setOtpSentTime', () => {
+      it('should store timestamp for email', () => {
+        const result = setOtpSentTime(testEmail);
+        expect(result).toBe(true);
+
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640995200000');
+      });
+
+      it('should normalize email to lowercase', () => {
+        setOtpSentTime('TEST@EXAMPLE.COM');
+
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640995200000');
+      });
+
+      it('should trim whitespace from email', () => {
+        setOtpSentTime('  test@example.com  ');
+
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640995200000');
+      });
+
+      it('should return false for empty email', () => {
+        expect(setOtpSentTime('')).toBe(false);
+        expect(setOtpSentTime(null)).toBe(false);
+        expect(setOtpSentTime(undefined)).toBe(false);
+      });
+
+      it('should handle localStorage errors gracefully', () => {
+        // Mock localStorage.setItem to throw error
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        const setItemSpy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+          throw new Error('QuotaExceededError');
+        });
+
+        const result = setOtpSentTime(testEmail);
+
+        expect(result).toBe(false);
+        expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store OTP sent time:', expect.any(Error));
+
+        consoleWarnSpy.mockRestore();
+        setItemSpy.mockRestore();
+      });
+
+      it('should overwrite existing timestamp', () => {
+        setOtpSentTime(testEmail);
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBe('1640995200000');
+
+        mockDateNow.mockReturnValue(1640995260000); // 1 minute later
+        setOtpSentTime(testEmail);
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBe('1640995260000');
+      });
+
+      it('should store timestamps for multiple emails independently', () => {
+        setOtpSentTime(testEmail);
+        mockDateNow.mockReturnValue(1640995260000);
+        setOtpSentTime(testEmail2);
+
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBe('1640995200000');
+        expect(localStorage.getItem('sport-wizard-otp-sent-another@example.com')).toBe('1640995260000');
+      });
+    });
+
+    describe('checkOtpExpiry', () => {
+      it('should return non-expired status for fresh OTP', () => {
+        setOtpSentTime(testEmail);
+
+        const result = checkOtpExpiry(testEmail);
+        expect(result).toEqual({
+          isExpired: false,
+          minutesRemaining: 59,
+          sentTime: 1640995200000
+        });
+      });
+
+      it('should calculate correct minutes remaining', () => {
+        setOtpSentTime(testEmail);
+
+        // 30 minutes later
+        mockDateNow.mockReturnValue(1640995200000 + (30 * 60 * 1000));
+        const result = checkOtpExpiry(testEmail);
+
+        expect(result).toEqual({
+          isExpired: false,
+          minutesRemaining: 29,
+          sentTime: 1640995200000
+        });
+      });
+
+      it('should mark as expired after 59 minutes', () => {
+        setOtpSentTime(testEmail);
+
+        // 59 minutes later
+        mockDateNow.mockReturnValue(1640995200000 + (59 * 60 * 1000));
+        const result = checkOtpExpiry(testEmail);
+
+        expect(result).toEqual({
+          isExpired: true,
+          minutesRemaining: 0,
+          sentTime: 1640995200000
+        });
+      });
+
+      it('should mark as expired after 60+ minutes', () => {
+        setOtpSentTime(testEmail);
+
+        // 90 minutes later
+        mockDateNow.mockReturnValue(1640995200000 + (90 * 60 * 1000));
+        const result = checkOtpExpiry(testEmail);
+
+        expect(result).toEqual({
+          isExpired: true,
+          minutesRemaining: 0,
+          sentTime: 1640995200000
+        });
+      });
+
+      it('should return non-expired when no timestamp found', () => {
+        const result = checkOtpExpiry(testEmail);
+
+        expect(result).toEqual({
+          isExpired: false,
+          minutesRemaining: 60,
+          sentTime: null
+        });
+      });
+
+      it('should return non-expired for empty email', () => {
+        expect(checkOtpExpiry('')).toEqual({
+          isExpired: false,
+          minutesRemaining: 60,
+          sentTime: null
+        });
+
+        expect(checkOtpExpiry(null)).toEqual({
+          isExpired: false,
+          minutesRemaining: 60,
+          sentTime: null
+        });
+
+        expect(checkOtpExpiry(undefined)).toEqual({
+          isExpired: false,
+          minutesRemaining: 60,
+          sentTime: null
+        });
+      });
+
+      it('should handle corrupted timestamp data', () => {
+        localStorage.setItem('sport-wizard-otp-sent-test@example.com', 'not-a-number');
+
+        const result = checkOtpExpiry(testEmail);
+        expect(result).toEqual({
+          isExpired: false,
+          minutesRemaining: 60,
+          sentTime: null
+        });
+      });
+
+      it('should handle localStorage errors gracefully', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        const getItemSpy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+          throw new Error('localStorage error');
+        });
+
+        const result = checkOtpExpiry(testEmail);
+
+        expect(result).toEqual({
+          isExpired: false,
+          minutesRemaining: 60,
+          sentTime: null
+        });
+        expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to check OTP expiry:', expect.any(Error));
+
+        consoleWarnSpy.mockRestore();
+        getItemSpy.mockRestore();
+      });
+
+      it('should normalize email when checking', () => {
+        setOtpSentTime('test@example.com');
+
+        // Check with uppercase
+        const result1 = checkOtpExpiry('TEST@EXAMPLE.COM');
+        expect(result1.sentTime).toBe(1640995200000);
+
+        // Check with whitespace
+        const result2 = checkOtpExpiry('  test@example.com  ');
+        expect(result2.sentTime).toBe(1640995200000);
+      });
+
+      it('should handle timestamps at exact expiry boundary', () => {
+        setOtpSentTime(testEmail);
+
+        // Exactly 58 minutes 59.999 seconds later (rounds down to 58 minutes)
+        mockDateNow.mockReturnValue(1640995200000 + (58 * 60 * 1000) + 59999);
+        const result = checkOtpExpiry(testEmail);
+
+        expect(result.isExpired).toBe(false);
+        expect(result.minutesRemaining).toBe(1);
+      });
+    });
+
+    describe('clearOtpSentTime', () => {
+      it('should remove timestamp for email', () => {
+        setOtpSentTime(testEmail);
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBeTruthy();
+
+        const result = clearOtpSentTime(testEmail);
+        expect(result).toBe(true);
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBeNull();
+      });
+
+      it('should normalize email when clearing', () => {
+        setOtpSentTime('test@example.com');
+
+        clearOtpSentTime('TEST@EXAMPLE.COM');
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBeNull();
+      });
+
+      it('should return false for empty email', () => {
+        expect(clearOtpSentTime('')).toBe(false);
+        expect(clearOtpSentTime(null)).toBe(false);
+        expect(clearOtpSentTime(undefined)).toBe(false);
+      });
+
+      it('should handle localStorage errors gracefully', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        const removeItemSpy = jest.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+          throw new Error('localStorage error');
+        });
+
+        const result = clearOtpSentTime(testEmail);
+
+        expect(result).toBe(false);
+        expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to clear OTP sent time:', expect.any(Error));
+
+        consoleWarnSpy.mockRestore();
+        removeItemSpy.mockRestore();
+      });
+
+      it('should not affect other email timestamps', () => {
+        setOtpSentTime(testEmail);
+        setOtpSentTime(testEmail2);
+
+        clearOtpSentTime(testEmail);
+
+        expect(localStorage.getItem('sport-wizard-otp-sent-test@example.com')).toBeNull();
+        expect(localStorage.getItem('sport-wizard-otp-sent-another@example.com')).toBeTruthy();
+      });
+
+      it('should return true even if timestamp does not exist', () => {
+        const result = clearOtpSentTime(testEmail);
+        expect(result).toBe(true);
+      });
+    });
+
+    describe('setOtpSentTime with server timestamp', () => {
+      it('should use server timestamp when provided as ISO string', () => {
+        const isoString = '2022-01-01T01:00:00.000Z'; // 1 hour after mock time
+        const result = setOtpSentTime(testEmail, isoString);
+
+        expect(result).toBe(true);
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640998800000'); // Converted to milliseconds
+      });
+
+      it('should use server timestamp when provided as milliseconds', () => {
+        const timestamp = 1640998800000;
+        const result = setOtpSentTime(testEmail, timestamp);
+
+        expect(result).toBe(true);
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640998800000');
+      });
+
+      it('should fall back to client time for invalid ISO string', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        const result = setOtpSentTime(testEmail, 'invalid-date');
+
+        expect(result).toBe(true);
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          'Invalid server timestamp, falling back to client time:',
+          'invalid-date'
+        );
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640995200000'); // Falls back to Date.now()
+
+        consoleWarnSpy.mockRestore();
+      });
+
+      it('should fall back to client time for null server timestamp', () => {
+        const result = setOtpSentTime(testEmail, null);
+
+        expect(result).toBe(true);
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640995200000'); // Falls back to Date.now()
+      });
+
+      it('should fall back to client time for unknown format', () => {
+        const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        const result = setOtpSentTime(testEmail, { unexpected: 'object' });
+
+        expect(result).toBe(true);
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          'Unknown timestamp format, falling back to client time:',
+          { unexpected: 'object' }
+        );
+
+        consoleWarnSpy.mockRestore();
+      });
+
+      it('should prefer server timestamp over client time', () => {
+        // Server time is 2 hours ahead of client time
+        const serverTime = '2022-01-01T02:00:00.000Z';
+        mockDateNow.mockReturnValue(1640995200000); // Client: 2022-01-01T00:00:00Z
+
+        setOtpSentTime(testEmail, serverTime);
+
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1641002400000'); // Server time, not client time
+      });
+
+      it('should work with existing single-parameter calls (backward compatibility)', () => {
+        const result = setOtpSentTime(testEmail);
+
+        expect(result).toBe(true);
+        const stored = localStorage.getItem('sport-wizard-otp-sent-test@example.com');
+        expect(stored).toBe('1640995200000');
+      });
+    });
+
+    describe('OTP workflow integration', () => {
+      it('should handle complete OTP lifecycle', () => {
+        // 1. User signs up - OTP sent
+        setOtpSentTime(testEmail);
+
+        // 2. Check immediately - should not be expired
+        let status = checkOtpExpiry(testEmail);
+        expect(status.isExpired).toBe(false);
+        expect(status.minutesRemaining).toBe(59);
+
+        // 3. Wait 30 minutes
+        mockDateNow.mockReturnValue(1640995200000 + (30 * 60 * 1000));
+        status = checkOtpExpiry(testEmail);
+        expect(status.isExpired).toBe(false);
+        expect(status.minutesRemaining).toBe(29);
+
+        // 4. Wait until expired (60 minutes total)
+        mockDateNow.mockReturnValue(1640995200000 + (60 * 60 * 1000));
+        status = checkOtpExpiry(testEmail);
+        expect(status.isExpired).toBe(true);
+        expect(status.minutesRemaining).toBe(0);
+
+        // 5. User requests new OTP
+        setOtpSentTime(testEmail);
+        status = checkOtpExpiry(testEmail);
+        expect(status.isExpired).toBe(false);
+        expect(status.minutesRemaining).toBe(59);
+
+        // 6. User successfully verifies
+        clearOtpSentTime(testEmail);
+        status = checkOtpExpiry(testEmail);
+        expect(status.sentTime).toBeNull();
+      });
+
+      it('should handle multiple users independently', () => {
+        // User 1 signs up
+        setOtpSentTime(testEmail);
+
+        // 30 minutes later, User 2 signs up
+        mockDateNow.mockReturnValue(1640995200000 + (30 * 60 * 1000));
+        setOtpSentTime(testEmail2);
+
+        // Check both users
+        const status1 = checkOtpExpiry(testEmail);
+        const status2 = checkOtpExpiry(testEmail2);
+
+        expect(status1.minutesRemaining).toBe(29); // User 1: 30 minutes old
+        expect(status2.minutesRemaining).toBe(59); // User 2: Just sent
+
+        // User 1 verifies
+        clearOtpSentTime(testEmail);
+
+        // User 2's timestamp unaffected
+        const status2After = checkOtpExpiry(testEmail2);
+        expect(status2After.sentTime).toBe(1640995200000 + (30 * 60 * 1000));
+      });
     });
   });
 });
