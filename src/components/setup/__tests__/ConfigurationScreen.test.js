@@ -1,5 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { I18nextProvider } from 'react-i18next';
+import { createTestI18n } from '../../../test-utils/i18nTestSetup';
 import { ConfigurationScreen } from '../ConfigurationScreen';
 import { VENUE_TYPES } from '../../../constants/matchVenues';
 import { FORMATS, FORMATIONS } from '../../../constants/teamConfiguration';
@@ -253,7 +255,7 @@ describe('ConfigurationScreen team preferences', () => {
       }
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalledWith('team-1', { forceRefresh: true });
@@ -291,7 +293,7 @@ describe('ConfigurationScreen team preferences', () => {
       hasActiveConfiguration: true
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -334,7 +336,7 @@ describe('ConfigurationScreen team preferences', () => {
       setCaptain
     });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -343,7 +345,7 @@ describe('ConfigurationScreen team preferences', () => {
     expect(setCaptain).not.toHaveBeenCalled();
 
     // Add preferred captain after minimum size reached
-    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(p => p.id), selectedSquadPlayers: players }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(p => p.id), selectedSquadPlayers: players }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
@@ -381,7 +383,7 @@ describe('ConfigurationScreen team preferences', () => {
       setPeriodDurationMinutes: jest.fn()
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).not.toHaveBeenCalled();
@@ -419,7 +421,7 @@ describe('ConfigurationScreen team preferences', () => {
       }
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -457,7 +459,7 @@ describe('ConfigurationScreen team preferences', () => {
       selectedSquadPlayers: players
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -512,7 +514,7 @@ describe('ConfigurationScreen team preferences', () => {
       syncPlayersFromTeamRoster
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(screen.getByText('Echo (5)')).toBeInTheDocument();
@@ -559,7 +561,7 @@ describe('ConfigurationScreen team preferences', () => {
       setCaptain
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -599,7 +601,7 @@ describe('ConfigurationScreen team preferences', () => {
       configurationSessionId: 10
     });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -609,7 +611,7 @@ describe('ConfigurationScreen team preferences', () => {
     expect(loadTeamPreferences).toHaveBeenCalledTimes(1);
 
     // Rerender with squad including preferred captain (regardless of selection order)
-    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(player => player.id), selectedSquadPlayers: players }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(player => player.id), selectedSquadPlayers: players }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
@@ -647,7 +649,7 @@ describe('ConfigurationScreen team preferences', () => {
       configurationSessionId: 11
     });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(loadTeamPreferences).toHaveBeenCalled();
@@ -655,7 +657,7 @@ describe('ConfigurationScreen team preferences', () => {
 
     expect(setCaptain).not.toHaveBeenCalledWith(preferredCaptainId);
 
-    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(player => player.id), selectedSquadPlayers: players }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, selectedSquadIds: players.map(player => player.id), selectedSquadPlayers: players }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(setCaptain).toHaveBeenCalledWith(preferredCaptainId);
@@ -697,13 +699,16 @@ describe('ConfigurationScreen team preferences', () => {
       captainId: 'existing-captain'
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     // On page refresh we skip preference reapplication, so no calls and no overrides
     expect(loadTeamPreferences).not.toHaveBeenCalled();
     expect(setCaptain).not.toHaveBeenCalled();
   });
 });
+
+// Create test i18n instance
+const testI18n = createTestI18n();
 
 const buildProps = (overrides = {}) => ({
   allPlayers: [],
@@ -759,6 +764,15 @@ const buildProps = (overrides = {}) => ({
   ...overrides
 });
 
+// Helper function to render ConfigurationScreen with i18n provider
+const renderConfigurationScreen = (props) => {
+  return render(
+    <I18nextProvider i18n={testI18n}>
+      <ConfigurationScreen {...props} />
+    </I18nextProvider>
+  );
+};
+
 describe('ConfigurationScreen squad selection', () => {
   it('selects the full roster when Select All is pressed', () => {
     mockUseAuth.mockImplementation(() => ({
@@ -777,7 +791,7 @@ describe('ConfigurationScreen squad selection', () => {
       selectedSquadIds: []
     });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     const selectAllButton = screen.getByRole('button', { name: /select all/i });
     expect(selectAllButton).toBeEnabled();
@@ -803,7 +817,7 @@ describe('ConfigurationScreen squad selection', () => {
     const lastConfigCall = props.createTeamConfigFromSquadSize.mock.calls[props.createTeamConfigFromSquadSize.mock.calls.length - 1];
     expect(lastConfigCall).toEqual([expectedIds.length, FORMATS.FORMAT_5V5]);
 
-    rerender(<ConfigurationScreen {...{ ...props, selectedSquadIds: nextSelection }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, selectedSquadIds: nextSelection }} /></I18nextProvider>);
 
     const allSelectedButton = screen.getByRole('button', { name: /all selected/i });
     expect(allSelectedButton).toBeDisabled();
@@ -830,7 +844,7 @@ describe('ConfigurationScreen squad selection', () => {
       selectedSquadPlayers: players
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes).toHaveLength(players.length);
@@ -846,7 +860,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
   it('surfaces previous opponents as suggestions while typing', async () => {
     const props = buildProps({ setOpponentTeam: jest.fn() });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const opponentInput = screen.getByLabelText(/opponent team name/i);
     fireEvent.focus(opponentInput);
@@ -864,7 +878,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
   it('allows navigating suggestions with keyboard arrows and selecting with Enter', async () => {
     const props = buildProps({ setOpponentTeam: jest.fn() });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const opponentInput = screen.getByLabelText(/opponent team name/i);
     fireEvent.focus(opponentInput);
@@ -883,7 +897,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
   it('does not restore a cleared opponent when refocusing the input', async () => {
     const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     const opponentInput = screen.getByLabelText(/opponent team name/i);
     fireEvent.focus(opponentInput);
@@ -896,13 +910,13 @@ describe('ConfigurationScreen opponent suggestions', () => {
     fireEvent.click(screen.getByText('Alpha FC'));
     expect(props.setOpponentTeam).toHaveBeenCalledWith('Alpha FC');
 
-    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: 'Alpha FC' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, opponentTeam: 'Alpha FC' }} /></I18nextProvider>);
 
     const updatedInput = screen.getByLabelText(/opponent team name/i);
     fireEvent.change(updatedInput, { target: { value: '' } });
     expect(props.setOpponentTeam).toHaveBeenCalledWith('');
 
-    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, opponentTeam: '' }} /></I18nextProvider>);
 
     fireEvent.blur(updatedInput);
     fireEvent.focus(updatedInput);
@@ -914,7 +928,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
     mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
     const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const initialHasActive = props.setHasActiveConfiguration.mock.calls.length;
 
@@ -930,7 +944,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
     mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
     const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: 'Existing Club' });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(mockSuggestUpcomingOpponent).not.toHaveBeenCalled();
@@ -946,16 +960,16 @@ describe('ConfigurationScreen opponent suggestions', () => {
 
     const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '', configurationSessionId: 1 });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(props.setOpponentTeam).toHaveBeenCalledWith('Auto FC');
     });
 
-    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: 'Auto FC' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, opponentTeam: 'Auto FC' }} /></I18nextProvider>);
     props.setOpponentTeam.mockClear();
 
-    rerender(<ConfigurationScreen {...{ ...props, configurationSessionId: 2, opponentTeam: '' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, configurationSessionId: 2, opponentTeam: '' }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(props.setOpponentTeam).toHaveBeenCalledWith('Next FC');
@@ -968,7 +982,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
     mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
     const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: '' });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(props.setOpponentTeam).toHaveBeenCalledWith('Auto FC');
@@ -977,7 +991,7 @@ describe('ConfigurationScreen opponent suggestions', () => {
     expect(mockSuggestUpcomingOpponent).toHaveBeenCalledTimes(1);
 
     // Simulate clearing the input while remaining in same session
-    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, opponentTeam: '' }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(mockSuggestUpcomingOpponent).toHaveBeenCalledTimes(1);
@@ -988,19 +1002,19 @@ describe('ConfigurationScreen opponent suggestions', () => {
     mockSuggestUpcomingOpponent.mockResolvedValue({ opponent: 'Auto FC', reason: 'matched' });
     const props = buildProps({ setOpponentTeam: jest.fn(), opponentTeam: 'Saved Opponent', configurationSessionId: 3 });
 
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(mockSuggestUpcomingOpponent).not.toHaveBeenCalled();
     });
 
-    rerender(<ConfigurationScreen {...{ ...props, opponentTeam: '' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, opponentTeam: '' }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(mockSuggestUpcomingOpponent).not.toHaveBeenCalled();
     });
 
-    rerender(<ConfigurationScreen {...{ ...props, configurationSessionId: 4, opponentTeam: '' }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, configurationSessionId: 4, opponentTeam: '' }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(mockSuggestUpcomingOpponent).toHaveBeenCalledWith('team-1');
@@ -1016,7 +1030,7 @@ describe('ConfigurationScreen venue selection', () => {
 
   it('renders all venue options with home selected by default', () => {
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const venueSelect = screen.getByTestId('venueType');
     const optionValues = Array.from(venueSelect.options).map(option => option.value);
@@ -1028,14 +1042,14 @@ describe('ConfigurationScreen venue selection', () => {
 
   it('falls back to home selection when venueType prop is undefined', () => {
     const props = buildProps({ venueType: undefined });
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     expect(screen.getByTestId('venueType').value).toBe(VENUE_TYPES.HOME);
   });
 
   it('invokes callbacks and updates selection when choosing a new venue', () => {
     const props = buildProps();
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     const venueSelect = screen.getByTestId('venueType');
     const initialCalls = props.setHasActiveConfiguration.mock.calls.length;
@@ -1047,18 +1061,18 @@ describe('ConfigurationScreen venue selection', () => {
     const lastCallArgs = props.setHasActiveConfiguration.mock.calls[props.setHasActiveConfiguration.mock.calls.length - 1];
     expect(lastCallArgs[0]).toBe(true);
 
-    rerender(<ConfigurationScreen {...{ ...props, venueType: VENUE_TYPES.AWAY }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, venueType: VENUE_TYPES.AWAY }} /></I18nextProvider>);
     expect(screen.getByTestId('venueType').value).toBe(VENUE_TYPES.AWAY);
     expect(screen.queryByTestId('venue-description')).toBeNull();
   });
 
   it('checks for pending matches when configurationSessionId changes', async () => {
     const props = buildProps();
-    const { rerender } = render(<ConfigurationScreen {...props} />);
+    const { rerender } = renderConfigurationScreen(props);
 
     expect(checkForPendingMatches).not.toHaveBeenCalled();
 
-    rerender(<ConfigurationScreen {...{ ...props, configurationSessionId: 1 }} />);
+    rerender(<I18nextProvider i18n={testI18n}><ConfigurationScreen {...{ ...props, configurationSessionId: 1 }} /></I18nextProvider>);
 
     await waitFor(() => {
       expect(checkForPendingMatches).toHaveBeenCalledWith('team-1');
@@ -1089,7 +1103,7 @@ describe('ConfigurationScreen formation visibility', () => {
       selectedSquadIds: ['player-1', 'player-2', 'player-3']
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     expect(screen.getByTestId('formation')).toBeInTheDocument();
     expect(screen.getByTestId('formation-preview')).toBeInTheDocument();
@@ -1112,7 +1126,7 @@ describe('ConfigurationScreen formation visibility', () => {
       }
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     expect(screen.getByTestId('formation')).toBeInTheDocument();
     expect(screen.getByTestId('formation-preview')).toBeInTheDocument();
@@ -1136,7 +1150,7 @@ describe('ConfigurationScreen formation visibility', () => {
       }
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     expect(screen.getByTestId('formation')).toBeInTheDocument();
     expect(screen.getByTestId('formation-preview')).toBeInTheDocument();
@@ -1149,7 +1163,7 @@ describe('ConfigurationScreen formation visibility', () => {
       selectedSquadIds: ['player-1', 'player-2', 'player-3']
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const formationSelect = screen.getByTestId('formation');
     expect(formationSelect).toBeInTheDocument();
@@ -1180,7 +1194,7 @@ describe('ConfigurationScreen formation visibility', () => {
       selectedSquadIds: ['player-1', 'player-2', 'player-3']
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const buttons = screen.getAllByTestId('mock-button');
     const saveButton = buttons.find(btn => btn.textContent.includes('Save Configuration'));
@@ -1194,7 +1208,7 @@ describe('ConfigurationScreen formation visibility', () => {
       selectedSquadIds: ['player-1', 'player-2', 'player-3']
     });
 
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     const buttons = screen.getAllByTestId('mock-button');
     const proceedButton = buttons.find(btn => btn.textContent.includes('Proceed to Period Setup'));
@@ -1263,7 +1277,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     });
 
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
@@ -1304,7 +1318,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     });
 
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(getPlayerConnectionDetails).toHaveBeenCalled();
@@ -1336,7 +1350,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     });
 
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(getPlayerConnectionDetails).toHaveBeenCalled();
@@ -1381,7 +1395,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     });
 
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(getPlayerConnectionDetails).toHaveBeenCalled();
@@ -1426,7 +1440,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     });
 
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
@@ -1466,7 +1480,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
 
     const onNavigateToMock = jest.fn();
     const props = buildProps({ onNavigateTo: onNavigateToMock });
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
@@ -1506,7 +1520,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
     });
 
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     await waitFor(() => {
       expect(screen.getByTestId('unmapped-players-banner')).toBeInTheDocument();
@@ -1520,7 +1534,7 @@ describe('ConfigurationScreen unmapped players banner', () => {
 describe('Browser Back Integration', () => {
   it('should register browser back handler on mount', () => {
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     expect(props.pushNavigationState).toHaveBeenCalledTimes(1);
     expect(typeof props.pushNavigationState.mock.calls[0][0]).toBe('function');
@@ -1528,7 +1542,7 @@ describe('Browser Back Integration', () => {
 
   it('should cleanup navigation handler on unmount', () => {
     const props = buildProps();
-    const { unmount } = render(<ConfigurationScreen {...props} />);
+    const { unmount } = renderConfigurationScreen(props);
 
     unmount();
 
@@ -1537,7 +1551,7 @@ describe('Browser Back Integration', () => {
 
   it('should close modals and navigate back when browser back is pressed', () => {
     const props = buildProps();
-    render(<ConfigurationScreen {...props} />);
+    renderConfigurationScreen(props);
 
     // Get the browser back handler
     const backHandler = props.pushNavigationState.mock.calls[0][0];

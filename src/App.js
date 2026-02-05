@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import './App.css';
+import './locales/i18n'; // Initialize i18n
 import { useGameState } from './hooks/useGameState';
 import { useTimers } from './hooks/useTimers';
 import { useBrowserBackIntercept } from './hooks/useBrowserBackIntercept';
@@ -34,6 +35,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TeamProvider, useTeam } from './contexts/TeamContext';
 import { PreferencesProvider } from './contexts/PreferencesContext';
 import { NavigationHistoryProvider } from './contexts/NavigationHistoryContext';
+import { I18nSync } from './contexts/I18nProvider';
 import { SessionExpiryModal } from './components/auth/SessionExpiryModal';
 import { AuthModal, useAuthModal } from './components/auth/AuthModal';
 import { ProfileCompletionPrompt } from './components/auth/ProfileCompletionPrompt';
@@ -1499,6 +1501,7 @@ function App() {
     <AuthProvider>
       <TeamProvider>
         <PreferencesProvider>
+          <I18nSync />
           <NavigationHistoryProvider>
             <AppContent />
           </NavigationHistoryProvider>

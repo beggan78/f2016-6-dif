@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
@@ -94,6 +95,9 @@ export function ConfigurationScreen({
   pushNavigationState,
   removeFromNavigationStack
 }) {
+  // Translation hook
+  const { t } = useTranslation(['configuration', 'common']);
+
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
@@ -778,16 +782,16 @@ export function ConfigurationScreen({
     }
 
     const performSync = async () => {
-      setPlayerSyncStatus({ loading: true, message: 'Syncing team roster...' });
+      setPlayerSyncStatus({ loading: true, message: t('configuration:sync.syncing') });
       teamSyncCompletedRef.current = false;
-      
+
       try {
         const result = syncPlayersFromTeamRoster(rosterPlayers);
-        
+
         if (result.success) {
-          setPlayerSyncStatus({ 
-            loading: false, 
-            message: result.message === 'No sync needed' ? '' : `✅ ${result.message}` 
+          setPlayerSyncStatus({
+            loading: false,
+            message: result.message === 'No sync needed' ? '' : t('configuration:sync.syncSuccess', { message: result.message })
           });
           
           // Mark team sync as completed
@@ -817,7 +821,7 @@ export function ConfigurationScreen({
     };
 
     performSync();
-  }, [currentTeam, currentTeam?.id, teamPlayers, syncPlayersFromTeamRoster]);
+  }, [currentTeam, currentTeam?.id, teamPlayers, syncPlayersFromTeamRoster, t]);
 
   const handleFormationChange = (newFormation) => {
     const definition = FORMATION_DEFINITIONS[newFormation];
@@ -1413,10 +1417,10 @@ export function ConfigurationScreen({
       .map(({ value, label }) => ({ value, label }));
 
     return [
-      { value: "", label: "No Captain" },
+      { value: "", label: t('configuration:captain.noCaptain') },
       ...squadOptions
     ];
-  }, [captainHistoryCounts, selectedSquadPlayers]);
+  }, [captainHistoryCounts, selectedSquadPlayers, t]);
 
   const setOpponentTeamValue = React.useCallback((value, options = {}) => {
     const { markActive = true } = options;
@@ -1920,15 +1924,15 @@ export function ConfigurationScreen({
       )}
 
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
-        <Settings className="mr-2 h-6 w-6" />Game & Squad Configuration
+        <Settings className="mr-2 h-6 w-6" />{t('configuration:header.title')}
       </h2>
 
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2">
           {hasNoTeamPlayers
-            ? "Add Players to Your Team"
-            : `Select Squad (5-15 Players) - Selected: ${selectedSquadIds.length}`
+            ? t('configuration:squad.addPlayerTitle')
+            : t('configuration:squad.selectTitle', { count: selectedSquadIds.length })
           }
         </h3>
         {hasNoTeamPlayers ? (
@@ -1943,9 +1947,9 @@ export function ConfigurationScreen({
               /* Show empty state when no unmapped players */
               <>
                 <UserPlus className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                <p className="text-lg font-medium text-slate-300 mb-2">No Players Added Yet</p>
+                <p className="text-lg font-medium text-slate-300 mb-2">{t('configuration:squad.noPlayers.title')}</p>
                 <p className="text-sm text-slate-400 mb-4">
-                  Your team roster is empty. Add players to start setting up your game.
+                  {t('configuration:squad.noPlayers.description')}
                 </p>
                 <div className="flex justify-center">
                   <Button
@@ -1953,7 +1957,7 @@ export function ConfigurationScreen({
                     variant="primary"
                     Icon={UserPlus}
                   >
-                    Add Player
+                    {t('configuration:squad.addPlayer')}
                   </Button>
                 </div>
               </>
@@ -1978,7 +1982,7 @@ export function ConfigurationScreen({
                 size="sm"
                 disabled={areAllEligibleSelected || playersToShow.length === 0}
               >
-                {areAllEligibleSelected ? 'All Selected' : 'Select All'}
+                {areAllEligibleSelected ? t('configuration:squad.allSelected') : t('configuration:squad.selectAll')}
               </Button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1992,7 +1996,7 @@ export function ConfigurationScreen({
                   />
                   <span>{formatPlayerName(player)}</span>
                   {player.isTemporary && (
-                    <span className="text-xs text-slate-300">(Temporary)</span>
+                    <span className="text-xs text-slate-300">{t('configuration:squad.temporaryLabel')}</span>
                   )}
                 </label>
               ))}
@@ -2004,12 +2008,12 @@ export function ConfigurationScreen({
                 size="sm"
                 Icon={UserPlus}
               >
-                Add Player
+                {t('configuration:squad.addPlayer')}
               </Button>
             </div>
             {exceedsFormatMaximum && (
               <p className="mt-2 text-xs text-amber-300">
-                You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad selection.
+                {t('configuration:squad.exceededFormat', { count: selectedSquadIds.length, format: formatLabel, max: maxPlayersAllowed })}
               </p>
             )}
           </>
@@ -2026,19 +2030,19 @@ export function ConfigurationScreen({
       {/* Match Details */}
       <div className="p-3 bg-slate-700 rounded-md space-y-4">
         <div>
-          <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
+          <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.opponentLabel')}</label>
           <OpponentNameAutocomplete
             teamId={currentTeam?.id}
             value={opponentTeam}
             onChange={handleOpponentTeamChange}
             onSelect={handleOpponentSuggestionSelect}
             inputId="opponentTeam"
-            placeholder="Enter opponent team name (optional)"
+            placeholder={t('configuration:matchDetails.opponentPlaceholder')}
           />
         </div>
 
         <div>
-          <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
+          <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.matchTypeLabel')}</label>
           <Select
             id="matchType"
             value={matchType}
@@ -2051,7 +2055,7 @@ export function ConfigurationScreen({
         </div>
 
         <div>
-          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
+          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.venueLabel')}</label>
           <Select
             id="venueType"
             value={effectiveVenueType}
@@ -2067,15 +2071,15 @@ export function ConfigurationScreen({
       {/* Game Settings */}
       <div className="p-3 bg-slate-700 rounded-md grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">Number of Periods</label>
+          <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.periodsLabel')}</label>
           <Select value={numPeriods} onChange={value => setNumPeriods(Number(value))} options={PERIOD_OPTIONS} id="numPeriods" />
         </div>
         <div>
-          <label htmlFor="periodDuration" className="block text-sm font-medium text-sky-200 mb-1">Period Duration (minutes)</label>
+          <label htmlFor="periodDuration" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.durationLabel')}</label>
           <Select value={periodDurationMinutes} onChange={value => setPeriodDurationMinutes(Number(value))} options={DURATION_OPTIONS} id="periodDuration" />
         </div>
         <div>
-          <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">Substitution Alert</label>
+          <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.alertLabel')}</label>
           <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={ALERT_OPTIONS} id="alertMinutes" />
         </div>
       </div>
@@ -2083,11 +2087,11 @@ export function ConfigurationScreen({
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
           <Layers className="mr-2 h-4 w-4" />
-          Match Format & Formation
+          {t('configuration:formation.header')}
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">Match Format</label>
+            <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:formation.formatLabel')}</label>
             <Select
               id="matchFormat"
               value={currentFormat}
@@ -2102,7 +2106,7 @@ export function ConfigurationScreen({
           <div className="space-y-3">
             <div>
               <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
-                Tactical Formation
+                {t('configuration:formation.formationLabel')}
               </label>
               <Select
                 id="formation"
@@ -2120,7 +2124,7 @@ export function ConfigurationScreen({
 
           {!withinFormatBounds && meetsMinimumSelection && (
             <p className="text-xs text-amber-300">
-              You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad before configuring formations.
+              {t('configuration:formation.formatExceeded', { count: selectedSquadIds.length, format: formatLabel, max: maxPlayersAllowed })}
             </p>
           )}
         </div>
@@ -2130,17 +2134,17 @@ export function ConfigurationScreen({
       {/* Goalie Assignment */}
       {withinFormatBounds && (
         <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
+          <h3 className="text-base font-medium text-sky-200 mb-2">{t('configuration:goalies.header')}</h3>
           <div className="space-y-2">
             {Array.from({ length: numPeriods }, (_, i) => i + 1).map(period => (
               <div key={period}>
-                <label htmlFor={`goalie_p${period}`} className="block text-sm font-medium text-sky-200 mb-1">Period {period} Goalie</label>
+                <label htmlFor={`goalie_p${period}`} className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:goalies.periodLabel', { period })}</label>
                 <Select
                   id={`goalie_p${period}`}
                   value={periodGoalieIds[period] || ""}
                   onChange={value => handleGoalieChange(period, value)}
                   options={selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))}
-                  placeholder="Select Goalie"
+                  placeholder={t('configuration:goalies.placeholder')}
                 />
               </div>
             ))}
@@ -2151,16 +2155,16 @@ export function ConfigurationScreen({
       {/* Captain Assignment */}
       {selectedSquadIds.length >= minPlayersRequired && teamPreferences?.teamCaptain !== 'none' && (
         <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
+          <h3 className="text-base font-medium text-sky-200 mb-2">{t('configuration:captain.header')}</h3>
           <div>
-            <label htmlFor="captain" className="block text-sm font-medium text-sky-200 mb-1">Team Captain</label>
+            <label htmlFor="captain" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:captain.label')}</label>
             <Select
               id="captain"
               value={captainId || ""}
               onChange={value => handleCaptainChange(value)}
               options={captainOptions}
             />
-            <p className="text-xs text-slate-400 mt-1">Optional - select a team captain for this game</p>
+            <p className="text-xs text-slate-400 mt-1">{t('configuration:captain.hint')}</p>
           </div>
         </div>
       )}
@@ -2176,7 +2180,7 @@ export function ConfigurationScreen({
           variant="secondary"
           Icon={Save}
         >
-          {saveConfigStatus.loading ? 'Saving...' : 'Save Configuration'}
+          {saveConfigStatus.loading ? t('configuration:buttons.savingConfig') : t('configuration:buttons.saveConfig')}
         </Button>
       )}
 
@@ -2191,7 +2195,7 @@ export function ConfigurationScreen({
           variant="secondary"
           Icon={Share2}
         >
-          {saveConfigStatus.loading ? 'Creating Link...' : 'Get Live Match Link'}
+          {saveConfigStatus.loading ? t('configuration:buttons.creatingLink') : t('configuration:buttons.getLiveLink')}
         </Button>
       )}
 
@@ -2203,7 +2207,7 @@ export function ConfigurationScreen({
         }
         Icon={Play}
       >
-        Proceed to Period Setup
+        {t('configuration:buttons.proceedToPeriod')}
       </Button>
 
       {/* Debug Mode Randomize Button */}
@@ -2214,7 +2218,7 @@ export function ConfigurationScreen({
           Icon={Shuffle}
           className="bg-amber-600 hover:bg-amber-700 text-white"
         >
-          🎲 Randomize Configuration (Debug)
+          {t('configuration:buttons.randomize')}
         </Button>
       )}
 
@@ -2242,11 +2246,11 @@ export function ConfigurationScreen({
         onPrimary={handleAddPlayerToTeam}
         onSecondary={handleAddTemporaryPlayer}
         onTertiary={handleCloseAddPlayerOptionsModal}
-        title="Add Player"
-        message="Choose how you'd like to add a player."
-        primaryText="Add Player to Team"
-        secondaryText="Add Temporary Player"
-        tertiaryText="Cancel"
+        title={t('configuration:addPlayerModal.title')}
+        message={t('configuration:addPlayerModal.message')}
+        primaryText={t('configuration:addPlayerModal.addToTeam')}
+        secondaryText={t('configuration:addPlayerModal.addTemporary')}
+        tertiaryText={t('configuration:addPlayerModal.cancel')}
         primaryVariant="primary"
         secondaryVariant="secondary"
         tertiaryVariant="secondary"
