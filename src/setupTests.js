@@ -35,13 +35,21 @@ if (typeof global.cancelAnimationFrame === 'undefined') {
   global.cancelAnimationFrame = () => {};
 }
 
-// Mock PointerEvent for tests (not available in jsdom)
-if (typeof global.PointerEvent === 'undefined') {
-  global.PointerEvent = class PointerEvent extends MouseEvent {
-    constructor(type, props = {}) {
-      super(type, props);
-      Object.defineProperty(this, 'pointerId', { value: props.pointerId || 0, writable: false });
-      Object.defineProperty(this, 'pointerType', { value: props.pointerType || 'mouse', writable: false });
-    }
-  };
-}
+// Mock PointerEvent for tests (ensure it's always compatible with user-event)
+// Always override to ensure properties are writable for @testing-library/user-event
+global.PointerEvent = class PointerEvent extends MouseEvent {
+  constructor(type, props = {}) {
+    super(type, props);
+    // Make properties writable so user-event can modify them
+    Object.defineProperty(this, 'pointerId', {
+      value: props.pointerId || 0,
+      writable: true,
+      configurable: true
+    });
+    Object.defineProperty(this, 'pointerType', {
+      value: props.pointerType || 'mouse',
+      writable: true,
+      configurable: true
+    });
+  }
+};
