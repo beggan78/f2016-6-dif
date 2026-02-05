@@ -76,39 +76,13 @@ export const calculateDurationInSeconds = (startTime, endTime) => {
  * Store timestamp when OTP was sent
  * Storage key format: 'sport-wizard-otp-sent-{email}'
  * @param {string} email - Email address that received the OTP
- * @param {string|number|null} serverTimestamp - Optional server timestamp (ISO string or milliseconds)
  * @returns {boolean} True if timestamp was stored successfully, false otherwise
  */
-export const setOtpSentTime = (email, serverTimestamp = null) => {
+export const setOtpSentTime = (email) => {
   if (!email) return false;
 
   try {
-    let timestamp;
-
-    if (serverTimestamp) {
-      // Server timestamp provided - use it
-      if (typeof serverTimestamp === 'string') {
-        // ISO 8601 string from Supabase
-        timestamp = new Date(serverTimestamp).getTime();
-
-        // Validate conversion succeeded
-        if (isNaN(timestamp)) {
-          console.warn('Invalid server timestamp, falling back to client time:', serverTimestamp);
-          timestamp = getCurrentTimestamp();
-        }
-      } else if (typeof serverTimestamp === 'number') {
-        // Already in milliseconds
-        timestamp = serverTimestamp;
-      } else {
-        // Unknown format - fall back
-        console.warn('Unknown timestamp format, falling back to client time:', serverTimestamp);
-        timestamp = getCurrentTimestamp();
-      }
-    } else {
-      // No server timestamp - fall back to client time
-      timestamp = getCurrentTimestamp();
-    }
-
+    const timestamp = getCurrentTimestamp();
     const key = `sport-wizard-otp-sent-${email.toLowerCase().trim()}`;
     localStorage.setItem(key, timestamp.toString());
     return true;
