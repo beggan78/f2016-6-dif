@@ -82,7 +82,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
         setAttendanceData(result || []);
       } catch (err) {
         console.error('Error fetching attendance stats:', err);
-        setError(err.message || 'Failed to load attendance statistics');
+        setError(err.message || t('attendanceStats.failedToLoadAttendance'));
         setAttendanceData([]);
       }
 
@@ -90,7 +90,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
     }
 
     fetchAttendanceStats();
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [currentTeam?.id, startDate, endDate, t]);
 
   // Fetch loan data for the date range
   useEffect(() => {
@@ -117,17 +117,17 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
           setLoanMap(nextMap);
         } else {
           setLoanMap(new Map());
-          setLoanError(loanResult.error || 'Failed to load loan matches');
+          setLoanError(loanResult.error || t('attendanceStats.failedToLoadLoanMatches'));
         }
       } catch (err) {
         console.error('Failed to load loan data:', err);
         setLoanMap(new Map());
-        setLoanError('Failed to load loan matches');
+        setLoanError(t('attendanceStats.failedToLoadLoanMatches'));
       }
     }
 
     fetchLoanData();
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [currentTeam?.id, startDate, endDate, t]);
 
   // Enhance attendance data with loan counts
   const enhancedAttendanceData = useMemo(() => {

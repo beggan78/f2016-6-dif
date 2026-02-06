@@ -27,7 +27,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
   }, [email, password, authError, clearAuthError]);
 
   const validateForm = () => {
-    const { isValid, errors: validationErrors } = validateLoginForm({ email, password });
+    const { isValid, errors: validationErrors } = validateLoginForm({ email, password }, { t });
     setErrors(validationErrors);
     return isValid;
   };

@@ -84,7 +84,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       if (result.success) {
         setMatches(result.matches || []);
       } else {
-        setMatchesError(result.error || 'Failed to load matches');
+        setMatchesError(result.error || t('playerStats.failedToLoadMatches'));
         setMatches([]);
       }
 
@@ -92,7 +92,7 @@ export function PlayerStatsView({ startDate, endDate }) {
     }
 
     fetchMatches();
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [currentTeam?.id, startDate, endDate, t]);
 
   // Fetch loan data and loan weight preference
   useEffect(() => {
@@ -123,7 +123,7 @@ export function PlayerStatsView({ startDate, endDate }) {
           setLoanMap(nextMap);
         } else {
           setLoanMap(new Map());
-          setLoanError(loanResult.error || 'Failed to load loan matches');
+          setLoanError(loanResult.error || t('playerStats.failedToLoadLoanMatches'));
         }
 
         const weightValue = prefResult?.loanMatchWeight;
@@ -132,13 +132,13 @@ export function PlayerStatsView({ startDate, endDate }) {
       } catch (err) {
         console.error('Failed to load loan data:', err);
         setLoanMap(new Map());
-        setLoanError('Failed to load loan matches');
+        setLoanError(t('playerStats.failedToLoadLoanMatches'));
         setLoanWeight(getDefaultLoanMatchWeight());
       }
     }
 
     fetchLoanData();
-  }, [currentTeam?.id, startDate, endDate, loadTeamPreferences]);
+  }, [currentTeam?.id, startDate, endDate, loadTeamPreferences, t]);
 
   // Fetch player stats from database
   useEffect(() => {
@@ -192,7 +192,7 @@ export function PlayerStatsView({ startDate, endDate }) {
     loanMap.forEach((loans, playerId) => {
       if (playersById.has(playerId)) return;
       const loanPlayer = loans.find((loan) => loan?.player)?.player;
-      const displayName = loanPlayer?.display_name || loanPlayer?.first_name || 'Unnamed Player';
+      const displayName = loanPlayer?.display_name || loanPlayer?.first_name || t('playerStats.unnamedPlayer');
 
       supplementalPlayers.push({
         id: playerId,
@@ -226,7 +226,7 @@ export function PlayerStatsView({ startDate, endDate }) {
         loanWeight: weight
       };
     });
-  }, [players, loanMap, loanWeight]);
+  }, [players, loanMap, loanWeight, t]);
 
   const filteredMatches = useMemo(() => {
     return filterMatchesByCriteria(matches, {

@@ -57,7 +57,9 @@
   },
   "sync": {
     "syncing": "Synkroniserar laglista...",
-    "syncSuccess": "✅ {{message}}"
+    "syncSuccess": "✅ {{message}}",
+    "syncFailed": "Synkronisering misslyckades: {{error}}",
+    "syncError": "Synkroniseringsfel: {{error}}"
   },
   "addPlayerModal": {
     "title": "Lägg till Spelare",
@@ -120,6 +122,9 @@
       "tryAgain": "Försök Igen"
     }
   },
+  "teamBanner": {
+    "label": "Lag: {{clubName}} {{teamName}}"
+  },
   "cloudSync": {
     "available": "Molnsynkronisering Tillgänglig",
     "description": "Håll dina data säkra på alla enheter",
@@ -129,12 +134,16 @@
     "title": "Migrera Lokal Data",
     "description": "Vi hittade matchhistorik sparad lokalt. Vill du synkronisera den till ditt molnkonto?",
     "migrating": "Migrerar...",
+    "migratingFull": "Migrerar lokal data till molnet...",
     "migrateButton": "Migrera Data",
     "laterButton": "Senare",
     "failed": "Migrering misslyckades",
     "failedWithError": "Migrering misslyckades: {{error}}"
   },
   "saveConfig": {
+    "saving": "Sparar konfiguration...",
+    "savedSuccess": "{{message}}",
+    "savedSuccessDefault": "Konfiguration sparad",
     "errors": {
       "failed": "Misslyckades med att spara konfiguration",
       "failedWithMessage": "Misslyckades med att spara konfiguration: {{error}}",

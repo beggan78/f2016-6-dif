@@ -170,16 +170,16 @@ const formatTimeAsMinutesSeconds = (minutes) => {
   }
 };
 
-const resolvePlayerDisplayName = (player) => {
+const resolvePlayerDisplayName = (player, fallback = 'Unnamed Player') => {
   if (!player) {
-    return 'Unnamed Player';
+    return fallback;
   }
 
   return player.displayName ||
     player.display_name ||
     player.firstName ||
     player.first_name ||
-    'Unnamed Player';
+    fallback;
 };
 
 
@@ -196,6 +196,8 @@ export function MatchDetailsView({
   const { t } = useTranslation('navigation');
   const { t: tStats } = useTranslation('statistics');
   const isCreateMode = mode === 'create';
+
+  const unnamedPlayerLabel = tStats('matchDetails.unnamedPlayer');
 
   const VENUE_OPTIONS = useMemo(() => [
     { value: 'home', label: tStats('matchDetails.venues.home') },
@@ -225,7 +227,7 @@ export function MatchDetailsView({
     return (Array.isArray(teamPlayers) ? teamPlayers : []).map((player, index) => ({
       id: player.id || `player-${index}`,
       playerId: player.id,
-      displayName: resolvePlayerDisplayName(player),
+      displayName: resolvePlayerDisplayName(player, unnamedPlayerLabel),
       goalsScored: 0,
       totalTimePlayed: 0,
       timeAsDefender: 0,
@@ -236,7 +238,7 @@ export function MatchDetailsView({
       wasCaptain: false,
       receivedFairPlayAward: false
     }));
-  }, [teamPlayers]);
+  }, [teamPlayers, unnamedPlayerLabel]);
 
   const createModeDefaults = useMemo(() => {
     if (!isCreateMode) {
@@ -290,9 +292,9 @@ export function MatchDetailsView({
       .filter(player => !assignedPlayerIds.has(player.id))
       .map(player => ({
         ...player,
-        displayName: resolvePlayerDisplayName(player)
+        displayName: resolvePlayerDisplayName(player, unnamedPlayerLabel)
       }));
-  }, [teamPlayers, assignedPlayerIds]);
+  }, [teamPlayers, assignedPlayerIds, unnamedPlayerLabel]);
 
   // Initialise create mode defaults when roster data becomes available
   useEffect(() => {
@@ -327,7 +329,7 @@ export function MatchDetailsView({
     }
 
     if (!matchId) {
-      setError('No match ID provided');
+      setError(tStats('matchDetails.noMatchId'));
       setLoading(false);
       return;
     }
@@ -359,7 +361,7 @@ export function MatchDetailsView({
         setMatchData(data);
         setEditData(data);
       } else {
-        setError(result.error || 'Failed to load match details');
+        setError(result.error || tStats('matchDetails.failedToLoadDetails'));
       }
 
       setLoading(false);
@@ -370,7 +372,7 @@ export function MatchDetailsView({
     return () => {
       isMounted = false;
     };
-  }, [isCreateMode, matchId]);
+  }, [isCreateMode, matchId, tStats]);
 
   useEffect(() => {
     if (playerToAdd && !availablePlayers.some(player => player.id === playerToAdd)) {
@@ -479,7 +481,7 @@ export function MatchDetailsView({
 
       if (isCreateMode || !matchId) {
         if (!teamId) {
-          throw new Error('A team must be selected before adding a match.');
+          throw new Error(tStats('matchDetails.teamRequired'));
         }
 
         const fairPlayAwardPlayerId = sanitizedPlayerStats.find((player) => player.receivedFairPlayAward)?.playerId || null;
@@ -493,7 +495,7 @@ export function MatchDetailsView({
         }, sanitizedPlayerStats);
 
         if (!manualResult.success) {
-          throw new Error(manualResult.error || 'Failed to create match');
+          throw new Error(manualResult.error || tStats('matchDetails.failedToCreate'));
         }
 
         setMatchData(sanitizedMatch);
@@ -523,13 +525,13 @@ export function MatchDetailsView({
       });
 
       if (!matchResult.success) {
-        throw new Error(matchResult.error || 'Failed to update match details');
+        throw new Error(matchResult.error || tStats('matchDetails.failedToUpdateDetails'));
       }
 
       const playerResult = await updatePlayerMatchStatsBatch(matchId, sanitizedPlayerStats);
 
       if (!playerResult.success) {
-        throw new Error(playerResult.error || 'Failed to update player stats');
+        throw new Error(playerResult.error || tStats('matchDetails.failedToUpdatePlayerStats'));
       }
 
       // Refresh data from database
@@ -794,7 +796,7 @@ export function MatchDetailsView({
     const newPlayerStats = {
       id: rosterPlayer.id,
       playerId: rosterPlayer.id,
-      displayName: resolvePlayerDisplayName(rosterPlayer),
+      displayName: resolvePlayerDisplayName(rosterPlayer, unnamedPlayerLabel),
       goalsScored: 0,
       totalTimePlayed: 0,
       timeAsDefender: 0,
@@ -840,7 +842,7 @@ export function MatchDetailsView({
     }
 
     if (!type) {
-      return 'Unknown';
+      return tStats('matchDetails.unknownType');
     }
 
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -1003,7 +1005,7 @@ export function MatchDetailsView({
           const result = await deleteFinishedMatch(matchId);
 
           if (!result.success) {
-            setDeleteError(result.error || 'Failed to delete match');
+            setDeleteError(result.error || tStats('matchDetails.failedToDelete'));
             setIsDeleting(false);
             setIsDeleteModalOpen(false);
             return;
@@ -1285,7 +1287,7 @@ export function MatchDetailsView({
                 onChange={setPlayerToAdd}
                 options={availablePlayers.map(player => ({
                   value: player.id,
-                  label: resolvePlayerDisplayName(player)
+                  label: resolvePlayerDisplayName(player, unnamedPlayerLabel)
                 }))}
                 placeholder={availablePlayers.length === 0 ? tStats('matchDetails.playerStats.allPlayersIncluded') : tStats('matchDetails.playerStats.selectPlayer')}
                 disabled={availablePlayers.length === 0}
@@ -1334,7 +1336,7 @@ export function MatchDetailsView({
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-100 font-medium">{resolvePlayerDisplayName(player)}</span>
+                      <span className="text-slate-100 font-medium">{resolvePlayerDisplayName(player, unnamedPlayerLabel)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">

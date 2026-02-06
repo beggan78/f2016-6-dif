@@ -104,6 +104,7 @@
     "invalidDate": "Ogiltigt datum",
     "defaultUser": "Användare",
     "unknownClub": "Okänd klubb",
-    "unknownTeam": "Okänt lag"
+    "unknownTeam": "Okänt lag",
+    "thisTeam": "detta lag"
   }
 }

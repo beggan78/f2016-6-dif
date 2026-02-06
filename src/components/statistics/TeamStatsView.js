@@ -47,7 +47,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
       if (result.success) {
         setMatches(result.matches || []);
       } else {
-        setError(result.error || 'Failed to load match data');
+        setError(result.error || t('teamStats.failedToLoadMatchData'));
         setMatches([]);
       }
 
@@ -55,7 +55,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     }
 
     fetchMatches();
-  }, [currentTeam?.id, startDate, endDate]);
+  }, [currentTeam?.id, startDate, endDate, t]);
 
   const clearAllFilters = clearFilters;
 

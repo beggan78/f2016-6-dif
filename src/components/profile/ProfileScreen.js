@@ -12,7 +12,7 @@ const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
 const LEAVE_TEAM_BLOCKING_ERRORS = ['last_team_member', 'last_team_admin'];
 
 export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
-  const { t } = useTranslation('profile');
+  const { t, i18n } = useTranslation('profile');
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
   const {
     currentTeam,
@@ -164,7 +164,8 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   const formatDate = (dateString) => {
     if (!dateString) return t('formatting.notAvailable');
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      const locale = i18n.language === 'sv' ? 'sv-SE' : 'en-US';
+      return new Date(dateString).toLocaleDateString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -233,7 +234,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
       const fallbackName = clubPrefix ? `${clubPrefix} ${fallbackTeams[0]}` : fallbackTeams[0];
       return t('modals.cantLeaveClub.lastMember', { teamName: fallbackName });
     }
-    return t('modals.cantLeaveClub.lastMember', { teamName: 'this team' });
+    return t('modals.cantLeaveClub.lastMember', { teamName: t('formatting.thisTeam') });
   };
 
   const handleLeaveClub = (membership) => {

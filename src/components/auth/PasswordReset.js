@@ -75,7 +75,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
   };
 
   const validateCodeForm = () => {
-    const { isValid, error } = validateOtpCode(code);
+    const { isValid, error } = validateOtpCode(code, { t });
     if (!isValid) {
       setErrors({ code: error });
       return false;

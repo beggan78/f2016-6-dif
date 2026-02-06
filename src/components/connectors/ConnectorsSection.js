@@ -35,6 +35,7 @@ export function ConnectorsSection({ team }) {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isVerificationMessage, setIsVerificationMessage] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState('');
   const [syncJobs, setSyncJobs] = useState({});
   const syncJobsIntervalRef = useRef(null);
@@ -91,14 +92,14 @@ export function ConnectorsSection({ team }) {
   // Clear success message after timeout (10s for verification, 5s for others)
   useEffect(() => {
     if (successMessage) {
-      // Use longer timeout for verification messages
-      const timeout = successMessage.includes('Verification') ? 10000 : 5000;
+      const timeout = isVerificationMessage ? 10000 : 5000;
       const timer = setTimeout(() => {
         setSuccessMessage('');
+        setIsVerificationMessage(false);
       }, timeout);
       return () => clearTimeout(timer);
     }
-  }, [successMessage]);
+  }, [successMessage, isVerificationMessage]);
 
   useEffect(() => {
     if (noticeMessage) {
@@ -148,6 +149,7 @@ export function ConnectorsSection({ team }) {
       await connectProvider(CONNECTOR_PROVIDERS.SPORTADMIN.id, credentials);
       setShowConnectModal(false);
       setSuccessMessage(t('connectorsSection.connectedSuccess'));
+      setIsVerificationMessage(true);
 
       // Trigger immediate scraper run for verification (non-blocking)
       triggerImmediateSync('Scraper workflow triggered for verification');

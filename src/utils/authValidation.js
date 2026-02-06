@@ -23,7 +23,8 @@ export const PASSWORD_REQUIREMENTS = {
 };
 
 /**
- * Validation error messages
+ * Validation error messages (English fallback defaults)
+ * When a `t` function is available, use getValidationMessages(t) for translated messages.
  */
 export const VALIDATION_MESSAGES = {
   email: {
@@ -52,25 +53,63 @@ export const VALIDATION_MESSAGES = {
 };
 
 /**
+ * Gets translated validation messages using the i18n `t` function.
+ * Falls back to VALIDATION_MESSAGES if `t` is not provided.
+ * @param {Function} t - i18n translation function (from useTranslation('auth'))
+ * @returns {Object} Translated validation messages
+ */
+export const getValidationMessages = (t) => {
+  if (!t) return VALIDATION_MESSAGES;
+  return {
+    email: {
+      required: t('validation.email.required'),
+      invalid: t('validation.email.invalid')
+    },
+    password: {
+      required: t('validation.password.required'),
+      tooShort: t('validation.password.tooShort'),
+      missingNumber: t('validation.password.missingNumber'),
+      missingSpecialChar: t('validation.password.missingSpecialChar')
+    },
+    confirmPassword: {
+      required: t('validation.confirmPassword.required'),
+      mismatch: t('validation.confirmPassword.mismatch')
+    },
+    otp: {
+      required: t('validation.otp.required'),
+      invalid: t('validation.otp.invalid'),
+      tooShort: t('validation.otp.tooShort'),
+      notNumeric: t('validation.otp.notNumeric')
+    },
+    general: {
+      unexpected: t('validation.general.unexpected')
+    }
+  };
+};
+
+/**
  * Validates an email address
  * @param {string} email - The email to validate
+ * @param {Object} options - Validation options
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, error: string|null }
  */
-export const validateEmail = (email) => {
+export const validateEmail = (email, options = {}) => {
+  const messages = getValidationMessages(options.t);
   if (!email || !email.trim()) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.email.required
+      error: messages.email.required
     };
   }
-  
+
   if (!EMAIL_REGEX.test(email.trim())) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.email.invalid
+      error: messages.email.invalid
     };
   }
-  
+
   return {
     isValid: true,
     error: null
@@ -82,18 +121,20 @@ export const validateEmail = (email) => {
  * @param {string} password - The password to validate
  * @param {Object} options - Validation options
  * @param {boolean} options.skipComplexity - Skip complexity requirements (for login)
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, error: string|null }
  */
 export const validatePassword = (password, options = {}) => {
   const { skipComplexity = false } = options;
-  
+  const messages = getValidationMessages(options.t);
+
   if (!password) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.password.required
+      error: messages.password.required
     };
   }
-  
+
   // Skip complexity checks for login form
   if (skipComplexity) {
     return {
@@ -101,41 +142,41 @@ export const validatePassword = (password, options = {}) => {
       error: null
     };
   }
-  
+
   // Length requirement
   if (password.length < PASSWORD_REQUIREMENTS.minLength) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.password.tooShort
+      error: messages.password.tooShort
     };
   }
-  
+
   // Number requirement (check first to match Supabase order)
   if (PASSWORD_REQUIREMENTS.requireNumber && !/(?=.*\d)/.test(password)) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.password.missingNumber
+      error: messages.password.missingNumber
     };
   }
-  
+
   // Case requirements
   if (PASSWORD_REQUIREMENTS.requireUppercase && PASSWORD_REQUIREMENTS.requireLowercase) {
     if (!/(?=.*[a-z])(?=.*[A-Z])/.test(password)) {
       return {
         isValid: false,
-        error: VALIDATION_MESSAGES.password.missingUppercase
+        error: messages.password.missingUppercase
       };
     }
   }
-  
+
   // Special character requirement (if enabled)
   if (PASSWORD_REQUIREMENTS.requireSpecialChar && !/(?=.*[!@#$%^&*])/.test(password)) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.password.missingSpecialChar
+      error: messages.password.missingSpecialChar
     };
   }
-  
+
   return {
     isValid: true,
     error: null
@@ -146,23 +187,26 @@ export const validatePassword = (password, options = {}) => {
  * Validates password confirmation
  * @param {string} password - The original password
  * @param {string} confirmPassword - The confirmation password
+ * @param {Object} options - Validation options
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, error: string|null }
  */
-export const validatePasswordConfirmation = (password, confirmPassword) => {
+export const validatePasswordConfirmation = (password, confirmPassword, options = {}) => {
+  const messages = getValidationMessages(options.t);
   if (!confirmPassword) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.confirmPassword.required
+      error: messages.confirmPassword.required
     };
   }
-  
+
   if (password !== confirmPassword) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.confirmPassword.mismatch
+      error: messages.confirmPassword.mismatch
     };
   }
-  
+
   return {
     isValid: true,
     error: null
@@ -174,21 +218,23 @@ export const validatePasswordConfirmation = (password, confirmPassword) => {
  * @param {Object} formData - Form data object
  * @param {string} formData.email - Email address
  * @param {string} formData.password - Password
+ * @param {Object} options - Validation options
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, errors: Object }
  */
-export const validateLoginForm = (formData) => {
+export const validateLoginForm = (formData, options = {}) => {
   const errors = {};
-  
-  const emailValidation = validateEmail(formData.email);
+
+  const emailValidation = validateEmail(formData.email, options);
   if (!emailValidation.isValid) {
     errors.email = emailValidation.error;
   }
-  
-  const passwordValidation = validatePassword(formData.password, { skipComplexity: true });
+
+  const passwordValidation = validatePassword(formData.password, { skipComplexity: true, ...options });
   if (!passwordValidation.isValid) {
     errors.password = passwordValidation.error;
   }
-  
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors
@@ -201,29 +247,32 @@ export const validateLoginForm = (formData) => {
  * @param {string} formData.email - Email address
  * @param {string} formData.password - Password
  * @param {string} formData.confirmPassword - Password confirmation
+ * @param {Object} options - Validation options
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, errors: Object }
  */
-export const validateSignupForm = (formData) => {
+export const validateSignupForm = (formData, options = {}) => {
   const errors = {};
-  
-  const emailValidation = validateEmail(formData.email);
+
+  const emailValidation = validateEmail(formData.email, options);
   if (!emailValidation.isValid) {
     errors.email = emailValidation.error;
   }
-  
-  const passwordValidation = validatePassword(formData.password);
+
+  const passwordValidation = validatePassword(formData.password, options);
   if (!passwordValidation.isValid) {
     errors.password = passwordValidation.error;
   }
-  
+
   const confirmPasswordValidation = validatePasswordConfirmation(
-    formData.password, 
-    formData.confirmPassword
+    formData.password,
+    formData.confirmPassword,
+    options
   );
   if (!confirmPasswordValidation.isValid) {
     errors.confirmPassword = confirmPasswordValidation.error;
   }
-  
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors
@@ -234,16 +283,18 @@ export const validateSignupForm = (formData) => {
  * Validates reset password form data
  * @param {Object} formData - Form data object
  * @param {string} formData.email - Email address
+ * @param {Object} options - Validation options
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, errors: Object }
  */
-export const validateResetPasswordForm = (formData) => {
+export const validateResetPasswordForm = (formData, options = {}) => {
   const errors = {};
-  
-  const emailValidation = validateEmail(formData.email);
+
+  const emailValidation = validateEmail(formData.email, options);
   if (!emailValidation.isValid) {
     errors.email = emailValidation.error;
   }
-  
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors
@@ -253,34 +304,37 @@ export const validateResetPasswordForm = (formData) => {
 /**
  * Validates an OTP/verification code
  * @param {string} code - The OTP code to validate
+ * @param {Object} options - Validation options
+ * @param {Function} options.t - Optional i18n translation function for translated messages
  * @returns {Object} { isValid: boolean, error: string|null }
  */
-export const validateOtpCode = (code) => {
+export const validateOtpCode = (code, options = {}) => {
+  const messages = getValidationMessages(options.t);
   if (!code || !code.trim()) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.otp.required
+      error: messages.otp.required
     };
   }
-  
+
   const trimmedCode = code.trim();
-  
+
   // Must be exactly 6 characters
   if (trimmedCode.length !== 6) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.otp.tooShort
+      error: messages.otp.tooShort
     };
   }
-  
+
   // Must be all numeric
   if (!/^\d{6}$/.test(trimmedCode)) {
     return {
       isValid: false,
-      error: VALIDATION_MESSAGES.otp.notNumeric
+      error: messages.otp.notNumeric
     };
   }
-  
+
   return {
     isValid: true,
     error: null

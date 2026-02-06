@@ -88,7 +88,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
   };
 
   const validateForm = () => {
-    const { isValid, error } = validateOtpCode(code);
+    const { isValid, error } = validateOtpCode(code, { t });
     if (!isValid) {
       setErrors({ code: error });
       return false;

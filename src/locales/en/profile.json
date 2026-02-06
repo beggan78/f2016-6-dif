@@ -104,6 +104,7 @@
     "invalidDate": "Invalid date",
     "defaultUser": "User",
     "unknownClub": "Unknown club",
-    "unknownTeam": "Unknown team"
+    "unknownTeam": "Unknown team",
+    "thisTeam": "this team"
   }
 }

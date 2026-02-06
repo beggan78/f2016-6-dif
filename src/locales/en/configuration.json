@@ -57,7 +57,9 @@
   },
   "sync": {
     "syncing": "Syncing team roster...",
-    "syncSuccess": "✅ {{message}}"
+    "syncSuccess": "✅ {{message}}",
+    "syncFailed": "Sync failed: {{error}}",
+    "syncError": "Sync error: {{error}}"
   },
   "addPlayerModal": {
     "title": "Add Player",
@@ -120,6 +122,9 @@
       "tryAgain": "Try Again"
     }
   },
+  "teamBanner": {
+    "label": "Team: {{clubName}} {{teamName}}"
+  },
   "cloudSync": {
     "available": "Cloud Sync Available",
     "description": "Keep your data safe across devices",
@@ -129,12 +134,16 @@
     "title": "Migrate Local Data",
     "description": "We found match history saved locally. Would you like to sync it to your cloud account?",
     "migrating": "Migrating...",
+    "migratingFull": "Migrating local data to cloud...",
     "migrateButton": "Migrate Data",
     "laterButton": "Later",
     "failed": "Migration failed",
     "failedWithError": "Migration failed: {{error}}"
   },
   "saveConfig": {
+    "saving": "Saving configuration...",
+    "savedSuccess": "{{message}}",
+    "savedSuccessDefault": "Configuration saved successfully",
     "errors": {
       "failed": "Failed to save configuration",
       "failedWithMessage": "Failed to save configuration: {{error}}",

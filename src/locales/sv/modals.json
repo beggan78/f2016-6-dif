@@ -52,7 +52,9 @@
     "configureNewMatch": "Konfigurera Ny Match",
     "cancel": "Avbryt",
     "tip": "Återuppta Konfiguration tar dig till konfigurationsskärmen där du kan granska och ändra inställningar",
-    "processing": "Bearbetar..."
+    "processing": "Bearbetar...",
+    "dateAtTime": "{{date}} kl. {{time}}",
+    "unknownFormation": "Okänd"
   },
   "addPlayer": {
     "title": "Lägg Till Spelare",

@@ -17,7 +17,7 @@ export function PendingMatchResumeModal({
   isLoading = false,
   error = ''
 }) {
-  const { t } = useTranslation('modals');
+  const { t } = useTranslation(['modals', 'configuration']);
   const [deletingMatchId, setDeletingMatchId] = useState(null);
   const [resumingMatchId, setResumingMatchId] = useState(null);
 
@@ -54,10 +54,12 @@ export function PendingMatchResumeModal({
   // Format creation date
   const formatMatchDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], {
+    const dateStr = date.toLocaleDateString();
+    const timeStr = date.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit'
     });
+    return t('pendingMatchResume.dateAtTime', { date: dateStr, time: timeStr });
   };
 
   return (
@@ -133,7 +135,7 @@ export function PendingMatchResumeModal({
                 const periods = matchConfig.periods || 3;
                 const duration = matchConfig.periodDurationMinutes || 15;
                 const squadSize = teamConfig.squadSize || initial_config?.squadSelection?.length || 0;
-                const formation = teamConfig.formation || 'Unknown';
+                const formation = teamConfig.formation || t('pendingMatchResume.unknownFormation');
 
                 return (
                   <div
@@ -164,7 +166,7 @@ export function PendingMatchResumeModal({
                     <div className="bg-slate-600 rounded-lg p-3 mb-4 space-y-2 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400">{t('pendingMatchResume.typeLabel')}</span>
-                        <span className="font-medium text-slate-200 capitalize">{matchType}</span>
+                        <span className="font-medium text-slate-200">{t(`configuration:matchTypes.${matchType}.label`, matchType)}</span>
                       </div>
 
                       <div className="flex items-center justify-between">

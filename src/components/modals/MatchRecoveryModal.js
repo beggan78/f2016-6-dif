@@ -23,7 +23,7 @@ export function MatchRecoveryModal({
   onDelete,
   onClose
 }) {
-  const { t } = useTranslation('modals');
+  const { t, i18n } = useTranslation('modals');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -51,7 +51,8 @@ export function MatchRecoveryModal({
   const formatMatchDate = (dateString) => {
     if (!dateString) return t('matchRecovery.unknownDate');
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      const locale = i18n.language === 'sv' ? 'sv-SE' : 'en-US';
+      return new Date(dateString).toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

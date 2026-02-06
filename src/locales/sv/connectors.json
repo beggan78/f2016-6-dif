@@ -104,6 +104,9 @@
     "title": "Spelare Tillgängliga att Matcha",
     "description": "Du har omatchade spelare från {{providerName}} som väntar på att matchas till din trupp."
   },
+  "providerLogo": {
+    "fallbackLabel": "Koppling"
+  },
   "connectorCard": {
     "lastVerified": "Senast verifierad:",
     "lastSync": "Senast synkroniserad:",

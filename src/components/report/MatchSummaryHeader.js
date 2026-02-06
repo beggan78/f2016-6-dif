@@ -153,7 +153,7 @@ export function MatchSummaryHeader({
         {/* Periods */}
         <div className="flex items-center space-x-1">
           <Timer className="h-4 w-4" />
-          <span>{totalPeriods} × {periodDurationMinutes}min</span>
+          <span>{t('matchSummary.periodsFormat', { periods: totalPeriods, duration: periodDurationMinutes })}</span>
         </div>
       </div>
     </div>

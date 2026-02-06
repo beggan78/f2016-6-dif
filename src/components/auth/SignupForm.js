@@ -35,7 +35,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
   };
 
   const validateForm = () => {
-    const { isValid, errors: validationErrors } = validateSignupForm(formData);
+    const { isValid, errors: validationErrors } = validateSignupForm(formData, { t });
     setErrors(validationErrors);
     return isValid;
   };

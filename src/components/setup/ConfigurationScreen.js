@@ -804,17 +804,17 @@ export function ConfigurationScreen({
             }, 3000);
           }
         } else {
-          setPlayerSyncStatus({ 
-            loading: false, 
-            message: `⚠️ Sync failed: ${result.error}` 
+          setPlayerSyncStatus({
+            loading: false,
+            message: t('configuration:sync.syncFailed', { error: result.error })
           });
           teamSyncCompletedRef.current = false;
         }
       } catch (error) {
         console.error('ConfigurationScreen sync error:', error);
-        setPlayerSyncStatus({ 
-          loading: false, 
-          message: `⚠️ Sync error: ${error.message}` 
+        setPlayerSyncStatus({
+          loading: false,
+          message: t('configuration:sync.syncError', { error: error.message })
         });
         teamSyncCompletedRef.current = false;
       }
@@ -1585,7 +1585,7 @@ export function ConfigurationScreen({
   }, [currentTeam?.id, teamLoading, opponentTeam, isResumedMatch, setOpponentTeamValue, configurationSessionId]);
 
   const handleMigrateData = async () => {
-    setSyncStatus({ loading: true, message: 'Migrating local data to cloud...', error: null });
+    setSyncStatus({ loading: true, message: t('configuration:dataMigration.migratingFull'), error: null });
 
     try {
       const result = await dataSyncManager.migrateLocalDataToCloud();
@@ -1680,7 +1680,7 @@ export function ConfigurationScreen({
       return;
     }
 
-    setSaveConfigStatus({ loading: true, message: 'Saving configuration...', error: null });
+    setSaveConfigStatus({ loading: true, message: t('configuration:saveConfig.saving'), error: null });
 
     try {
       const result = await handleSaveConfiguration();
@@ -1688,7 +1688,7 @@ export function ConfigurationScreen({
       if (result.success) {
         setSaveConfigStatus({
           loading: false,
-          message: `✅ ${result.message || 'Configuration saved successfully'}`,
+          message: t('configuration:saveConfig.savedSuccess', { message: result.message || t('configuration:saveConfig.savedSuccessDefault') }),
           error: null
         });
         
@@ -1792,7 +1792,7 @@ export function ConfigurationScreen({
     <div className="space-y-4">
       {isAuthenticated && currentTeam && (
         <div className="p-3 bg-sky-600/20 border border-sky-500 rounded-lg">
-          <div className="text-sky-200 font-medium">Team: {currentTeam.club?.name} {currentTeam.name}</div>
+          <div className="text-sky-200 font-medium">{t('configuration:teamBanner.label', { clubName: currentTeam.club?.name || '', teamName: currentTeam.name })}</div>
           {playerSyncStatus.loading && (
             <div className="text-sky-300 text-sm mt-1">
               🔄 {playerSyncStatus.message}

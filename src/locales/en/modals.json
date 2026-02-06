@@ -52,7 +52,9 @@
     "configureNewMatch": "Configure New Match",
     "cancel": "Cancel",
     "tip": "Resume Setup takes you to the Configuration Screen where you can review and modify settings",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "dateAtTime": "{{date}} at {{time}}",
+    "unknownFormation": "Unknown"
   },
   "addPlayer": {
     "title": "Add Player",

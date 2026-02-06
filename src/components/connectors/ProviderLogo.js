@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImageOff } from 'lucide-react';
 
 export function ProviderLogo({ provider, className = '' }) {
+  const { t } = useTranslation('connectors');
   const containerClassName = `w-32 h-10 flex-shrink-0 overflow-hidden rounded-md border border-slate-600 bg-slate-800 ${className}`.trim();
 
   if (provider?.logo) {
@@ -16,7 +18,7 @@ export function ProviderLogo({ provider, className = '' }) {
     );
   }
 
-  const fallbackLabel = provider?.name || 'Connector';
+  const fallbackLabel = provider?.name || t('providerLogo.fallbackLabel');
 
   return (
     <div
