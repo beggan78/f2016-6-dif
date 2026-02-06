@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
-import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
+import { PERIOD_OPTIONS, DURATION_OPTIONS, getAlertOptions } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
@@ -25,8 +25,8 @@ import { FormationPreview } from './FormationPreview';
 import { OpponentNameAutocomplete } from './OpponentNameAutocomplete';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
 import { VIEWS } from '../../constants/viewConstants';
-import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
-import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
+import { getMatchTypeOptions } from '../../constants/matchTypes';
+import { getVenueTypeOptions, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 import { TAB_VIEWS } from '../../constants/teamManagementTabs';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
@@ -1725,13 +1725,13 @@ export function ConfigurationScreen({
     if (!isAuthenticated || !currentTeam) {
       setShareLinkNotification({
         isOpen: true,
-        title: 'Authentication Required',
-        message: 'You must be signed in with a team to share a live match link.'
+        title: t('configuration:liveLinkNotifications.authRequired'),
+        message: t('configuration:liveLinkNotifications.authRequiredMessage')
       });
       return;
     }
 
-    setSaveConfigStatus({ loading: true, message: 'Creating live match link...', error: null });
+    setSaveConfigStatus({ loading: true, message: t('configuration:liveLinkNotifications.creating'), error: null });
 
     try {
       const result = await handleSaveConfiguration();
@@ -1748,13 +1748,13 @@ export function ConfigurationScreen({
         if (copyResult.success) {
           setShareLinkNotification({
             isOpen: true,
-            title: 'Link Copied!',
-            message: 'Live match link copied to clipboard!'
+            title: t('configuration:liveLinkNotifications.linkCopied'),
+            message: t('configuration:liveLinkNotifications.linkCopiedMessage')
           });
         } else {
           setShareLinkNotification({
             isOpen: true,
-            title: 'Live Match URL',
+            title: t('configuration:liveLinkNotifications.liveMatchUrl'),
             message: copyResult.url
           });
         }
@@ -1764,7 +1764,7 @@ export function ConfigurationScreen({
         setSaveConfigStatus({
           loading: false,
           message: '',
-          error: result.error || 'Failed to create live match link'
+          error: result.error || t('configuration:liveLinkNotifications.failed')
         });
       }
     } catch (error) {
@@ -1772,7 +1772,7 @@ export function ConfigurationScreen({
       setSaveConfigStatus({
         loading: false,
         message: '',
-        error: 'Failed to create live match link: ' + error.message
+        error: t('configuration:liveLinkNotifications.failedWithError', { error: error.message })
       });
     }
   };
@@ -2047,7 +2047,7 @@ export function ConfigurationScreen({
             id="matchType"
             value={matchType}
             onChange={handleMatchTypeChange}
-            options={MATCH_TYPE_OPTIONS.map(option => ({
+            options={getMatchTypeOptions(t).map(option => ({
               value: option.value,
               label: option.label
             }))}
@@ -2060,7 +2060,7 @@ export function ConfigurationScreen({
             id="venueType"
             value={effectiveVenueType}
             onChange={handleVenueTypeChange}
-            options={VENUE_TYPE_OPTIONS.map(option => ({
+            options={getVenueTypeOptions(t).map(option => ({
               value: option.value,
               label: option.label
             }))}
@@ -2080,7 +2080,7 @@ export function ConfigurationScreen({
         </div>
         <div>
           <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.alertLabel')}</label>
-          <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={ALERT_OPTIONS} id="alertMinutes" />
+          <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={getAlertOptions(t)} id="alertMinutes" />
         </div>
       </div>
 

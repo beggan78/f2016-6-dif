@@ -1,0 +1,14 @@
+{
+  "buttons": {
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "add": "Lägg till",
+    "close": "Stäng",
+    "confirm": "Bekräfta"
+  },
+  "alerts": {
+    "noAlerts": "Inga varningar"
+  }
+}

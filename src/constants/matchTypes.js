@@ -11,29 +11,59 @@ export const MATCH_TYPES = {
   CUP: 'cup'
 };
 
+// Match type options with translation keys
+export const getMatchTypeOptions = (t) => [
+  {
+    value: MATCH_TYPES.LEAGUE,
+    label: t('configuration:matchTypes.league.label'),
+    description: t('configuration:matchTypes.league.description')
+  },
+  {
+    value: MATCH_TYPES.FRIENDLY,
+    label: t('configuration:matchTypes.friendly.label'),
+    description: t('configuration:matchTypes.friendly.description')
+  },
+  {
+    value: MATCH_TYPES.CUP,
+    label: t('configuration:matchTypes.cup.label'),
+    description: t('configuration:matchTypes.cup.description')
+  },
+  {
+    value: MATCH_TYPES.TOURNAMENT,
+    label: t('configuration:matchTypes.tournament.label'),
+    description: t('configuration:matchTypes.tournament.description')
+  },
+  {
+    value: MATCH_TYPES.INTERNAL,
+    label: t('configuration:matchTypes.internal.label'),
+    description: t('configuration:matchTypes.internal.description')
+  }
+];
+
+// Backward compatibility - static MATCH_TYPE_OPTIONS for components that don't use translation yet
 export const MATCH_TYPE_OPTIONS = [
-  { 
-    value: MATCH_TYPES.LEAGUE, 
+  {
+    value: MATCH_TYPES.LEAGUE,
     label: 'League',
     description: 'Official league/conference game'
   },
-  { 
-    value: MATCH_TYPES.FRIENDLY, 
+  {
+    value: MATCH_TYPES.FRIENDLY,
     label: 'Friendly',
     description: 'Practice or non-competitive game'
   },
-  { 
-    value: MATCH_TYPES.CUP, 
+  {
+    value: MATCH_TYPES.CUP,
     label: 'Cup',
     description: 'Tournament or cup competition game'
   },
-  { 
-    value: MATCH_TYPES.TOURNAMENT, 
+  {
+    value: MATCH_TYPES.TOURNAMENT,
     label: 'Tournament',
     description: 'Tournament bracket or playoff game'
   },
-  { 
-    value: MATCH_TYPES.INTERNAL, 
+  {
+    value: MATCH_TYPES.INTERNAL,
     label: 'Internal',
     description: 'Team scrimmage or internal practice'
   }

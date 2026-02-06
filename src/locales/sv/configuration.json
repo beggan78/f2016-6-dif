@@ -1,0 +1,111 @@
+{
+  "header": {
+    "title": "Matchkonfiguration"
+  },
+  "squad": {
+    "selectTitle": "Välj Trupp (5-15 Spelare) - Valda: {{count}}",
+    "addPlayerTitle": "Lägg till Spelare i Ditt Lag",
+    "selectAll": "Välj alla",
+    "allSelected": "Alla Valda",
+    "addPlayer": "Lägg till Spelare",
+    "temporaryLabel": "(Tillfällig)",
+    "noPlayers": {
+      "title": "Inga Spelare Tillagda Än",
+      "description": "Din laglista är tom. Lägg till spelare för att börja ställa in ditt spel."
+    },
+    "exceededFormat": "Du har valt {{count}} spelare, vilket överstiger {{format}}-gränsen på {{max}}. Uppdatera matchformatet eller justera truppen."
+  },
+  "matchDetails": {
+    "opponentLabel": "Motståndare",
+    "opponentPlaceholder": "Ange motståndarlags namn (valfritt)",
+    "matchTypeLabel": "Matchtyp",
+    "venueLabel": "Arena"
+  },
+  "gameSettings": {
+    "periodsLabel": "Antal Perioder",
+    "durationLabel": "Periodlängd (minuter)",
+    "alertLabel": "Bytesvarning"
+  },
+  "formation": {
+    "header": "Matchformat & Formation",
+    "formatLabel": "Matchformat",
+    "formationLabel": "Spelsystem",
+    "formatExceeded": "Du har valt {{count}} spelare, vilket överstiger {{format}}-gränsen på {{max}}. Uppdatera matchformatet eller justera truppen innan du konfigurerar formationer."
+  },
+  "goalies": {
+    "header": "Målvakter",
+    "periodLabel": "Period {{period}} Målvakt",
+    "placeholder": "Välj Målvakt"
+  },
+  "captain": {
+    "header": "Kapten",
+    "label": "Lagkapten",
+    "hint": "Valfritt - välj en lagkapten för denna match",
+    "noCaptain": "Ingen Kapten"
+  },
+  "buttons": {
+    "saveConfig": "Spara",
+    "savingConfig": "Sparar...",
+    "getLiveLink": "Live Match-länk",
+    "creatingLink": "Skapar Länk...",
+    "proceedToPeriod": "Fortsätt",
+    "randomize": "🎲 Slumpa Konfiguration (Debug)"
+  },
+  "sync": {
+    "syncing": "Synkroniserar laglista...",
+    "syncSuccess": "✅ {{message}}"
+  },
+  "addPlayerModal": {
+    "title": "Lägg till Spelare",
+    "message": "Välj hur du vill lägga till en spelare.",
+    "addToTeam": "Lägg till Spelare i Laget",
+    "addTemporary": "Lägg till Tillfällig Spelare",
+    "cancel": "Avbryt"
+  },
+  "liveLinkNotifications": {
+    "authRequired": "Autentisering Krävs",
+    "authRequiredMessage": "Du måste vara inloggad med ett lag för att dela en live match-länk.",
+    "creating": "Skapar live match-länk...",
+    "linkCopied": "Länk Kopierad!",
+    "linkCopiedMessage": "Live match-länk kopierad till urklipp!",
+    "liveMatchUrl": "Live Match-URL",
+    "failed": "Misslyckades med att skapa live match-länk",
+    "failedWithError": "Misslyckades med att skapa live match-länk: {{error}}"
+  },
+  "matchTypes": {
+    "league": {
+      "label": "Serie",
+      "description": "Officiell seriematch"
+    },
+    "friendly": {
+      "label": "Träningsmatch",
+      "description": "Träningsmatch eller vänskapsmatch"
+    },
+    "cup": {
+      "label": "Cup",
+      "description": "Turnering eller cupmatch"
+    },
+    "tournament": {
+      "label": "Turnering",
+      "description": "Turneringsmatch eller slutspel"
+    },
+    "internal": {
+      "label": "Internmatch",
+      "description": "Intern träningsmatch"
+    }
+  },
+  "venueTypes": {
+    "home": {
+      "label": "Hemma",
+      "description": "Matchen spelas på hemmaplan med bekanta omgivningar."
+    },
+    "away": {
+      "label": "Borta",
+      "description": "Matchen spelas på motståndarens arena."
+    },
+    "neutral": {
+      "label": "Neutral",
+      "description": "Matchen spelas på neutral plan för båda lagen."
+    }
+  }
+}

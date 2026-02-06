@@ -1,0 +1,111 @@
+{
+  "header": {
+    "title": "Game & Squad Configuration"
+  },
+  "squad": {
+    "selectTitle": "Select Squad (5-15 Players) - Selected: {{count}}",
+    "addPlayerTitle": "Add Players to Your Team",
+    "selectAll": "Select All",
+    "allSelected": "All Selected",
+    "addPlayer": "Add Player",
+    "temporaryLabel": "(Temporary)",
+    "noPlayers": {
+      "title": "No Players Added Yet",
+      "description": "Your team roster is empty. Add players to start setting up your game."
+    },
+    "exceededFormat": "You have selected {{count}} players, which exceeds the {{format}} limit of {{max}}. Update the match format or adjust the squad selection."
+  },
+  "matchDetails": {
+    "opponentLabel": "Opponent Team Name",
+    "opponentPlaceholder": "Enter opponent team name (optional)",
+    "matchTypeLabel": "Match Type",
+    "venueLabel": "Venue"
+  },
+  "gameSettings": {
+    "periodsLabel": "Number of Periods",
+    "durationLabel": "Period Duration (minutes)",
+    "alertLabel": "Substitution Alert"
+  },
+  "formation": {
+    "header": "Match Format & Formation",
+    "formatLabel": "Match Format",
+    "formationLabel": "Tactical Formation",
+    "formatExceeded": "You have selected {{count}} players, which exceeds the {{format}} limit of {{max}}. Update the match format or adjust the squad before configuring formations."
+  },
+  "goalies": {
+    "header": "Assign Goalies",
+    "periodLabel": "Period {{period}} Goalie",
+    "placeholder": "Select Goalie"
+  },
+  "captain": {
+    "header": "Assign Captain",
+    "label": "Team Captain",
+    "hint": "Optional - select a team captain for this game",
+    "noCaptain": "No Captain"
+  },
+  "buttons": {
+    "saveConfig": "Save Configuration",
+    "savingConfig": "Saving...",
+    "getLiveLink": "Get Live Match Link",
+    "creatingLink": "Creating Link...",
+    "proceedToPeriod": "Proceed to Period Setup",
+    "randomize": "🎲 Randomize Configuration (Debug)"
+  },
+  "sync": {
+    "syncing": "Syncing team roster...",
+    "syncSuccess": "✅ {{message}}"
+  },
+  "addPlayerModal": {
+    "title": "Add Player",
+    "message": "Choose how you'd like to add a player.",
+    "addToTeam": "Add Player to Team",
+    "addTemporary": "Add Temporary Player",
+    "cancel": "Cancel"
+  },
+  "liveLinkNotifications": {
+    "authRequired": "Authentication Required",
+    "authRequiredMessage": "You must be signed in with a team to share a live match link.",
+    "creating": "Creating live match link...",
+    "linkCopied": "Link Copied!",
+    "linkCopiedMessage": "Live match link copied to clipboard!",
+    "liveMatchUrl": "Live Match URL",
+    "failed": "Failed to create live match link",
+    "failedWithError": "Failed to create live match link: {{error}}"
+  },
+  "matchTypes": {
+    "league": {
+      "label": "League",
+      "description": "Official league/conference game"
+    },
+    "friendly": {
+      "label": "Friendly",
+      "description": "Practice or non-competitive game"
+    },
+    "cup": {
+      "label": "Cup",
+      "description": "Tournament or cup competition game"
+    },
+    "tournament": {
+      "label": "Tournament",
+      "description": "Tournament bracket or playoff game"
+    },
+    "internal": {
+      "label": "Internal",
+      "description": "Team scrimmage or internal practice"
+    }
+  },
+  "venueTypes": {
+    "home": {
+      "label": "Home",
+      "description": "Match is played on our home field with familiar surroundings."
+    },
+    "away": {
+      "label": "Away",
+      "description": "Match is played at the opponent's venue."
+    },
+    "neutral": {
+      "label": "Neutral",
+      "description": "Match is played on a neutral field for both teams."
+    }
+  }
+}
