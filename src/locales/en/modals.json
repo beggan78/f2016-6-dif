@@ -165,6 +165,7 @@
     "unableToPreview": "Unable to preview sound: {{error}}",
     "playingPreview": "Playing preview...",
     "volume": "Volume",
+    "noteLabel": "Note:",
     "audioNote": "Audio alerts work alongside vibration alerts. If your browser blocks audio playback, only vibration will be used. The alert timing is configured in the game setup screen.",
     "language": "Language",
     "applicationLanguage": "Application Language",
@@ -192,5 +193,28 @@
     "cannotUndo": "This action cannot be undone.",
     "confirm": "Confirm",
     "cancel": "Cancel"
+  },
+  "endPeriodEarly": {
+    "title": "End Period Early?",
+    "message": "There are still {{timeString}} remaining in this period. Are you sure you want to end the period early?"
+  },
+  "signOutDuringMatch": {
+    "title": "Sign Out During Active Match?",
+    "message": "You have a match currently running. Signing out now may stop tracking this match. Are you sure you want to sign out?",
+    "confirmSignOut": "Sign Out",
+    "cancelStayLoggedIn": "Stay Logged In"
+  },
+  "unableToSaveMatch": {
+    "title": "Unable to Save Match",
+    "retrying": "Retrying...",
+    "retry": "Retry",
+    "continueWithoutSaving": "Continue without saving"
+  },
+  "newGame": {
+    "title": "Start a new game?",
+    "message": "Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen.",
+    "stayOnPage": "Stay on page",
+    "yesStartNewGame": "Yes, start new game",
+    "leaveSportWizard": "Leave Sport Wizard"
   }
 }

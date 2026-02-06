@@ -165,6 +165,7 @@
     "unableToPreview": "Kan inte förhandsgranska ljud: {{error}}",
     "playingPreview": "Spelar förhandsgranskning...",
     "volume": "Volym",
+    "noteLabel": "Obs:",
     "audioNote": "Ljudlarm fungerar tillsammans med vibrationslarm. Om din webbläsare blockerar ljuduppspelning används bara vibration. Larmtiden konfigureras i spelinställningsskärmen.",
     "language": "Språk",
     "applicationLanguage": "Applikationsspråk",
@@ -192,5 +193,28 @@
     "cannotUndo": "Denna åtgärd kan inte ångras.",
     "confirm": "Bekräfta",
     "cancel": "Avbryt"
+  },
+  "endPeriodEarly": {
+    "title": "Avsluta Period i Förtid?",
+    "message": "Det återstår fortfarande {{timeString}} av denna period. Är du säker på att du vill avsluta perioden i förtid?"
+  },
+  "signOutDuringMatch": {
+    "title": "Logga Ut Under Aktiv Match?",
+    "message": "Du har en match som pågår. Om du loggar ut nu kan spårningen av denna match avbrytas. Är du säker på att du vill logga ut?",
+    "confirmSignOut": "Logga Ut",
+    "cancelStayLoggedIn": "Fortsätt Inloggad"
+  },
+  "unableToSaveMatch": {
+    "title": "Kunde Inte Spara Match",
+    "retrying": "Försöker igen...",
+    "retry": "Försök Igen",
+    "continueWithoutSaving": "Fortsätt utan att spara"
+  },
+  "newGame": {
+    "title": "Starta ny match?",
+    "message": "Är du säker på att du vill starta en ny match? Detta återställer alla framsteg och tar dig tillbaka till konfigurationsskärmen.",
+    "stayOnPage": "Stanna kvar",
+    "yesStartNewGame": "Ja, starta ny match",
+    "leaveSportWizard": "Lämna Sport Wizard"
   }
 }

@@ -324,7 +324,7 @@ export function PreferencesModal({ isOpen, onClose }) {
             {/* Additional Info */}
             <div className="bg-slate-700 rounded-lg p-3">
               <p className="text-xs text-slate-300 leading-relaxed">
-                <strong>Note:</strong> {t('preferences.audioNote')}
+                <strong>{t('preferences.noteLabel')}</strong> {t('preferences.audioNote')}
               </p>
             </div>
           </div>

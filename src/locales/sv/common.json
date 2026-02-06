@@ -10,5 +10,11 @@
   },
   "alerts": {
     "noAlerts": "Inga varningar"
+  },
+  "errors": {
+    "invalidMatchId": "Ogiltigt match-ID",
+    "unknownView": "Okänd vy",
+    "unknownPlayer": "Okänd Spelare",
+    "supabaseConfigMissing": "Supabase-konfiguration saknas. Kontrollera miljövariablerna."
   }
 }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { DETECTION_TYPES } from '../services/sessionDetectionService';
@@ -29,15 +30,14 @@ const TEAM_ERROR_CODES = {
   TEAM_NOT_FOUND: 'team_not_found'
 };
 
-const TEAM_ERROR_MESSAGES = {
-  [TEAM_ERROR_CODES.AUTH_REQUIRED]: 'Must be logged in to continue',
-  [TEAM_ERROR_CODES.CLUB_MEMBERSHIP_NOT_FOUND]: 'Club membership not found',
-  [TEAM_ERROR_CODES.DUPLICATE_CLUB_MEMBERSHIP]: 'You are already a member of this club',
-  [TEAM_ERROR_CODES.DUPLICATE_TEAM_NAME]:
-    'A team with this name already exists in this club. Please request to join the existing team.',
-  [TEAM_ERROR_CODES.GENERIC]: 'An unexpected error occurred',
-  [TEAM_ERROR_CODES.TEAM_MEMBERSHIP_NOT_FOUND]: 'Team membership not found',
-  [TEAM_ERROR_CODES.TEAM_NOT_FOUND]: 'Team not found'
+const TEAM_ERROR_MESSAGE_KEYS = {
+  [TEAM_ERROR_CODES.AUTH_REQUIRED]: 'team:errors.loginRequired',
+  [TEAM_ERROR_CODES.CLUB_MEMBERSHIP_NOT_FOUND]: 'team:errors.clubMembershipNotFound',
+  [TEAM_ERROR_CODES.DUPLICATE_CLUB_MEMBERSHIP]: 'team:errors.alreadyClubMember',
+  [TEAM_ERROR_CODES.DUPLICATE_TEAM_NAME]: 'team:errors.teamNameExists',
+  [TEAM_ERROR_CODES.GENERIC]: 'team:errors.genericError',
+  [TEAM_ERROR_CODES.TEAM_MEMBERSHIP_NOT_FOUND]: 'team:errors.teamMembershipNotFound',
+  [TEAM_ERROR_CODES.TEAM_NOT_FOUND]: 'team:errors.teamNotFound'
 };
 
 const TEAM_ERROR_MESSAGE_TO_CODE = {
@@ -56,16 +56,19 @@ const TEAM_ERROR_MESSAGE_TO_CODE = {
 
 const isTeamErrorCode = (value) => Object.values(TEAM_ERROR_CODES).includes(value);
 
-const normalizeTeamError = (errorValue) => {
+const normalizeTeamError = (errorValue, t) => {
   if (!errorValue) {
     return null;
   }
 
+  const resolveMessage = (key) => t ? t(key) : key;
+
   if (typeof errorValue === 'string') {
     if (isTeamErrorCode(errorValue)) {
+      const messageKey = TEAM_ERROR_MESSAGE_KEYS[errorValue] || TEAM_ERROR_MESSAGE_KEYS[TEAM_ERROR_CODES.GENERIC];
       return {
         code: errorValue,
-        message: TEAM_ERROR_MESSAGES[errorValue] || TEAM_ERROR_MESSAGES[TEAM_ERROR_CODES.GENERIC],
+        message: resolveMessage(messageKey),
         isTransient: errorValue === TEAM_ERROR_CODES.TEAM_NOT_FOUND
       };
     }
@@ -81,7 +84,8 @@ const normalizeTeamError = (errorValue) => {
   const code = isTeamErrorCode(errorValue.code)
     ? errorValue.code
     : TEAM_ERROR_CODES.GENERIC;
-  const message = errorValue.message || TEAM_ERROR_MESSAGES[code] || TEAM_ERROR_MESSAGES[TEAM_ERROR_CODES.GENERIC];
+  const messageKey = TEAM_ERROR_MESSAGE_KEYS[code] || TEAM_ERROR_MESSAGE_KEYS[TEAM_ERROR_CODES.GENERIC];
+  const message = errorValue.message || resolveMessage(messageKey);
 
   return {
     ...errorValue,
@@ -100,6 +104,7 @@ export const useTeam = () => {
 };
 
 export const TeamProvider = ({ children }) => {
+  const { t } = useTranslation('team');
   const { user, userProfile, sessionDetectionResult } = useAuth();
 
   // Create persistence manager for currentTeamId
@@ -125,7 +130,7 @@ export const TeamProvider = ({ children }) => {
   const isMatchRunning = matchActivityStatus.isRunning;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const errorDetails = useMemo(() => normalizeTeamError(error), [error]);
+  const errorDetails = useMemo(() => normalizeTeamError(error, t), [error, t]);
   const displayError = useMemo(() => {
     if (!errorDetails || errorDetails.isTransient) {
       return null;
@@ -225,7 +230,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error fetching user teams:', error);
-        setError('Failed to load teams');
+        setError(t('errors.loadTeams'));
         return [];
       }
 
@@ -255,12 +260,12 @@ export const TeamProvider = ({ children }) => {
       return teams;
     } catch (err) {
       console.error('Exception in getUserTeams:', err);
-      setError('Failed to load teams');
+      setError(t('errors.loadTeams'));
       return [];
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, currentTeam, teamIdPersistence]);
+  }, [user, clearError, currentTeam, teamIdPersistence, t]);
 
   // Search clubs for autocomplete
   const searchClubs = useCallback(async (query) => {
@@ -332,7 +337,7 @@ export const TeamProvider = ({ children }) => {
   // Create a new club using atomic function
   const createClub = useCallback(async (clubData) => {
     if (!user) {
-      setError('Must be logged in to create club');
+      setError(t('errors.loginRequiredCreateClub'));
       return null;
     }
 
@@ -349,14 +354,14 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error calling create_club_with_admin:', error);
-        setError('Failed to create club');
+        setError(t('errors.createClub'));
         return null;
       }
 
       // Check if the function returned an error result
       if (!data.success) {
         console.error('Create club function failed:', data.error);
-        setError(data.message || 'Failed to create club');
+        setError(data.message || t('errors.createClub'));
         return null;
       }
 
@@ -367,12 +372,12 @@ export const TeamProvider = ({ children }) => {
       return data.club;
     } catch (err) {
       console.error('Exception in createClub:', err);
-      setError('Failed to create club');
+      setError(t('errors.createClub'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getClubMemberships]);
+  }, [user, clearError, getClubMemberships, t]);
 
   // Get teams for a specific club
   const getTeamsByClub = useCallback(async (clubId) => {
@@ -399,7 +404,7 @@ export const TeamProvider = ({ children }) => {
   // Create a new team using atomic function
   const createTeam = useCallback(async (teamData) => {
     if (!user) {
-      setError('User must be authenticated to create a team');
+      setError(t('errors.loginRequiredCreateTeam'));
       return null;
     }
 
@@ -416,7 +421,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error calling create_team_with_admin:', error);
-        setError('Failed to create team');
+        setError(t('errors.createTeam'));
         return null;
       }
 
@@ -426,9 +431,9 @@ export const TeamProvider = ({ children }) => {
         
         // Provide specific error handling for duplicate team names
         if (data.error === 'duplicate_team_name') {
-          setError('A team with this name already exists in this club. Please request to join the existing team.');
+          setError(t('errors.teamNameExists'));
         } else {
-          setError(data.message || 'Failed to create team');
+          setError(data.message || t('errors.createTeam'));
         }
         return null;
       }
@@ -439,12 +444,12 @@ export const TeamProvider = ({ children }) => {
       return data.team;
     } catch (err) {
       console.error('Exception in createTeam:', err);
-      setError('Failed to create team');
+      setError(t('errors.createTeam'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getUserTeams]);
+  }, [user, clearError, getUserTeams, t]);
 
   // Get players for current team
   const getTeamPlayers = useCallback(async (teamId, includeTemporary = false) => {
@@ -487,7 +492,7 @@ export const TeamProvider = ({ children }) => {
   // Create a new player for current team
   const createPlayer = useCallback(async (playerData) => {
     if (!currentTeam) {
-      setError('No team selected');
+      setError(t('errors.noTeamSelected'));
       return null;
     }
 
@@ -509,7 +514,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error creating player:', error);
-        setError('Failed to create player');
+        setError(t('errors.createPlayer'));
         return null;
       }
 
@@ -531,18 +536,18 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in createPlayer:', err);
-      setError('Failed to create player');
+      setError(t('errors.createPlayer'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [currentTeam, clearError, getTeamPlayers]);
+  }, [currentTeam, clearError, getTeamPlayers, t]);
 
   // Switch current team
   const switchCurrentTeam = useCallback(async (teamId) => {
     const team = userTeams.find(t => t.id === teamId);
     if (!team) {
-      setError('Team not found');
+      setError(t('errors.teamNotFound'));
       return;
     }
 
@@ -571,7 +576,7 @@ export const TeamProvider = ({ children }) => {
 
     // Store in localStorage for persistence via PersistenceManager
     teamIdPersistence.saveState({ teamId });
-  }, [userTeams, getTeamPlayers, teamIdPersistence]);
+  }, [userTeams, getTeamPlayers, teamIdPersistence, t]);
 
   // Initialize team and club data when user is authenticated
   useEffect(() => {
@@ -637,7 +642,7 @@ export const TeamProvider = ({ children }) => {
           setUserClubs(clubs);
         }).catch((error) => {
           console.error('Error initializing user data:', error);
-          setError('Failed to initialize user data');
+          setError(t('errors.initUserData'));
         });
       }
     } else if (!user) {
@@ -651,7 +656,7 @@ export const TeamProvider = ({ children }) => {
       teamIdPersistence.clearState();
       clearTeamPreferencesCache();
     }
-  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult, teamIdPersistence, clearTeamPreferencesCache]);
+  }, [user, getUserTeams, getClubMemberships, sessionDetectionResult, teamIdPersistence, clearTeamPreferencesCache, t]);
 
   useEffect(() => {
     return () => {
@@ -844,12 +849,12 @@ export const TeamProvider = ({ children }) => {
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
         console.error('Error checking existing club membership:', checkError);
-        setError('Failed to check club membership');
+        setError(t('errors.checkClubMembership'));
         return null;
       }
 
       if (existingMembership) {
-        setError('You are already a member of this club');
+        setError(t('errors.alreadyClubMember'));
         return null;
       }
 
@@ -871,9 +876,9 @@ export const TeamProvider = ({ children }) => {
         console.error('Error joining club:', error);
         // Handle specific duplicate key error
         if (error.code === '23505') {
-          setError('You are already a member of this club');
+          setError(t('errors.alreadyClubMember'));
         } else {
-          setError('Failed to join club');
+          setError(t('errors.joinClub'));
         }
         return null;
       }
@@ -885,12 +890,12 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in joinClub:', err);
-      setError('Failed to join club');
+      setError(t('errors.joinClub'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getClubMemberships]);
+  }, [user, clearError, getClubMemberships, t]);
 
   // Leave a club (remove club and team memberships)
   const leaveClub = useCallback(async (membership) => {
@@ -899,12 +904,12 @@ export const TeamProvider = ({ children }) => {
       : membership?.club?.id || membership?.club_id || null;
 
     if (!clubId) {
-      setError('Club membership not found');
+      setError(t('errors.clubMembershipNotFound'));
       return null;
     }
 
     if (!user) {
-      setError('Must be logged in to leave club');
+      setError(t('errors.loginRequiredLeaveClub'));
       return null;
     }
 
@@ -918,7 +923,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error leaving club:', error);
-        setError('Failed to leave club');
+        setError(t('errors.leaveClub'));
         return null;
       }
 
@@ -927,7 +932,7 @@ export const TeamProvider = ({ children }) => {
           return data;
         }
 
-        const message = data?.message || data?.error || 'Failed to leave club';
+        const message = data?.message || data?.error || t('errors.leaveClub');
         setError(message);
         return data;
       }
@@ -939,12 +944,12 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in leaveClub:', err);
-      setError('Failed to leave club');
+      setError(t('errors.leaveClub'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getClubMemberships, getUserTeams]);
+  }, [user, clearError, getClubMemberships, getUserTeams, t]);
 
   // Leave a team (remove team membership only)
   const leaveTeam = useCallback(async (team) => {
@@ -953,12 +958,12 @@ export const TeamProvider = ({ children }) => {
       : team?.id || team?.team_id || null;
 
     if (!teamId) {
-      setError('Team membership not found');
+      setError(t('errors.teamMembershipNotFound'));
       return null;
     }
 
     if (!user) {
-      setError('Must be logged in to leave team');
+      setError(t('errors.loginRequiredLeaveTeam'));
       return null;
     }
 
@@ -972,12 +977,12 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error leaving team:', error);
-        setError('Failed to leave team');
+        setError(t('errors.leaveTeam'));
         return null;
       }
 
       if (!data?.success) {
-        setError(data?.message || data?.error || 'Failed to leave team');
+        setError(data?.message || data?.error || t('errors.leaveTeam'));
         return data;
       }
 
@@ -996,12 +1001,12 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in leaveTeam:', err);
-      setError('Failed to leave team');
+      setError(t('errors.leaveTeam'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence]);
+  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence, t]);
 
   // Delete (deactivate) a team
   const deleteTeam = useCallback(async (team) => {
@@ -1010,12 +1015,12 @@ export const TeamProvider = ({ children }) => {
       : team?.id || team?.team_id || null;
 
     if (!teamId) {
-      setError('Team not found');
+      setError(t('errors.teamNotFound'));
       return null;
     }
 
     if (!user) {
-      setError('Must be logged in to delete team');
+      setError(t('errors.loginRequiredDeleteTeam'));
       return null;
     }
 
@@ -1029,12 +1034,12 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error deleting team:', error);
-        setError('Failed to delete team');
+        setError(t('errors.deleteTeam'));
         return null;
       }
 
       if (!data?.success) {
-        setError(data?.message || data?.error || 'Failed to delete team');
+        setError(data?.message || data?.error || t('errors.deleteTeam'));
         return null;
       }
 
@@ -1053,12 +1058,12 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in deleteTeam:', err);
-      setError('Failed to delete team');
+      setError(t('errors.deleteTeam'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence]);
+  }, [user, clearError, getUserTeams, currentTeam, teamIdPersistence, t]);
 
 
   // Get pending club membership requests (for club admins)
@@ -1109,19 +1114,19 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error approving club membership:', error);
-        setError('Failed to approve club membership');
+        setError(t('errors.approveClubMembership'));
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in approveClubMembership:', err);
-      setError('Failed to approve club membership');
+      setError(t('errors.approveClubMembership'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [clearError]);
+  }, [clearError, t]);
 
   // Reject club membership request (for club admins)
   const rejectClubMembership = useCallback(async (membershipId, reviewNotes = '') => {
@@ -1141,29 +1146,29 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error rejecting club membership:', error);
-        setError('Failed to reject club membership');
+        setError(t('errors.rejectClubMembership'));
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in rejectClubMembership:', err);
-      setError('Failed to reject club membership');
+      setError(t('errors.rejectClubMembership'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [clearError]);
+  }, [clearError, t]);
 
   // ============================================================================
-  // TEAM INVITATION FUNCTIONS  
+  // TEAM INVITATION FUNCTIONS
   // ============================================================================
 
   // Invite a user to join a team via email
   const inviteUserToTeam = useCallback(async ({ teamId, email, role, message = '' }) => {
     try {
       if (!user) {
-        setError('Must be authenticated to send invitations');
+        setError(t('errors.loginRequiredInvite'));
         return { success: false, error: 'Authentication required' };
       }
 
@@ -1173,13 +1178,13 @@ export const TeamProvider = ({ children }) => {
       // Validate that the user has permission to invite (admin or coach)
       const currentUserTeam = userTeams.find(t => t.id === teamId);
       if (!currentUserTeam || (currentUserTeam.userRole !== 'admin' && currentUserTeam.userRole !== 'coach')) {
-        setError('You do not have permission to invite users to this team');
+        setError(t('errors.noPermissionInvite'));
         return { success: false, error: 'Insufficient permissions' };
       }
 
       // Validate role restrictions (coaches can't invite admins)
       if (currentUserTeam.userRole === 'coach' && role === 'admin') {
-        setError('Coaches cannot invite users as administrators');
+        setError(t('errors.coachCannotInviteAdmin'));
         return { success: false, error: 'Role restriction' };
       }
 
@@ -1196,13 +1201,13 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error calling Edge Function:', error);
-        setError(error.message || 'Failed to send invitation');
+        setError(error.message || t('errors.sendInvitation'));
         return { success: false, error: error.message };
       }
 
       if (!data?.success) {
         console.error('Edge Function returned error:', data?.error);
-        setError(data?.error || 'Failed to send invitation');
+        setError(data?.error || t('errors.sendInvitation'));
         return { success: false, error: data?.error };
       }
 
@@ -1220,13 +1225,13 @@ export const TeamProvider = ({ children }) => {
 
     } catch (err) {
       console.error('Exception in inviteUserToTeam:', err);
-      const errorMessage = err.message || 'Failed to send invitation';
+      const errorMessage = err.message || t('errors.sendInvitation');
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  }, [user, userTeams, clearError]);
+  }, [user, userTeams, clearError, t]);
 
   // Get team invitations (for team admins/coaches)
   const getTeamInvitations = useCallback(async (teamId) => {
@@ -1269,25 +1274,25 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error cancelling invitation:', error);
-        setError('Failed to cancel invitation');
+        setError(t('errors.cancelInvitation'));
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in cancelTeamInvitation:', err);
-      setError('Failed to cancel invitation');
+      setError(t('errors.cancelInvitation'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, t]);
 
   // Accept a team invitation
   const acceptTeamInvitation = useCallback(async (invitationId) => {
     try {
       if (!user) {
-        setError('Must be authenticated to accept invitations');
+        setError(t('errors.loginRequiredAccept'));
         return { success: false, error: 'Authentication required' };
       }
 
@@ -1302,7 +1307,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error accepting invitation:', error);
-        const errorMessage = error.message || 'Failed to accept invitation';
+        const errorMessage = error.message || t('errors.acceptInvitation');
         setError(errorMessage);
         return { success: false, error: errorMessage };
       }
@@ -1310,21 +1315,21 @@ export const TeamProvider = ({ children }) => {
       // Refresh user teams to include the new team
       await getUserTeams();
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         data,
-        message: 'Welcome to the team! You have been successfully added.' 
+        message: 'Welcome to the team! You have been successfully added.'
       };
 
     } catch (err) {
       console.error('Exception in acceptTeamInvitation:', err);
-      const errorMessage = err.message || 'Failed to accept invitation';
+      const errorMessage = err.message || t('errors.acceptInvitation');
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, getUserTeams]);
+  }, [user, clearError, getUserTeams, t]);
 
   // Get pending invitations for the current user
   const getUserPendingInvitations = useCallback(async () => {
@@ -1364,7 +1369,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error fetching user pending invitations:', error);
-        setError('Failed to load pending invitations');
+        setError(t('errors.loadInvitations'));
         return [];
       }
 
@@ -1394,18 +1399,18 @@ export const TeamProvider = ({ children }) => {
       return invitations;
     } catch (err) {
       console.error('Exception in getUserPendingInvitations:', err);
-      setError('Failed to load pending invitations');
+      setError(t('errors.loadInvitations'));
       return [];
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, t]);
 
   // Decline a team invitation
   const declineTeamInvitation = useCallback(async (invitationId) => {
     try {
       if (!user) {
-        setError('Must be authenticated to decline invitations');
+        setError(t('errors.loginRequiredDecline'));
         return { success: false, error: 'Authentication required' };
       }
 
@@ -1420,31 +1425,31 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error declining invitation:', error);
-        const errorMessage = error.message || 'Failed to decline invitation';
+        const errorMessage = error.message || t('errors.declineInvitation');
         setError(errorMessage);
         return { success: false, error: errorMessage };
       }
 
       return {
-        success: true, 
+        success: true,
         data,
         message: data?.message || 'Invitation declined successfully'
       };
     } catch (err) {
       console.error('Exception in declineTeamInvitation:', err);
-      const errorMessage = 'Failed to decline invitation';
+      const errorMessage = t('errors.declineInvitation');
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, t]);
 
   // Refresh an existing invitation (pending or expired)
   const refreshInvitation = useCallback(async ({ invitationId, teamId, email, role, message = '' }) => {
     try {
       if (!user) {
-        setError('Must be authenticated to refresh invitations');
+        setError(t('errors.loginRequiredRefresh'));
         return { success: false, error: 'Authentication required' };
       }
 
@@ -1461,25 +1466,25 @@ export const TeamProvider = ({ children }) => {
           was_expired: result.was_expired
         };
       } else {
-        setError(result.error || 'Failed to refresh invitation');
+        setError(result.error || t('errors.refreshInvitation'));
         return { success: false, error: result.error };
       }
 
     } catch (err) {
       console.error('Exception in refreshInvitation:', err);
-      const errorMessage = err.message || 'Failed to refresh invitation';
+      const errorMessage = err.message || t('errors.refreshInvitation');
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  }, [user, inviteUserToTeam, clearError]);
+  }, [user, inviteUserToTeam, clearError, t]);
 
   // Delete a team invitation permanently
   const deleteInvitation = useCallback(async (invitationId) => {
     try {
       if (!user) {
-        setError('Must be authenticated to delete invitations');
+        setError(t('errors.loginRequiredDelete'));
         return { success: false, error: 'Authentication required' };
       }
 
@@ -1493,7 +1498,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error deleting invitation:', error);
-        const errorMessage = error.message || 'Failed to delete invitation';
+        const errorMessage = error.message || t('errors.deleteInvitation');
         setError(errorMessage);
         return { success: false, error: errorMessage };
       }
@@ -1505,13 +1510,13 @@ export const TeamProvider = ({ children }) => {
 
     } catch (err) {
       console.error('Exception in deleteInvitation:', err);
-      const errorMessage = err.message || 'Failed to delete invitation';
+      const errorMessage = err.message || t('errors.deleteInvitation');
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, t]);
 
   // ============================================================================
   // TEAM ACCESS REQUEST FUNCTIONS
@@ -1550,9 +1555,9 @@ export const TeamProvider = ({ children }) => {
         if (!skipLoadingState) {
           // Handle specific unique constraint violation (23505 = unique_violation)
           if (error.code === '23505' && error.message?.includes('unique_pending_request_idx')) {
-            setError('You already have a pending request for this team. Please wait for the current request to be reviewed, or cancel it first to submit a new one.');
+            setError(t('errors.pendingRequestExists'));
           } else {
-            setError('Failed to request team access');
+            setError(t('errors.requestTeamAccess'));
           }
         }
         return null;
@@ -1562,7 +1567,7 @@ export const TeamProvider = ({ children }) => {
     } catch (err) {
       console.error('Exception in requestTeamAccess:', err);
       if (!skipLoadingState) {
-        setError('Failed to request team access');
+        setError(t('errors.requestTeamAccess'));
       }
       return null;
     } finally {
@@ -1570,7 +1575,7 @@ export const TeamProvider = ({ children }) => {
         setLoading(false);
       }
     }
-  }, [user, clearError]);
+  }, [user, clearError, t]);
 
 
 
@@ -1617,7 +1622,7 @@ export const TeamProvider = ({ children }) => {
 
       if (requestError) {
         console.error('Error fetching request:', requestError);
-        setError('Failed to fetch request details');
+        setError(t('errors.fetchRequestDetails'));
         return null;
       }
 
@@ -1632,7 +1637,7 @@ export const TeamProvider = ({ children }) => {
 
       if (teamUserError) {
         console.error('Error adding user to team:', teamUserError);
-        setError('Failed to add user to team');
+        setError(t('errors.addUserToTeam'));
         return null;
       }
 
@@ -1658,7 +1663,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error updating request status:', error);
-        setError('Failed to update request status');
+        setError(t('errors.updateRequestStatus'));
         return null;
       }
 
@@ -1670,12 +1675,12 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in approveTeamAccess:', err);
-      setError('Failed to approve team access');
+      setError(t('errors.approveTeamAccess'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, currentTeam, checkPendingRequests]);
+  }, [user, clearError, currentTeam, checkPendingRequests, t]);
 
   // Reject team access request (for team coaches)
   const rejectTeamAccess = useCallback(async (requestId, reviewNotes = '') => {
@@ -1705,7 +1710,7 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error rejecting team access:', error);
-        setError('Failed to reject team access');
+        setError(t('errors.rejectTeamAccess'));
         return null;
       }
 
@@ -1717,12 +1722,12 @@ export const TeamProvider = ({ children }) => {
       return data;
     } catch (err) {
       console.error('Exception in rejectTeamAccess:', err);
-      setError('Failed to reject team access');
+      setError(t('errors.rejectTeamAccess'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError, currentTeam, checkPendingRequests]);
+  }, [user, clearError, currentTeam, checkPendingRequests, t]);
 
   // Cancel team access request (for users)
   const cancelTeamAccess = useCallback(async (requestId) => {
@@ -1742,19 +1747,19 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error cancelling team access request:', error);
-        setError('Failed to cancel request');
+        setError(t('errors.cancelRequest'));
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in cancelTeamAccess:', err);
-      setError('Failed to cancel request');
+      setError(t('errors.cancelRequest'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [user, clearError]);
+  }, [user, clearError, t]);
 
   // Get team members (for admins to manage roles)
   const getTeamMembers = useCallback(async (teamId) => {
@@ -1798,19 +1803,19 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error updating team member role:', error);
-        setError('Failed to update member role');
+        setError(t('errors.updateMemberRole'));
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in updateTeamMemberRole:', err);
-      setError('Failed to update member role');
+      setError(t('errors.updateMemberRole'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [clearError]);
+  }, [clearError, t]);
 
   // Remove team member (for admins)
   const removeTeamMember = useCallback(async (teamUserId) => {
@@ -1827,19 +1832,19 @@ export const TeamProvider = ({ children }) => {
 
       if (error) {
         console.error('Error removing team member:', error);
-        setError('Failed to remove team member');
+        setError(t('errors.removeTeamMember'));
         return null;
       }
 
       return data;
     } catch (err) {
       console.error('Exception in removeTeamMember:', err);
-      setError('Failed to remove team member');
+      setError(t('errors.removeTeamMember'));
       return null;
     } finally {
       setLoading(false);
     }
-  }, [clearError]);
+  }, [clearError, t]);
 
   // Get team roster (players)
   const getTeamRoster = useCallback(async (teamId) => {

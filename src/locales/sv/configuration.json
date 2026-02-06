@@ -153,7 +153,16 @@
     "acceptAll": "Acceptera Alla"
   },
   "formationVoting": {
-    "description": "Endast 2-2 och 1-2-1 formationerna är för närvarande implementerade. Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare per formation räknas."
+    "description": "Endast 2-2 och 1-2-1 formationerna är för närvarande implementerade. Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare per formation räknas.",
+    "errors": {
+      "loginRequired": "Du måste vara inloggad för att rösta på formationer",
+      "submitFailed": "Misslyckades skicka röst. Försök igen.",
+      "voteSubmissionFailed": "Misslyckades registrera röst"
+    },
+    "messages": {
+      "duplicateVote": "Du har redan röstat på {{formation}}-formationen i {{format}}-format.",
+      "voteRecorded": "Din röst för {{formation}}-formationen har registrerats!"
+    }
   },
   "formationPreview": {
     "formations": {

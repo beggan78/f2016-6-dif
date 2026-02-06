@@ -320,9 +320,9 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-sky-300">Team Matches</h1>
+        <h1 className="text-2xl font-bold text-sky-300">{t('teamMatches.title')}</h1>
         <Button onClick={onNavigateBack} variant="secondary" size="sm">
-          Back
+          {t('teamMatches.back')}
         </Button>
       </div>
 

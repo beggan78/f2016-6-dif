@@ -6,12 +6,14 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 
 export const useFormationVotes = () => {
+  const { t } = useTranslation('configuration');
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,7 +23,7 @@ export const useFormationVotes = () => {
   const submitVote = useCallback(async (formation, format) => {
     // Check authentication
     if (!user) {
-      setError('You must be logged in to vote for formations');
+      setError(t('formationVoting.errors.loginRequired'));
       return { success: false, error: 'Authentication required' };
     }
 
@@ -54,7 +56,7 @@ export const useFormationVotes = () => {
       if (!response.ok) {
         // Handle different error types
         if (response.status === 409 && result.error === 'duplicate_vote') {
-          setInfoMessage(result.message || `You've already voted for the ${formation} formation in ${format} format.`);
+          setInfoMessage(result.message || t('formationVoting.messages.duplicateVote', { formation, format }));
           return { success: false, error: 'duplicate_vote', message: result.message };
         }
         
@@ -62,11 +64,11 @@ export const useFormationVotes = () => {
       }
 
       if (!result.success) {
-        throw new Error(result.error || 'Vote submission failed');
+        throw new Error(result.error || t('formationVoting.errors.voteSubmissionFailed'));
       }
 
       // Success
-      setSuccessMessage(result.message || `Your vote for the ${formation} formation has been recorded!`);
+      setSuccessMessage(result.message || t('formationVoting.messages.voteRecorded', { formation }));
       
       return { 
         success: true, 
@@ -74,7 +76,7 @@ export const useFormationVotes = () => {
       };
 
     } catch (err) {
-      const errorMessage = err.message || 'Failed to submit vote. Please try again.';
+      const errorMessage = err.message || t('formationVoting.errors.submitFailed');
       setError(errorMessage);
       console.error('Formation vote submission error:', err);
       
@@ -85,7 +87,7 @@ export const useFormationVotes = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, t]);
 
   const clearMessages = useCallback(() => {
     setError(null);

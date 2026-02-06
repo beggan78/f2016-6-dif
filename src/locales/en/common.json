@@ -10,5 +10,11 @@
   },
   "alerts": {
     "noAlerts": "No alerts"
+  },
+  "errors": {
+    "invalidMatchId": "Invalid match ID",
+    "unknownView": "Unknown view",
+    "unknownPlayer": "Unknown Player",
+    "supabaseConfigMissing": "Supabase configuration missing. Please check environment variables."
   }
 }

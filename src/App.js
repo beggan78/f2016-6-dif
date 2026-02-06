@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import './App.css';
 import './locales/i18n'; // Initialize i18n
 import { useGameState } from './hooks/useGameState';
@@ -95,6 +96,7 @@ const clearDismissedModals = () => {
 
 // Main App Content Component (needs to be inside AuthProvider to access useAuth)
 function AppContent() {
+  const { t } = useTranslation(['modals', 'navigation', 'common']);
   // Create the main gameState instance without circular dependencies
   const gameState = useGameState();
   const {
@@ -1190,7 +1192,7 @@ function AppContent() {
             trackGoalScorer={gameState.trackGoalScorer}
             getPlayerName={(playerId) => {
               const player = gameState.allPlayers.find(p => p.id === playerId);
-              return player ? formatPlayerName(player) : 'Unknown Player';
+              return player ? formatPlayerName(player) : t('common:errors.unknownPlayer');
             }}
           />
         );
@@ -1301,11 +1303,11 @@ function AppContent() {
                     onClick={handleLiveMatchNavigateBack}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700 text-slate-100 rounded-md hover:bg-slate-600 transition-colors"
                   >
-                    Back
+                    {t('navigation:back')}
                   </button>
                 </div>
               )}
-              <p className="text-slate-400">Invalid match ID</p>
+              <p className="text-slate-400">{t('common:errors.invalidMatchId')}</p>
             </div>
           </div>
         );
@@ -1320,7 +1322,7 @@ function AppContent() {
           />
         );
       default:
-        return <div>Unknown view</div>;
+        return <div>{t('common:errors.unknownView')}</div>;
     }
   };
 
@@ -1373,28 +1375,28 @@ function AppContent() {
         isOpen={showConfirmModal}
         onConfirm={handleConfirmEndPeriod}
         onCancel={handleCancelEndPeriod}
-        title="End Period Early?"
-        message={`There are still ${confirmModalData.timeString} remaining in this period. Are you sure you want to end the period early?`}
+        title={t('modals:endPeriodEarly.title')}
+        message={t('modals:endPeriodEarly.message', { timeString: confirmModalData.timeString })}
       />
 
       <ConfirmationModal
         isOpen={showSignOutConfirmModal}
         onConfirm={handleConfirmSignOut}
         onCancel={handleCancelSignOut}
-        title="Sign Out During Active Match?"
-        message="You have a match currently running. Signing out now may stop tracking this match. Are you sure you want to sign out?"
-        confirmText="Sign Out"
-        cancelText="Stay Logged In"
+        title={t('modals:signOutDuringMatch.title')}
+        message={t('modals:signOutDuringMatch.message')}
+        confirmText={t('modals:signOutDuringMatch.confirmSignOut')}
+        cancelText={t('modals:signOutDuringMatch.cancelStayLoggedIn')}
       />
 
       <ConfirmationModal
         isOpen={showMatchPersistenceError}
         onConfirm={handleRetryMatchPersistence}
         onCancel={handleContinueWithoutSaving}
-        title="Unable to Save Match"
+        title={t('modals:unableToSaveMatch.title')}
         message={persistenceErrorMessage}
-        confirmText={isMatchPersistenceRetrying ? 'Retrying...' : 'Retry'}
-        cancelText="Continue without saving"
+        confirmText={isMatchPersistenceRetrying ? t('modals:unableToSaveMatch.retrying') : t('modals:unableToSaveMatch.retry')}
+        cancelText={t('modals:unableToSaveMatch.continueWithoutSaving')}
         variant="primary"
         confirmDisabled={isMatchPersistenceRetrying}
         cancelDisabled={isMatchPersistenceRetrying}
@@ -1411,11 +1413,11 @@ function AppContent() {
         onPrimary={handleCancelNewGame}
         onSecondary={handleConfirmNewGame}
         onTertiary={handleLeaveSportWizard}
-        title="Start a new game?"
-        message="Are you sure you want to start a new game? This will reset all progress and take you back to the configuration screen."
-        primaryText="Stay on page"
-        secondaryText="Yes, start new game"
-        tertiaryText="Leave Sport Wizard"
+        title={t('modals:newGame.title')}
+        message={t('modals:newGame.message')}
+        primaryText={t('modals:newGame.stayOnPage')}
+        secondaryText={t('modals:newGame.yesStartNewGame')}
+        tertiaryText={t('modals:newGame.leaveSportWizard')}
         primaryVariant="accent"
         secondaryVariant="primary"
         tertiaryVariant="danger"
