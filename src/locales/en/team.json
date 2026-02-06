@@ -1,0 +1,84 @@
+{
+  "management": {
+    "title": "Team Management",
+    "tabs": {
+      "overview": "Overview",
+      "roster": "Roster",
+      "loans": "Loans",
+      "access": "Access Management",
+      "connectors": "Connectors",
+      "preferences": "Preferences"
+    }
+  },
+  "roster": {
+    "title": "Team Roster",
+    "addPlayer": "Add Player",
+    "editPlayer": "Edit Player",
+    "deletePlayer": "Delete Player",
+    "noPlayers": "No players in roster",
+    "addPlayersToStart": "Add players to get started"
+  },
+  "player": {
+    "name": "Name",
+    "number": "Number",
+    "position": "Preferred Position",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "temporary": "Temporary"
+  },
+  "addPlayer": {
+    "title": "Add Player",
+    "addToTeam": "Add Player to Team",
+    "addTemporary": "Add Temporary Player",
+    "cancel": "Cancel"
+  },
+  "editPlayer": {
+    "title": "Edit Player",
+    "save": "Save Changes",
+    "cancel": "Cancel"
+  },
+  "deletePlayer": {
+    "title": "Delete Player",
+    "confirm": "Are you sure you want to delete {{playerName}} from the team?",
+    "delete": "Delete",
+    "cancel": "Cancel"
+  },
+  "loans": {
+    "title": "Player Loans",
+    "loanDate": "Loan Date",
+    "receivingTeam": "Receiving Team",
+    "players": "Players",
+    "noLoans": "No active loans",
+    "addLoan": "Add Loan"
+  },
+  "access": {
+    "title": "Team Access",
+    "role": "Role",
+    "admin": "Admin",
+    "coach": "Coach",
+    "viewer": "Viewer",
+    "invite": "Invite Member",
+    "remove": "Remove"
+  },
+  "invite": {
+    "title": "Invite Team Member",
+    "email": "Email Address",
+    "role": "Role",
+    "send": "Send Invitation",
+    "cancel": "Cancel"
+  },
+  "creation": {
+    "title": "Create Team",
+    "teamName": "Team Name",
+    "clubName": "Club Name",
+    "ageGroup": "Age Group",
+    "create": "Create Team",
+    "cancel": "Cancel"
+  },
+  "selector": {
+    "title": "Select Team",
+    "noTeams": "No teams available",
+    "createTeam": "Create Team"
+  }
+}

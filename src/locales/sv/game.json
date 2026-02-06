@@ -1,0 +1,71 @@
+{
+  "period": {
+    "label": "Period {{number}}",
+    "ordinal": {
+      "1st": "1:a",
+      "2nd": "2:a",
+      "3rd": "3:e",
+      "4th": "4:e",
+      "nth": "{{number}}:e"
+    }
+  },
+  "startScreen": {
+    "startMatch": "Starta Match",
+    "startPeriod": "Starta {{ordinal}} Perioden",
+    "instructions": "Tryck för att börja perioden och starta timers",
+    "backToSetup": "Tillbaka till Konfiguration"
+  },
+  "timers": {
+    "matchClock": "Matchklocka",
+    "substitutionTimer": "Bytestimer",
+    "pauseTooltip": "Pausa bytestimer",
+    "resumeTooltip": "Återuppta bytestimer"
+  },
+  "score": {
+    "instructions": "Tryck på lagnamn för att lägga till mål • Håll inne ställning för att redigera"
+  },
+  "substitution": {
+    "button": "BYT NU",
+    "buttonMultiple": "BYT {{count}}",
+    "makeSubstitution": "Genomför byte",
+    "cannotSubstitute": "Alla avbytare är inaktiva - kan inte göra byte",
+    "undoTooltip": "Ångra senaste byte",
+    "undoDisabled": "Inget byte att ångra"
+  },
+  "actions": {
+    "endPeriod": "Avsluta Period"
+  },
+  "modals": {
+    "fieldPlayer": {
+      "setNext": "Sätt som Nästa",
+      "removeFromNext": "Ta Bort från Nästa",
+      "subNow": "Byt Nu",
+      "changePosition": "Byt Position",
+      "cancel": "Avbryt"
+    },
+    "substitute": {
+      "inactivate": "Inaktivera",
+      "activate": "Aktivera",
+      "cancel": "Avbryt"
+    },
+    "goalie": {
+      "switchGoalie": "Byt Målvakt",
+      "cancel": "Avbryt"
+    }
+  },
+  "finished": {
+    "title": "Match Avslutad!",
+    "subtitle": "Bra match! Här är sammanfattningen:",
+    "finalScore": "Slutresultat",
+    "matchTime": "Matchtid",
+    "periods": "Perioder",
+    "fairPlay": "Fair Play-Utmärkelse",
+    "fairPlayDescription": "Mest balanserad speltid",
+    "topScorer": "Skyttekung",
+    "topScorerGoals": "{{count}} mål",
+    "topScorerGoals_plural": "{{count}} mål",
+    "noGoals": "Inga mål gjorda",
+    "viewReport": "Visa Fullständig Rapport",
+    "newMatch": "Ny Match"
+  }
+}

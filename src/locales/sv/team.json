@@ -1,0 +1,84 @@
+{
+  "management": {
+    "title": "Laghantering",
+    "tabs": {
+      "overview": "Översikt",
+      "roster": "Trupp",
+      "loans": "Lån",
+      "access": "Åtkomsthantering",
+      "connectors": "Kopplingar",
+      "preferences": "Inställningar"
+    }
+  },
+  "roster": {
+    "title": "Laglista",
+    "addPlayer": "Lägg Till Spelare",
+    "editPlayer": "Redigera Spelare",
+    "deletePlayer": "Ta Bort Spelare",
+    "noPlayers": "Inga spelare i truppen",
+    "addPlayersToStart": "Lägg till spelare för att komma igång"
+  },
+  "player": {
+    "name": "Namn",
+    "number": "Nummer",
+    "position": "Föredragen Position",
+    "status": "Status",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "temporary": "Tillfällig"
+  },
+  "addPlayer": {
+    "title": "Lägg Till Spelare",
+    "addToTeam": "Lägg Till Spelare i Laget",
+    "addTemporary": "Lägg Till Tillfällig Spelare",
+    "cancel": "Avbryt"
+  },
+  "editPlayer": {
+    "title": "Redigera Spelare",
+    "save": "Spara Ändringar",
+    "cancel": "Avbryt"
+  },
+  "deletePlayer": {
+    "title": "Ta Bort Spelare",
+    "confirm": "Är du säker på att du vill ta bort {{playerName}} från laget?",
+    "delete": "Ta Bort",
+    "cancel": "Avbryt"
+  },
+  "loans": {
+    "title": "Spelarlån",
+    "loanDate": "Lånedatum",
+    "receivingTeam": "Mottagande Lag",
+    "players": "Spelare",
+    "noLoans": "Inga aktiva lån",
+    "addLoan": "Lägg Till Lån"
+  },
+  "access": {
+    "title": "Lagåtkomst",
+    "role": "Roll",
+    "admin": "Administratör",
+    "coach": "Tränare",
+    "viewer": "Åskådare",
+    "invite": "Bjud In Medlem",
+    "remove": "Ta Bort"
+  },
+  "invite": {
+    "title": "Bjud In Lagmedlem",
+    "email": "E-postadress",
+    "role": "Roll",
+    "send": "Skicka Inbjudan",
+    "cancel": "Avbryt"
+  },
+  "creation": {
+    "title": "Skapa Lag",
+    "teamName": "Lagnamn",
+    "clubName": "Klubbnamn",
+    "ageGroup": "Åldersgrupp",
+    "create": "Skapa Lag",
+    "cancel": "Avbryt"
+  },
+  "selector": {
+    "title": "Välj Lag",
+    "noTeams": "Inga lag tillgängliga",
+    "createTeam": "Skapa Lag"
+  }
+}

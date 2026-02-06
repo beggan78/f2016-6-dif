@@ -1,0 +1,84 @@
+{
+  "tabs": {
+    "team": "Team",
+    "player": "Player",
+    "attendance": "Attendance",
+    "history": "History"
+  },
+  "teamStats": {
+    "title": "Team Statistics",
+    "totalMatches": "Total Matches",
+    "winRate": "Win Rate",
+    "avgGoalsScored": "Avg. Goals Scored",
+    "avgGoalsConceded": "Avg. Goals Conceded",
+    "activePlayers": "Active players",
+    "perMatch": "Per match",
+    "wins": "Wins",
+    "draws": "Draws",
+    "losses": "Losses"
+  },
+  "playerStats": {
+    "title": "Player Statistics",
+    "totalPlayers": "Total Players",
+    "avgPlayingTime": "Avg. Playing Time",
+    "avgGoals": "Average goals",
+    "topScorer": "Top Scorer",
+    "noStats": "No player statistics available",
+    "adjustTimeRange": "Add matches or adjust the selected time range"
+  },
+  "attendanceStats": {
+    "title": "Attendance Statistics",
+    "totalPlayers": "Total Players",
+    "trackedPlayers": "Tracked players",
+    "totalPractices": "Total Practices",
+    "inSelectedPeriod": "In selected period",
+    "noData": "No attendance data available"
+  },
+  "matchHistory": {
+    "title": "Match History",
+    "noMatches": "No matches yet",
+    "addMatches": "Matches you play will appear here"
+  },
+  "matchDetails": {
+    "title": "Match Details",
+    "opponent": "Opponent",
+    "opponentName": "Opponent name",
+    "venue": "Venue",
+    "matchType": "Match Type",
+    "duration": "Duration",
+    "finalScore": "Final Score",
+    "delete": "Delete Match",
+    "deleteConfirm": "Are you sure you want to delete this match from history?",
+    "deleteSuccess": "Match deleted successfully",
+    "deleteError": "Failed to delete match"
+  },
+  "filters": {
+    "all": "All",
+    "timeRange": "Time Range",
+    "matchType": "Match Type",
+    "venue": "Venue"
+  },
+  "timeFilter": {
+    "allTime": "All Time",
+    "last30Days": "Last 30 Days",
+    "last3Months": "Last 3 Months",
+    "last6Months": "Last 6 Months",
+    "lastYear": "Last Year",
+    "custom": "Custom Range"
+  },
+  "table": {
+    "player": "Player",
+    "matches": "Matches",
+    "playingTime": "Playing Time",
+    "goals": "Goals",
+    "assists": "Assists",
+    "attendance": "Attendance",
+    "sortBy": "Sort by"
+  },
+  "loading": "Loading statistics...",
+  "error": "Unable to load statistics",
+  "empty": {
+    "title": "No Data Available",
+    "description": "Statistics will appear once you've played matches"
+  }
+}

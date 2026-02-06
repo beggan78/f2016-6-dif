@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateSignupForm, getPasswordRequirementsText } from '../../utils/authValidation';
@@ -6,6 +7,7 @@ import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/auth
 import { EmailVerificationForm } from './EmailVerificationForm';
 
 export function SignupForm({ onSwitchToLogin, onClose }) {
+  const { t } = useTranslation('auth');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -63,7 +65,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
         onClose();
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('signup.errors.unexpected') });
     }
   };
 
@@ -97,8 +99,8 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-sky-300">Create Account</h2>
-        <p className="text-slate-400 mt-2">Get started with email verification</p>
+        <h2 className="text-2xl font-bold text-sky-300">{t('signup.header.title')}</h2>
+        <p className="text-slate-400 mt-2">{t('signup.header.subtitle')}</p>
       </div>
 
       {/* Error Message */}
@@ -112,14 +114,14 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-            Email Address
+            {t('signup.form.emailLabel')}
           </label>
           <Input
             id="email"
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
-            placeholder="Enter your email"
+            placeholder={t('signup.form.emailPlaceholder')}
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.email, 'field').container}
           />
@@ -130,14 +132,14 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-            Password
+            {t('signup.form.passwordLabel')}
           </label>
           <Input
             id="password"
             type="password"
             value={formData.password}
             onChange={(e) => handleInputChange('password', e.target.value)}
-            placeholder="Create a secure password"
+            placeholder={t('signup.form.passwordPlaceholder')}
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.password, 'field').container}
           />
@@ -145,20 +147,20 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             <p className={getErrorDisplayClasses(!!errors.password, 'field').text}>{errors.password}</p>
           )}
           <p className="text-slate-500 text-xs mt-1">
-            {getPasswordRequirementsText()}
+            {t('signup.form.passwordRequirements')}
           </p>
         </div>
 
         <div>
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
-            Confirm Password
+            {t('signup.form.confirmPasswordLabel')}
           </label>
           <Input
             id="confirmPassword"
             type="password"
             value={formData.confirmPassword}
             onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-            placeholder="Confirm your password"
+            placeholder={t('signup.form.confirmPasswordPlaceholder')}
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.confirmPassword, 'field').container}
           />
@@ -176,21 +178,21 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
           disabled={loading}
           className="w-full"
         >
-          {loading ? 'Creating Account...' : 'Create Account'}
+          {loading ? t('signup.form.submittingButton') : t('signup.form.submitButton')}
         </Button>
       </form>
 
       {/* Footer Links */}
       <div className="text-center">
         <div className="text-slate-400 text-sm">
-          Already have an account?{' '}
+          {t('signup.links.hasAccount')}{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
             className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
             disabled={loading}
           >
-            Sign in
+            {t('signup.links.signIn')}
           </button>
         </div>
       </div>

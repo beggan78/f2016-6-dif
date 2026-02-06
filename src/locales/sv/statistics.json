@@ -1,0 +1,84 @@
+{
+  "tabs": {
+    "team": "Lag",
+    "player": "Spelare",
+    "attendance": "Närvaro",
+    "history": "Historik"
+  },
+  "teamStats": {
+    "title": "Lagstatistik",
+    "totalMatches": "Totalt Antal Matcher",
+    "winRate": "Vinstprocent",
+    "avgGoalsScored": "Snitt Gjorda Mål",
+    "avgGoalsConceded": "Snitt Insläppta Mål",
+    "activePlayers": "Aktiva spelare",
+    "perMatch": "Per match",
+    "wins": "Vinster",
+    "draws": "Oavgjorda",
+    "losses": "Förluster"
+  },
+  "playerStats": {
+    "title": "Spelarstatistik",
+    "totalPlayers": "Totalt Antal Spelare",
+    "avgPlayingTime": "Snitt Speltid",
+    "avgGoals": "Snitt mål",
+    "topScorer": "Skyttekung",
+    "noStats": "Ingen spelarstatistik tillgänglig",
+    "adjustTimeRange": "Lägg till matcher eller justera valt tidsintervall"
+  },
+  "attendanceStats": {
+    "title": "Närvarostatistik",
+    "totalPlayers": "Totalt Antal Spelare",
+    "trackedPlayers": "Spårade spelare",
+    "totalPractices": "Totalt Antal Träningar",
+    "inSelectedPeriod": "I vald period",
+    "noData": "Ingen närvarodata tillgänglig"
+  },
+  "matchHistory": {
+    "title": "Matchhistorik",
+    "noMatches": "Inga matcher än",
+    "addMatches": "Matcher du spelar kommer att visas här"
+  },
+  "matchDetails": {
+    "title": "Matchdetaljer",
+    "opponent": "Motståndare",
+    "opponentName": "Motståndarlagets namn",
+    "venue": "Arena",
+    "matchType": "Matchtyp",
+    "duration": "Längd",
+    "finalScore": "Slutresultat",
+    "delete": "Ta Bort Match",
+    "deleteConfirm": "Är du säker på att du vill ta bort denna match från historiken?",
+    "deleteSuccess": "Match borttagen",
+    "deleteError": "Misslyckades med att ta bort match"
+  },
+  "filters": {
+    "all": "Alla",
+    "timeRange": "Tidsperiod",
+    "matchType": "Matchtyp",
+    "venue": "Arena"
+  },
+  "timeFilter": {
+    "allTime": "Alla Tider",
+    "last30Days": "Senaste 30 Dagarna",
+    "last3Months": "Senaste 3 Månaderna",
+    "last6Months": "Senaste 6 Månaderna",
+    "lastYear": "Senaste Året",
+    "custom": "Anpassat Intervall"
+  },
+  "table": {
+    "player": "Spelare",
+    "matches": "Matcher",
+    "playingTime": "Speltid",
+    "goals": "Mål",
+    "assists": "Assist",
+    "attendance": "Närvaro",
+    "sortBy": "Sortera efter"
+  },
+  "loading": "Laddar statistik...",
+  "error": "Kan inte ladda statistik",
+  "empty": {
+    "title": "Ingen Data Tillgänglig",
+    "description": "Statistik kommer att visas när du har spelat matcher"
+  }
+}

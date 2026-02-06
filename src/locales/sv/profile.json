@@ -1,0 +1,24 @@
+{
+  "header": {
+    "title": "Profilinställningar"
+  },
+  "form": {
+    "nameLabel": "Visningsnamn",
+    "namePlaceholder": "Ange ditt namn",
+    "emailLabel": "E-postadress",
+    "languageLabel": "Språk",
+    "languageEnglish": "English",
+    "languageSwedish": "Svenska",
+    "saveButton": "Spara Ändringar",
+    "savingButton": "Sparar..."
+  },
+  "validation": {
+    "nameRequired": "Namn krävs",
+    "nameTooShort": "Namnet måste vara minst 2 tecken",
+    "nameInvalidChars": "Namnet innehåller ogiltiga tecken"
+  },
+  "messages": {
+    "updateSuccess": "Profil uppdaterad!",
+    "updateError": "Misslyckades med att uppdatera profil"
+  }
+}

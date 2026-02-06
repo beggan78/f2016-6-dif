@@ -1,0 +1,71 @@
+{
+  "period": {
+    "label": "Period {{number}}",
+    "ordinal": {
+      "1st": "1st",
+      "2nd": "2nd",
+      "3rd": "3rd",
+      "4th": "4th",
+      "nth": "{{number}}th"
+    }
+  },
+  "startScreen": {
+    "startMatch": "Start Match",
+    "startPeriod": "Start {{ordinal}} Period",
+    "instructions": "Tap to begin the period and start timers",
+    "backToSetup": "Back to Setup"
+  },
+  "timers": {
+    "matchClock": "Match Clock",
+    "substitutionTimer": "Substitution Timer",
+    "pauseTooltip": "Pause substitution timer",
+    "resumeTooltip": "Resume substitution timer"
+  },
+  "score": {
+    "instructions": "Tap team name to add goal • Hold score to edit"
+  },
+  "substitution": {
+    "button": "SUB NOW",
+    "buttonMultiple": "SUB {{count}}",
+    "makeSubstitution": "Make substitution",
+    "cannotSubstitute": "All substitutes are inactive - cannot substitute",
+    "undoTooltip": "Undo last substitution",
+    "undoDisabled": "No substitution to undo"
+  },
+  "actions": {
+    "endPeriod": "End Period"
+  },
+  "modals": {
+    "fieldPlayer": {
+      "setNext": "Set as Next",
+      "removeFromNext": "Remove from Next",
+      "subNow": "Sub Now",
+      "changePosition": "Change Position",
+      "cancel": "Cancel"
+    },
+    "substitute": {
+      "inactivate": "Inactivate",
+      "activate": "Activate",
+      "cancel": "Cancel"
+    },
+    "goalie": {
+      "switchGoalie": "Switch Goalie",
+      "cancel": "Cancel"
+    }
+  },
+  "finished": {
+    "title": "Match Complete!",
+    "subtitle": "Great game! Here's the summary:",
+    "finalScore": "Final Score",
+    "matchTime": "Match Time",
+    "periods": "Periods",
+    "fairPlay": "Fair Play Award",
+    "fairPlayDescription": "Most balanced playing time",
+    "topScorer": "Top Scorer",
+    "topScorerGoals": "{{count}} goal",
+    "topScorerGoals_plural": "{{count}} goals",
+    "noGoals": "No goals scored",
+    "viewReport": "View Full Report",
+    "newMatch": "New Match"
+  }
+}

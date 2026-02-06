@@ -1,0 +1,24 @@
+{
+  "header": {
+    "title": "Profile Settings"
+  },
+  "form": {
+    "nameLabel": "Display Name",
+    "namePlaceholder": "Enter your name",
+    "emailLabel": "Email Address",
+    "languageLabel": "Language",
+    "languageEnglish": "English",
+    "languageSwedish": "Svenska",
+    "saveButton": "Save Changes",
+    "savingButton": "Saving..."
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "nameTooShort": "Name must be at least 2 characters",
+    "nameInvalidChars": "Name contains invalid characters"
+  },
+  "messages": {
+    "updateSuccess": "Profile updated successfully!",
+    "updateError": "Failed to update profile"
+  }
+}
