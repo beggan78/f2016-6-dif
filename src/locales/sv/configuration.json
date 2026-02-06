@@ -107,5 +107,69 @@
       "label": "Neutral",
       "description": "Matchen spelas på neutral plan för båda lagen."
     }
+  },
+  "periodSetup": {
+    "header": {
+      "title": "Period {{period}} Laguppställning"
+    },
+    "score": {
+      "title": "Nuvarande Ställning",
+      "opponent": "Motståndare"
+    },
+    "substituteRecommendations": {
+      "title": "Rekommenderade Avbytare",
+      "timeframe": "Senaste 6 månaderna",
+      "loading": "Laddar rekommendationer för avbytare...",
+      "error": "Kan inte ladda rekommendationer för avbytare just nu.",
+      "description": "Spelare som sällan startat som avbytare nyligen. Överväg att ge dem en start som avbytare.",
+      "noEligible": "Inga avbytare att rekommendera.",
+      "dismiss": "Avfärda",
+      "accept": "Acceptera"
+    },
+    "goalie": {
+      "header": "Målvakt för Period {{period}}",
+      "headerInactive": "Målvakt för Period {{period}} (Inaktiv - behöver aktiveras)",
+      "placeholder": "Välj Målvakt för denna Period"
+    },
+    "saveStatus": {
+      "saving": "Sparar periodkonfiguration...",
+      "success": "✅ {{message}}",
+      "error": "❌ {{message}}",
+      "defaultSuccess": "Periodkonfiguration sparad",
+      "defaultError": "Misslyckades med att spara periodkonfiguration"
+    },
+    "buttons": {
+      "enterGame": "Starta Match",
+      "saveConfig": "Spara Konfiguration",
+      "saving": "Sparar...",
+      "backToConfig": "Tillbaka till Konfiguration",
+      "randomize": "🎲 Slumpa Formation (Debug)"
+    },
+    "modals": {
+      "inactiveGoalie": {
+        "title": "Inaktiv Målvakt Upptäckt",
+        "message": "{{playerName}} är inaktiv men vald som målvakt för nästa period. Vill du fortsätta med {{playerName}} som målvakt?",
+        "confirm": "Aktivera & Fortsätt",
+        "cancel": "Välj Annan Målvakt"
+      },
+      "recommendationRerun": {
+        "title": "Kör Om Formationsrekommendationer?",
+        "message": "Du har bytt målvakt från {{formerGoalie}} till {{newGoalie}}. Vill du köra om formationsrekommendationerna med den nya målvakten?",
+        "confirm": "Ja, Kör Om Rekommendationer",
+        "cancel": "Nej, Behåll Nuvarande Formation"
+      },
+      "activatePlayer": {
+        "title": "Aktivera Spelare",
+        "message": "Sätt tillbaka {{playerName}} i rotation?",
+        "confirm": "Aktivera",
+        "cancel": "Avbryt"
+      }
+    },
+    "alerts": {
+      "selectGoalieFirst": "Välj en målvakt först innan du slumpar formationen.",
+      "noPlayersAvailable": "Inga spelare tillgängliga för positionering.",
+      "randomizeFailed": "Misslyckades med att generera slumpmässig formation.",
+      "alreadyAssigned": "{{playerName}} är redan tilldelad. Välj en annan spelare."
+    }
   }
 }

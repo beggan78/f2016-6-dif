@@ -107,5 +107,69 @@
       "label": "Neutral",
       "description": "Match is played on a neutral field for both teams."
     }
+  },
+  "periodSetup": {
+    "header": {
+      "title": "Period {{period}} Team Selection"
+    },
+    "score": {
+      "title": "Current Score",
+      "opponent": "Opponent"
+    },
+    "substituteRecommendations": {
+      "title": "Recommended Substitutes",
+      "timeframe": "Last 6 months",
+      "loading": "Loading substitute recommendations...",
+      "error": "Unable to load substitute recommendations right now.",
+      "description": "Players who have rarely started as substitutes recently. Consider giving them a substitute start.",
+      "noEligible": "No eligible substitutes to recommend.",
+      "dismiss": "Dismiss",
+      "accept": "Accept"
+    },
+    "goalie": {
+      "header": "Goalie for Period {{period}}",
+      "headerInactive": "Goalie for Period {{period}} (Inactive - needs activation)",
+      "placeholder": "Select Goalie for this Period"
+    },
+    "saveStatus": {
+      "saving": "Saving period configuration...",
+      "success": "✅ {{message}}",
+      "error": "❌ {{message}}",
+      "defaultSuccess": "Period configuration saved successfully",
+      "defaultError": "Failed to save period configuration"
+    },
+    "buttons": {
+      "enterGame": "Enter Game",
+      "saveConfig": "Save Configuration",
+      "saving": "Saving...",
+      "backToConfig": "Back to Configuration",
+      "randomize": "🎲 Randomize Formation (Debug)"
+    },
+    "modals": {
+      "inactiveGoalie": {
+        "title": "Inactive Goalie Detected",
+        "message": "{{playerName}} is currently inactive but selected as goalie for next period. Do you want to continue with {{playerName}} as goalie?",
+        "confirm": "Activate & Continue",
+        "cancel": "Choose Different Goalie"
+      },
+      "recommendationRerun": {
+        "title": "Re-run Formation Recommendations?",
+        "message": "You've changed the goalie from {{formerGoalie}} to {{newGoalie}}. Would you like to re-run the formation recommendations with the new goalie?",
+        "confirm": "Yes, Re-run Recommendations",
+        "cancel": "No, Keep Current Formation"
+      },
+      "activatePlayer": {
+        "title": "Activate Player",
+        "message": "Put {{playerName}} back into rotation?",
+        "confirm": "Activate",
+        "cancel": "Cancel"
+      }
+    },
+    "alerts": {
+      "selectGoalieFirst": "Please select a goalie first before randomizing the formation.",
+      "noPlayersAvailable": "No players available for positioning.",
+      "randomizeFailed": "Failed to generate random formation.",
+      "alreadyAssigned": "{{playerName}} is already assigned. Choose a different player."
+    }
   }
 }
