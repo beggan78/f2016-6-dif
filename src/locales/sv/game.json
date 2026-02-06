@@ -62,6 +62,11 @@
       "cancel": "Avbryt"
     }
   },
+  "formation": {
+    "noConfig": "Ingen lagkonfiguration tillgänglig",
+    "invalidConfig": "Ogiltig lagkonfiguration",
+    "inactive": "(Inaktiv)"
+  },
   "finished": {
     "title": "Match Avslutad!",
     "subtitle": "Bra match! Här är sammanfattningen:",
@@ -76,5 +81,22 @@
     "noGoals": "Inga mål gjorda",
     "viewReport": "Visa Fullständig Rapport",
     "newMatch": "Ny Match"
+  },
+  "stats": {
+    "title": "Match Avslutad - Statistik",
+    "opponent": "Motståndare",
+    "fairPlayAward": "Fair Play-Utmärkelse",
+    "notAwarded": "Ej tilldelad",
+    "fairPlayWinner": "FAIR PLAY-VINNARE",
+    "savingSelection": "Sparar val...",
+    "selectionSavesAutomatically": "Val sparas automatiskt",
+    "matchSaved": "Match sparad i historik",
+    "viewMatchReport": "Visa Matchrapport",
+    "startNewGame": "Starta Ny Match",
+    "errors": {
+      "noMatchId": "Inget match-ID hittat. Starta om matchen för att aktivera sparande.",
+      "signInRequired": "Logga in för att spara matchuppdateringar.",
+      "saveFailed": "Misslyckades med att spara matchuppdateringar"
+    }
   }
 }

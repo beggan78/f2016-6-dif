@@ -162,7 +162,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('formatting.notAvailable');
     try {
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -170,7 +170,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         day: 'numeric'
       });
     } catch {
-      return 'Invalid date';
+      return t('formatting.invalidDate');
     }
   };
 
@@ -181,7 +181,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     if (user?.email) {
       return user.email.split('@')[0]; // Fallback to email username
     }
-    return 'User';
+    return t('formatting.defaultUser');
   };
 
   const getInitials = () => {
@@ -194,11 +194,11 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
   };
 
   const formatClubName = (membership) => {
-    return membership?.club?.long_name || membership?.club?.name || 'Unknown club';
+    return membership?.club?.long_name || membership?.club?.name || t('formatting.unknownClub');
   };
 
   const formatTeamName = (team) => {
-    if (!team) return 'Unknown team';
+    if (!team) return t('formatting.unknownTeam');
     return team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name;
   };
 
@@ -673,7 +673,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                           {currentTeam.club?.long_name ? `${currentTeam.club.long_name} ${currentTeam.name}` : currentTeam.name}
                         </p>
                         <p className="text-sky-300 text-sm">
-                          {currentTeam.userRole || 'Member'}
+                          {currentTeam.userRole || t('teamManagement.member')}
                         </p>
                       </div>
                       <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>

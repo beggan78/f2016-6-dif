@@ -3,22 +3,17 @@ import { X, UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react'
 import { Button, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
-const ROLE_OPTIONS = [
-  { value: 'admin', label: 'Admin', description: 'Full team management access' },
-  { value: 'coach', label: 'Coach', description: 'Manage team and players' },
-  { value: 'player', label: 'Player', description: 'Basic team member' },
-  { value: 'parent', label: 'Parent', description: 'View team information' }
-];
-
-export function TeamRoleManagementModal({ 
-  isOpen, 
-  onClose, 
-  team, 
-  members, 
+export function TeamRoleManagementModal({
+  isOpen,
+  onClose,
+  team,
+  members,
   onRefresh,
-  currentUserRole 
+  currentUserRole
 }) {
+  const { t } = useTranslation('team');
   const { updateTeamMemberRole, removeTeamMember } = useTeam();
   const { user } = useAuth();
   const [memberRoles, setMemberRoles] = useState({});
@@ -27,6 +22,13 @@ export function TeamRoleManagementModal({
   const [removing, setRemoving] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+
+  const ROLE_OPTIONS = [
+    { value: 'admin', label: t('roleManagement.roles.admin'), description: t('roleManagement.roles.adminDescription') },
+    { value: 'coach', label: t('roleManagement.roles.coach'), description: t('roleManagement.roles.coachDescription') },
+    { value: 'player', label: t('roleManagement.roles.player'), description: t('roleManagement.roles.playerDescription') },
+    { value: 'parent', label: t('roleManagement.roles.parent'), description: t('roleManagement.roles.parentDescription') }
+  ];
 
   // Initialize member roles state
   useEffect(() => {
@@ -85,30 +87,30 @@ export function TeamRoleManagementModal({
     if (!member) return;
     // Check if coach is trying to promote someone to admin
     if (currentUserRole === 'coach' && newRole === 'admin') {
-      setError('Coaches cannot promote members to admin role');
+      setError(t('roleManagement.errors.coachCannotPromote'));
       return;
     }
 
     // Prevent self-modification
     if (isCurrentUser(member)) {
-      setError('You cannot modify your own role');
+      setError(t('roleManagement.errors.cannotModifySelf'));
       return;
     }
 
     // Prevent admin-to-admin changes (except by super admin if implemented)
     if (isAdminToAdminChange(member, newRole) && currentUserRole !== 'super_admin') {
-      setError('Admins cannot modify other admin roles');
+      setError(t('roleManagement.errors.cannotModifyAdmin'));
       return;
     }
 
     // Prevent demoting the last admin
     if (wouldCreateLastAdminDemotion(memberId, newRole)) {
-      setError('Cannot demote the last admin. At least one admin must remain.');
+      setError(t('roleManagement.errors.lastAdminDemotion'));
       return;
     }
 
     setMemberRoles(prev => ({ ...prev, [memberId]: newRole }));
-    
+
     // Track pending changes
     if (newRole !== members.find(m => m.id === memberId)?.role) {
       setPendingChanges(prev => ({ ...prev, [memberId]: newRole }));
@@ -123,7 +125,7 @@ export function TeamRoleManagementModal({
 
   const handleSaveChanges = async () => {
     if (Object.keys(pendingChanges).length === 0) {
-      setError('No changes to save');
+      setError(t('roleManagement.errors.noChanges'));
       return;
     }
 
@@ -135,16 +137,16 @@ export function TeamRoleManagementModal({
         await updateTeamMemberRole(memberId, newRole);
       }
 
-      setSuccessMessage(`Successfully updated ${Object.keys(pendingChanges).length} member role(s)`);
+      setSuccessMessage(t('roleManagement.success.rolesUpdated', { count: Object.keys(pendingChanges).length }));
       setPendingChanges({});
-      
+
       // Refresh team data
       if (onRefresh) {
         await onRefresh();
       }
     } catch (err) {
       console.error('Error updating member roles:', err);
-      setError(err.message || 'Failed to update member roles');
+      setError(err.message || t('roleManagement.errors.updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -153,17 +155,18 @@ export function TeamRoleManagementModal({
   const handleRemoveMember = async (member) => {
     // Prevent self-removal
     if (isCurrentUser(member)) {
-      setError('You cannot remove yourself from the team');
+      setError(t('roleManagement.errors.cannotRemoveSelf'));
       return;
     }
 
     // Prevent removing admins
     if (member.role === 'admin') {
-      setError('Admin users cannot be removed. Demote them first, then remove.');
+      setError(t('roleManagement.errors.cannotRemoveAdmin'));
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to remove ${member.user?.name || member.user?.email} from the team?`)) {
+    const memberName = member.user?.name || member.user?.email;
+    if (!window.confirm(t('roleManagement.confirmRemove', { name: memberName }))) {
       return;
     }
 
@@ -172,15 +175,15 @@ export function TeamRoleManagementModal({
 
     try {
       await removeTeamMember(member.id);
-      setSuccessMessage(`Successfully removed ${member.user?.name || member.user?.email} from the team`);
-      
+      setSuccessMessage(t('roleManagement.success.memberRemoved', { name: memberName }));
+
       // Refresh team data
       if (onRefresh) {
         await onRefresh();
       }
     } catch (err) {
       console.error('Error removing team member:', err);
-      setError(err.message || 'Failed to remove team member');
+      setError(err.message || t('roleManagement.errors.removeFailed'));
     } finally {
       setRemoving(null);
     }
@@ -195,7 +198,7 @@ export function TeamRoleManagementModal({
         <div className="flex items-center justify-between p-6 border-b border-slate-600">
           <div className="flex items-center space-x-3">
             <UserCheck className="w-6 h-6 text-sky-400" />
-            <h2 className="text-xl font-semibold text-slate-100">Manage Team Roles</h2>
+            <h2 className="text-xl font-semibold text-slate-100">{t('roleManagement.title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -219,7 +222,7 @@ export function TeamRoleManagementModal({
 
           {successMessage && (
             <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">✓ {successMessage}</p>
+              <p className="text-emerald-200 text-sm">{successMessage}</p>
             </div>
           )}
 
@@ -227,19 +230,21 @@ export function TeamRoleManagementModal({
           <div className="mb-6">
             <h3 className="text-lg font-medium text-slate-200 mb-2">{team?.name}</h3>
             <p className="text-slate-400 text-sm mb-3">
-              Manage roles and permissions for {members.length} team member{members.length !== 1 ? 's' : ''}
+              {members.length !== 1
+                ? t('roleManagement.managePermissionsPlural', { count: members.length })
+                : t('roleManagement.managePermissions', { count: members.length })}
             </p>
-            
+
             {/* Security Info */}
             <div className="bg-slate-800 border border-slate-600 rounded-lg p-3">
               <div className="flex items-center space-x-2 mb-2">
                 <Shield className="w-4 h-4 text-amber-400" />
-                <span className="text-slate-200 text-sm font-medium">Security Restrictions</span>
+                <span className="text-slate-200 text-sm font-medium">{t('roleManagement.security.title')}</span>
               </div>
               <ul className="text-slate-400 text-xs space-y-1">
-                <li>• You cannot modify your own role or remove yourself</li>
-                <li>• Admin roles are protected from modification by other admins</li>
-                <li>• At least one admin must remain on the team</li>
+                <li>{t('roleManagement.security.cannotModifySelf')}</li>
+                <li>{t('roleManagement.security.adminProtected')}</li>
+                <li>{t('roleManagement.security.lastAdmin')}</li>
               </ul>
             </div>
           </div>
@@ -258,8 +263,8 @@ export function TeamRoleManagementModal({
               const canRemove = !isCurrentUserMember && !isAdminMember;
 
               return (
-                <div 
-                  key={member.id} 
+                <div
+                  key={member.id}
                   className={`p-4 bg-slate-700 rounded-lg border ${
                     hasChange ? 'border-amber-500' : 'border-slate-600'
                   }`}
@@ -282,17 +287,17 @@ export function TeamRoleManagementModal({
                         <div>
                           <div className="flex items-center space-x-2">
                             <p className="text-slate-100 font-medium">
-                              {member.user?.name || member.user?.email?.split('@')[0] || 'Unknown User'}
+                              {member.user?.name || member.user?.email?.split('@')[0] || t('roleManagement.unknownUser')}
                             </p>
                             {isCurrentUserMember && (
                               <span className="hidden sm:inline-block text-xs px-2 py-0.5 bg-blue-600 text-blue-100 rounded-full">
-                                You
+                                {t('roleManagement.badges.you')}
                               </span>
                             )}
                             {isLastAdmin && (
                               <span className="hidden sm:flex text-xs px-2 py-0.5 bg-amber-600 text-amber-100 rounded-full items-center">
                                 <Lock className="w-3 h-3 mr-1" />
-                                Last Admin
+                                {t('roleManagement.badges.lastAdmin')}
                               </span>
                             )}
                           </div>
@@ -305,7 +310,7 @@ export function TeamRoleManagementModal({
                       {hasChange && (
                         <div className="mt-2 text-xs text-amber-400 flex items-center">
                           <AlertTriangle className="w-3 h-3 mr-1" />
-                          Role will change from {originalRole} to {pendingChanges[member.id]}
+                          {t('roleManagement.pendingChange', { from: originalRole, to: pendingChanges[member.id] })}
                         </div>
                       )}
                     </div>
@@ -339,16 +344,16 @@ export function TeamRoleManagementModal({
                         onClick={() => handleRemoveMember(member)}
                         disabled={loading || isRemoving || !canRemove}
                         className={`p-2 transition-colors disabled:opacity-50 ${
-                          canRemove 
-                            ? 'text-slate-400 hover:text-rose-400' 
+                          canRemove
+                            ? 'text-slate-400 hover:text-rose-400'
                             : 'text-slate-600 cursor-not-allowed'
                         }`}
                         title={
-                          !canRemove 
-                            ? isCurrentUserMember 
-                              ? "Cannot remove yourself" 
-                              : "Cannot remove admin users"
-                            : "Remove from team"
+                          !canRemove
+                            ? isCurrentUserMember
+                              ? t('roleManagement.tooltips.cannotRemoveSelf')
+                              : t('roleManagement.tooltips.cannotRemoveAdmin')
+                            : t('roleManagement.tooltips.removeFromTeam')
                         }
                       >
                         {isRemoving ? (
@@ -366,7 +371,7 @@ export function TeamRoleManagementModal({
 
           {members.length === 0 && (
             <div className="text-center py-8 text-slate-400">
-              No team members found
+              {t('roleManagement.noMembers')}
             </div>
           )}
         </div>
@@ -376,27 +381,27 @@ export function TeamRoleManagementModal({
           <div className="text-sm text-slate-400">
             {hasPendingChanges && (
               <span className="text-amber-400">
-                {Object.keys(pendingChanges).length} unsaved change(s)
+                {t('roleManagement.unsavedChanges', { count: Object.keys(pendingChanges).length })}
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <Button
               onClick={onClose}
               variant="secondary"
               disabled={loading}
             >
-              {hasPendingChanges ? 'Cancel' : 'Close'}
+              {hasPendingChanges ? t('roleManagement.buttons.cancel') : t('roleManagement.buttons.close')}
             </Button>
-            
+
             {hasPendingChanges && (
               <Button
                 onClick={handleSaveChanges}
                 variant="primary"
                 disabled={loading}
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? t('roleManagement.buttons.saving') : t('roleManagement.buttons.saveChanges')}
               </Button>
             )}
           </div>

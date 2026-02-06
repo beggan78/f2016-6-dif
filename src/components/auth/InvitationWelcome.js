@@ -92,7 +92,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
       
     } catch (error) {
       console.error('Error setting up account:', error);
-      setPasswordError(error.message || 'Failed to set up account');
+      setPasswordError(error.message || t('invitation.errors.setupFailed'));
       // Re-enable profile fetch on error
       disableProfileFetchSkip();
     } finally {
@@ -116,7 +116,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
       }
     } catch (error) {
       console.error('Error signing out:', error);
-      setPasswordError('Failed to sign out. Please try again.');
+      setPasswordError(t('invitation.errors.signOutFailed'));
     } finally {
       setIsProcessing(false);
     }

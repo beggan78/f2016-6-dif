@@ -1,8 +1,11 @@
 import React from 'react';
 import { Button } from '../shared/UI';
 import { Trash2, AlertTriangle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onConfirm }) {
+  const { t } = useTranslation('team');
+
   if (!player) return null;
 
   const willBeDeleted = !hasGameHistory;
@@ -19,9 +22,9 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
               <AlertTriangle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Remove Player</h2>
+              <h2 className="text-lg font-semibold text-slate-100">{t('deletePlayerModal.title')}</h2>
               <p className="text-sm text-slate-400">
-                {willBeDeleted ? 'This player will be permanently deleted' : 'This player will be deactivated'}
+                {willBeDeleted ? t('deletePlayerModal.subtitleDelete') : t('deletePlayerModal.subtitleDeactivate')}
               </p>
             </div>
           </div>
@@ -53,7 +56,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
                     </span>
                   )}
                   <span className={player.on_roster ? 'text-emerald-400' : 'text-slate-400'}>
-                    {player.on_roster ? 'Active' : 'Inactive'}
+                    {player.on_roster ? t('deletePlayerModal.status.active') : t('deletePlayerModal.status.inactive')}
                   </span>
                 </div>
               </div>
@@ -66,16 +69,16 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
               <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
               <div className="space-y-2">
                 <p className="text-rose-200 font-medium">
-                  Are you sure you want to remove this player?
+                  {t('deletePlayerModal.warning.title')}
                 </p>
                 {willBeDeleted ? (
                   <ul className="text-rose-300 text-sm space-y-1">
-                    <li>• Player has no game history and will be <strong>permanently deleted</strong></li>
-                    <li>• This action cannot be undone</li>
+                    <li>{t('deletePlayerModal.warning.permanentDeleteFull')}</li>
+                    <li>{t('deletePlayerModal.warning.cannotUndo')}</li>
                   </ul>
                 ) : (
                   <ul className="text-rose-300 text-sm space-y-1">
-                    <li>• Player has game history and will be <strong>deactivated</strong> (set as inactive)</li>
+                    <li>{t('deletePlayerModal.warning.deactivatedFull')}</li>
                   </ul>
                 )}
               </div>
@@ -85,9 +88,9 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
           {/* Additional info for permanent delete path */}
           {willBeDeleted && (
             <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
-              <p className="text-slate-200 font-medium mb-2">What happens next</p>
+              <p className="text-slate-200 font-medium mb-2">{t('deletePlayerModal.whatHappensNext')}</p>
               <ul className="text-slate-300 text-sm space-y-1">
-                <li>• Jersey number will become available for other players</li>
+                <li>{t('deletePlayerModal.deleteConsequences.jerseyAvailable')}</li>
               </ul>
             </div>
           )}
@@ -95,11 +98,11 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
           {/* Reassurance for deactivation path */}
           {!willBeDeleted && (
             <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
-              <p className="text-slate-200 font-medium mb-2">What happens next</p>
+              <p className="text-slate-200 font-medium mb-2">{t('deletePlayerModal.whatHappensNext')}</p>
               <ul className="text-slate-300 text-sm space-y-1">
-                <li>• All match statistics and history will be preserved</li>
-                <li>• Jersey number will become available for other players</li>
-                <li>• Player can be reactivated later if needed</li>
+                <li>{t('deletePlayerModal.deactivateConsequences.statsPreserved')}</li>
+                <li>{t('deletePlayerModal.deactivateConsequences.jerseyAvailable')}</li>
+                <li>{t('deletePlayerModal.deactivateConsequences.canReactivate')}</li>
               </ul>
             </div>
           )}
@@ -112,14 +115,14 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
               className="flex-1 bg-rose-600 hover:bg-rose-700 text-white"
               Icon={Trash2}
             >
-              {willBeDeleted ? 'Delete Player' : 'Deactivate Player'}
+              {willBeDeleted ? t('deletePlayerModal.buttons.deletePlayer') : t('deletePlayerModal.buttons.deactivatePlayer')}
             </Button>
             <Button
               onClick={onClose}
               variant="secondary"
               className="flex-1"
             >
-              Cancel
+              {t('deletePlayerModal.buttons.cancel')}
             </Button>
           </div>
         </div>

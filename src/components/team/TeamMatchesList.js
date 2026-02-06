@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Share2, AlertCircle, Eye, Play, Trash2 } from 'lucide-react';
 import { Button, NotificationModal } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
+import { useTranslation } from 'react-i18next';
 import { useRealtimeTeamMatches } from '../../hooks/useRealtimeTeamMatches';
 import { useUpcomingTeamMatches } from '../../hooks/useUpcomingTeamMatches';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
@@ -14,6 +15,7 @@ import { discardPendingMatch } from '../../services/matchStateManager';
  * Allows coaches to copy live match links, resume setup, or navigate to LiveMatchScreen
  */
 export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
+  const { t } = useTranslation('team');
   const { currentTeam } = useTeam();
   const {
     matches: activeMatches,
@@ -42,22 +44,22 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       if (result.success) {
         setNotification({
           isOpen: true,
-          title: 'Link Copied',
-          message: 'Live match link copied to clipboard!'
+          title: t('teamMatches.notifications.linkCopied'),
+          message: t('teamMatches.notifications.linkCopiedMessage')
         });
       } else {
         setNotification({
           isOpen: true,
-          title: 'Live Match URL',
-          message: result.url || 'Could not copy link'
+          title: t('teamMatches.notifications.liveMatchUrl'),
+          message: result.url || t('teamMatches.notifications.couldNotCopy')
         });
       }
     } catch (err) {
       console.error('Failed to copy link:', err);
       setNotification({
         isOpen: true,
-        title: 'Error',
-        message: 'Failed to copy link'
+        title: t('teamMatches.notifications.error'),
+        message: t('teamMatches.error.copyFailed')
       });
     } finally {
       setCopyingMatchId(null);
@@ -89,23 +91,23 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       if (result.success) {
         setNotification({
           isOpen: true,
-          title: 'Match Deleted',
-          message: 'Pending match deleted.'
+          title: t('teamMatches.notifications.matchDeleted'),
+          message: t('teamMatches.notifications.matchDeletedMessage')
         });
         await refetchActiveMatches();
       } else {
         setNotification({
           isOpen: true,
-          title: 'Error',
-          message: result.error || 'Failed to delete pending match'
+          title: t('teamMatches.notifications.error'),
+          message: result.error || t('teamMatches.error.deleteFailed')
         });
       }
     } catch (err) {
       console.error('Failed to delete pending match:', err);
       setNotification({
         isOpen: true,
-        title: 'Error',
-        message: 'Failed to delete pending match'
+        title: t('teamMatches.notifications.error'),
+        message: t('teamMatches.error.deleteFailed')
       });
     } finally {
       setDeletingMatchId(null);
@@ -186,7 +188,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   };
 
   const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'No date';
+    if (!timestamp) return t('teamMatches.timestamps.noDate');
 
     const date = new Date(timestamp);
     const now = new Date();
@@ -195,9 +197,9 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (date >= today) {
-      return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+      return t('teamMatches.timestamps.today', { time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) });
     } else if (date >= yesterday) {
-      return `Yesterday at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+      return t('teamMatches.timestamps.yesterday', { time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) });
     }
 
     return formatIsoDate(date);
@@ -209,7 +211,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   };
 
   const formatUpcomingSchedule = (matchDate, matchTime) => {
-    if (!matchDate) return 'Date TBD';
+    if (!matchDate) return t('teamMatches.timestamps.dateTbd');
     const trimmedTime = formatUpcomingMatchTime(matchTime);
     return trimmedTime ? `${matchDate} ${trimmedTime}` : matchDate;
   };
@@ -218,19 +220,19 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     if (state === 'running') {
       return (
         <span className="px-2 py-1 text-xs font-medium bg-emerald-600 text-emerald-100 rounded-full">
-          Running
+          {t('teamMatches.states.running')}
         </span>
       );
     } else if (state === 'pending') {
       return (
         <span className="px-2 py-1 text-xs font-medium bg-sky-600 text-sky-100 rounded-full">
-          Pending
+          {t('teamMatches.states.pending')}
         </span>
       );
     } else if (state === 'upcoming') {
       return (
         <span className="px-2 py-1 text-xs font-medium bg-amber-600 text-amber-100 rounded-full">
-          Upcoming
+          {t('teamMatches.states.upcoming')}
         </span>
       );
     }
@@ -247,16 +249,16 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Team Matches</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('teamMatches.title')}</h1>
           <Button onClick={onNavigateBack} variant="secondary" size="sm">
-            Back
+            {t('teamMatches.back')}
           </Button>
         </div>
 
         <div className="bg-slate-700 rounded-lg border border-slate-600 p-8">
           <div className="flex items-center justify-center space-x-3">
             <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-            <span className="text-slate-300">Loading matches...</span>
+            <span className="text-slate-300">{t('teamMatches.loading')}</span>
           </div>
         </div>
       </div>
@@ -268,9 +270,9 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Team Matches</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('teamMatches.title')}</h1>
           <Button onClick={onNavigateBack} variant="secondary" size="sm">
-            Back
+            {t('teamMatches.back')}
           </Button>
         </div>
 
@@ -278,10 +280,10 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           <div className="flex items-start space-x-3">
             <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-rose-200 font-medium">Failed to load matches</p>
+              <p className="text-rose-200 font-medium">{t('teamMatches.error.loadFailed')}</p>
               <p className="text-rose-300 text-sm mt-1">{errorMessage}</p>
               <Button onClick={handleRetry} variant="secondary" size="sm" className="mt-3">
-                Try Again
+                {t('teamMatches.error.tryAgain')}
               </Button>
             </div>
           </div>
@@ -295,18 +297,18 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Team Matches</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('teamMatches.title')}</h1>
           <Button onClick={onNavigateBack} variant="secondary" size="sm">
-            Back
+            {t('teamMatches.back')}
           </Button>
         </div>
 
         <div className="bg-slate-700 rounded-lg border border-slate-600 p-8">
           <div className="text-center">
             <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-400 opacity-50" />
-            <p className="text-lg font-medium text-slate-300 mb-2">No Active Matches</p>
+            <p className="text-lg font-medium text-slate-300 mb-2">{t('teamMatches.empty.title')}</p>
             <p className="text-sm text-slate-400">
-              Your team has no pending or running matches at the moment.
+              {t('teamMatches.empty.description')}
             </p>
           </div>
         </div>
@@ -372,7 +374,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                         className="w-full sm:w-auto"
                         disabled={isDeleting}
                       >
-                        Resume Setup
+                        {t('teamMatches.buttons.resumeSetup')}
                       </Button>
                     )}
                     <Button
@@ -382,7 +384,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                       Icon={Eye}
                       className="w-full sm:w-auto"
                     >
-                      Open Live
+                      {t('teamMatches.buttons.openLive')}
                     </Button>
                     <Button
                       onClick={() => handleCopyLink(match.id)}
@@ -392,7 +394,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                       disabled={copyingMatchId === match.id}
                       className="w-full sm:w-auto"
                     >
-                      {copyingMatchId === match.id ? 'Copying...' : 'Copy Link'}
+                      {copyingMatchId === match.id ? t('teamMatches.buttons.copying') : t('teamMatches.buttons.copyLink')}
                     </Button>
                     {isPending && (
                       <Button
@@ -403,7 +405,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                         disabled={isDeleting}
                         className="w-full sm:w-auto"
                       >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
+                        {isDeleting ? t('teamMatches.buttons.deleting') : t('teamMatches.buttons.delete')}
                       </Button>
                     )}
                   </div>
@@ -417,9 +419,9 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       {hasUpcomingMatches && (
         <div className="space-y-3">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-slate-200">Upcoming Matches</h2>
+            <h2 className="text-lg font-semibold text-slate-200">{t('teamMatches.upcoming.title')}</h2>
             <p className="text-xs text-slate-400">
-              Future matches from connected schedules. Not planned yet.
+              {t('teamMatches.upcoming.description')}
             </p>
           </div>
           {upcomingMatches.map((match) => (
@@ -435,7 +437,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                     </h3>
                     {getStateBadge('upcoming')}
                   </div>
-                  <p className="text-xs text-amber-200">Not planned yet</p>
+                  <p className="text-xs text-amber-200">{t('teamMatches.upcoming.notPlanned')}</p>
                   <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-3.5 h-3.5" />
@@ -456,7 +458,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                     className="w-full sm:w-auto"
                     onClick={() => handlePlanMatch(match)}
                   >
-                    Plan
+                    {t('teamMatches.buttons.plan')}
                   </Button>
                 </div>
               </div>
@@ -475,7 +477,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           >
             <div className="p-4 border-b border-slate-600">
               <h3 id="plan-matches-title" className="text-lg font-semibold text-sky-300">
-                Plan Matches
+                {t('teamMatches.planModal.title')}
               </h3>
             </div>
             <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
@@ -511,14 +513,14 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
             </div>
             <div className="p-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
               <Button variant="secondary" onClick={closePlanModal}>
-                Cancel
+                {t('teamMatches.planModal.cancel')}
               </Button>
               <Button
                 variant="accent"
                 onClick={confirmPlanSelection}
                 disabled={planSelectionIds.length === 0}
               >
-                Plan Selected
+                {t('teamMatches.planModal.planSelected')}
               </Button>
             </div>
           </div>

@@ -150,16 +150,69 @@
   },
   "matchDetails": {
     "title": "Matchdetaljer",
-    "opponent": "Motståndare",
-    "opponentName": "Motståndarlagets namn",
+    "newMatch": "Ny Match",
+    "opponent": "Motst\u00e5ndare",
+    "opponentName": "Motst\u00e5ndarlagets namn",
     "venue": "Arena",
     "matchType": "Matchtyp",
-    "duration": "Längd",
+    "type": "Typ",
+    "format": "Format",
+    "formation": "Formation",
+    "periods": "Perioder",
+    "periodDuration": "Periodl\u00e4ngd",
+    "totalTime": "Total Tid",
+    "duration": "L\u00e4ngd",
     "finalScore": "Slutresultat",
+    "saving": "Sparar...",
+    "saveChanges": "Spara \u00c4ndringar",
+    "cancel": "Avbryt",
+    "editMatch": "Redigera Match",
+    "deleting": "Tar bort...",
     "delete": "Ta Bort Match",
-    "deleteConfirm": "Är du säker på att du vill ta bort denna match från historiken?",
+    "deleteTitle": "Ta Bort Match",
+    "deleteConfirm": "\u00c4r du s\u00e4ker p\u00e5 att du vill ta bort denna match fr\u00e5n historiken? Detta kan inte \u00e5ngras.",
+    "deletingEllipsis": "Tar bort...",
     "deleteSuccess": "Match borttagen",
-    "deleteError": "Misslyckades med att ta bort match"
+    "deleteError": "Misslyckades med att ta bort match",
+    "errorSaving": "Fel vid sparande:",
+    "errorDeleting": "Fel vid borttagning av match:",
+    "loading": "Laddar matchdetaljer...",
+    "notFound": "Match hittades inte",
+    "outcomes": {
+      "win": "Vinst",
+      "draw": "Oavgjort",
+      "loss": "F\u00f6rlust"
+    },
+    "venues": {
+      "home": "Hemma",
+      "away": "Borta",
+      "neutral": "Neutral"
+    },
+    "playerStats": {
+      "title": "Spelarstatistik",
+      "subtitle": "Individuell spelarprestanda f\u00f6r denna match",
+      "player": "Spelare",
+      "goals": "M\u00e5l",
+      "outfieldTime": "Utespelartid",
+      "defender": "Back",
+      "midfielder": "Mittf\u00e4lt",
+      "attacker": "Forward",
+      "goalkeeper": "M\u00e5lvakt",
+      "substitute": "Avbytare",
+      "startingRole": "Startroll",
+      "captain": "Kapten",
+      "fairPlay": "Fair Play",
+      "actions": "\u00c5tg\u00e4rder",
+      "addPlayer": "L\u00e4gg Till Spelare",
+      "remove": "Ta Bort",
+      "selectPlayer": "V\u00e4lj spelare",
+      "allPlayersIncluded": "Alla spelare inkluderade",
+      "exceedsMatchDuration": "\u00d6verstiger matchl\u00e4ngd",
+      "goalWarning": "Spelarnas m\u00e5l ({{playerGoals}}) \u00f6verstiger lagets totala ({{teamGoals}}).",
+      "roleWarning": "Inkonsistens i startroll: {{issues}}.",
+      "goalkeeperCountIssue": "{{count}} m\u00e5lvakter (f\u00f6rv\u00e4ntat 1)",
+      "outfieldCountIssue": "{{count}} utespelare (f\u00f6rv\u00e4ntat {{expected}} f\u00f6r {{format}})"
+    }
   },
   "matchSummary": {
     "scheduled": "Schemalagd:",
@@ -169,18 +222,57 @@
     "tied": "Oavgjort"
   },
   "filters": {
+    "title": "Filter",
+    "clearAll": "Rensa Alla",
     "all": "Alla",
     "timeRange": "Tidsperiod",
     "matchType": "Matchtyp",
-    "venue": "Arena"
+    "type": "Typ",
+    "outcome": "Utfall",
+    "venue": "Arena",
+    "opponent": "Motståndare",
+    "withPlayer": "Med Spelare",
+    "format": "Format",
+    "outcomes": {
+      "win": "Vinst",
+      "draw": "Oavgjort",
+      "loss": "Förlust"
+    },
+    "venues": {
+      "home": "Hemma",
+      "away": "Borta",
+      "neutral": "Neutral"
+    }
   },
   "timeFilter": {
-    "allTime": "Alla Tider",
+    "allTime": "Alla tider",
     "last30Days": "Senaste 30 Dagarna",
-    "last3Months": "Senaste 3 Månaderna",
-    "last6Months": "Senaste 6 Månaderna",
-    "lastYear": "Senaste Året",
-    "custom": "Anpassat Intervall"
+    "last3Months": "Senaste 3 M\u00e5naderna",
+    "last6Months": "Senaste 6 M\u00e5naderna",
+    "lastYear": "Senaste \u00c5ret",
+    "custom": "Anpassat",
+    "customRange": "Anpassat intervall...",
+    "selectTimeRange": "V\u00e4lj Tidsperiod",
+    "startDate": "Startdatum",
+    "endDate": "Slutdatum",
+    "apply": "Till\u00e4mpa",
+    "cancel": "Avbryt",
+    "from": "Fr\u00e5n {{date}}",
+    "until": "Till {{date}}",
+    "dateRange": "{{start}} - {{end}}",
+    "invalidStartDate": "Ogiltigt startdatum",
+    "invalidEndDate": "Ogiltigt slutdatum",
+    "startBeforeEnd": "Startdatum m\u00e5ste vara f\u00f6re slutdatum",
+    "startDateTooFar": "Startdatum kan inte vara mer \u00e4n ett \u00e5r i framtiden",
+    "endDateTooFar": "Slutdatum kan inte vara mer \u00e4n ett \u00e5r i framtiden",
+    "presets": {
+      "last-30-days": "Senaste 30 dagarna",
+      "last-3-months": "Senaste 3 m\u00e5naderna",
+      "last-6-months": "Senaste 6 m\u00e5naderna",
+      "last-12-months": "Senaste 12 m\u00e5naderna",
+      "year-to-date": "Fr\u00e5n \u00e5rets b\u00f6rjan",
+      "all-time": "Alla tider"
+    }
   },
   "table": {
     "player": "Spelare",
@@ -194,7 +286,32 @@
   "loading": "Laddar statistik...",
   "error": "Kan inte ladda statistik",
   "empty": {
-    "title": "Ingen Data Tillgänglig",
-    "description": "Statistik kommer att visas när du har spelat matcher"
+    "title": "Ingen Data Tillg\u00e4nglig",
+    "description": "Statistik kommer att visas n\u00e4r du har spelat matcher"
+  },
+  "screen": {
+    "title": "Statistik",
+    "loadingSubtitle": "Laddar statistik...",
+    "fetchingData": "H\u00e4mtar senaste data...",
+    "signInSubtitle": "H\u00e5ll dig n\u00e4ra matchen",
+    "signInBody": "Logga in med ditt f\u00f6r\u00e4ldrakonto f\u00f6r att utforska matchhistorik, spelarstatistik och lagtrender.",
+    "signIn": "Logga In",
+    "createAccount": "Skapa Konto",
+    "selectTeamSubtitle": "V\u00e4lj ett lag f\u00f6r att forts\u00e4tta",
+    "noTeamSubtitle": "Inget lagmedlemskap hittades",
+    "selectTeamBody": "V\u00e4lj ett lag fr\u00e5n huvudmenyn f\u00f6r att se dess statistik.",
+    "noTeamBody": "Du beh\u00f6ver ett lagmedlemskap innan du kan se statistik. Be en tr\u00e4nare eller administrat\u00f6r att l\u00e4gga till dig i laget.",
+    "roleUpdateSubtitle": "Rolluppdatering kr\u00e4vs",
+    "roleUpdateBody": "Statistik \u00e4r tillg\u00e4nglig f\u00f6r f\u00f6r\u00e4ldrakonton. Be din lagadministrat\u00f6r att uppgradera din \u00e5tkomst.",
+    "tabs": {
+      "teamStats": "Lagstatistik",
+      "teamStatsDescription": "Lagets prestanda\u00f6versikt",
+      "playerMatchStats": "Spelarstatistik",
+      "playerMatchStatsDescription": "Individuell spelarstatistik per match",
+      "attendanceStats": "N\u00e4rvarostatistik",
+      "attendanceStatsDescription": "N\u00e4rvaro vid tr\u00e4ningar",
+      "matchHistory": "Matchhistorik",
+      "matchHistoryDescription": "Komplett matchhistorik"
+    }
   }
 }

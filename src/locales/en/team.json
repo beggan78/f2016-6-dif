@@ -234,7 +234,8 @@
   "inviteModal": {
     "header": {
       "title": "Invite Team Member",
-      "closeLabel": "Close modal"
+      "closeLabel": "Close modal",
+      "teamFallback": "Team"
     },
     "form": {
       "labels": {
@@ -288,7 +289,9 @@
       },
       "details": {
         "sent": "Sent: {{date}}",
-        "remaining": "{{time}} remaining"
+        "remaining": "{{time}} remaining",
+        "hoursMinutesRemaining": "{{hours}}h {{minutes}}m remaining",
+        "minutesRemaining": "{{minutes}}m remaining"
       }
     },
     "info": {
@@ -571,15 +574,301 @@
         "none": "No Credit (0.0)"
       },
       "loanWeightDescription": "Controls how loan matches count toward season statistics.",
+      "unnamedPlayer": "Unnamed Player",
+      "previousCaptain": "Previously selected captain",
       "errors": {
         "selectCaptain": "Please select a player to serve as the permanent team captain.",
         "unsupportedFormat": "Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.",
         "saveFailed": "Failed to save preferences. Please try again.",
-        "loadFailed": "Failed to load preferences"
+        "loadFailed": "Failed to load preferences",
+        "loadRosterFailed": "Failed to load team roster"
       },
       "success": {
         "saved": "Preferences saved successfully"
       }
+    }
+  },
+  "roleManagement": {
+    "title": "Manage Team Roles",
+    "managePermissions": "Manage roles and permissions for {{count}} team member",
+    "managePermissionsPlural": "Manage roles and permissions for {{count}} team members",
+    "security": {
+      "title": "Security Restrictions",
+      "cannotModifySelf": "You cannot modify your own role or remove yourself",
+      "adminProtected": "Admin roles are protected from modification by other admins",
+      "lastAdmin": "At least one admin must remain on the team"
+    },
+    "roles": {
+      "admin": "Admin",
+      "adminDescription": "Full team management access",
+      "coach": "Coach",
+      "coachDescription": "Manage team and players",
+      "player": "Player",
+      "playerDescription": "Basic team member",
+      "parent": "Parent",
+      "parentDescription": "View team information"
+    },
+    "badges": {
+      "you": "You",
+      "lastAdmin": "Last Admin"
+    },
+    "errors": {
+      "coachCannotPromote": "Coaches cannot promote members to admin role",
+      "cannotModifySelf": "You cannot modify your own role",
+      "cannotModifyAdmin": "Admins cannot modify other admin roles",
+      "lastAdminDemotion": "Cannot demote the last admin. At least one admin must remain.",
+      "noChanges": "No changes to save",
+      "updateFailed": "Failed to update member roles",
+      "cannotRemoveSelf": "You cannot remove yourself from the team",
+      "cannotRemoveAdmin": "Admin users cannot be removed. Demote them first, then remove.",
+      "removeFailed": "Failed to remove team member"
+    },
+    "success": {
+      "rolesUpdated": "Successfully updated {{count}} member role(s)",
+      "memberRemoved": "Successfully removed {{name}} from the team"
+    },
+    "pendingChange": "Role will change from {{from}} to {{to}}",
+    "unsavedChanges": "{{count}} unsaved change(s)",
+    "confirmRemove": "Are you sure you want to remove {{name}} from the team?",
+    "buttons": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes"
+    },
+    "tooltips": {
+      "cannotRemoveSelf": "Cannot remove yourself",
+      "cannotRemoveAdmin": "Cannot remove admin users",
+      "removeFromTeam": "Remove from team"
+    },
+    "noMembers": "No team members found",
+    "unknownUser": "Unknown User"
+  },
+  "deletePlayerModal": {
+    "title": "Remove Player",
+    "subtitleDelete": "This player will be permanently deleted",
+    "subtitleDeactivate": "This player will be deactivated",
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "warning": {
+      "title": "Are you sure you want to remove this player?",
+      "permanentDelete": "permanently deleted",
+      "permanentDeleteFull": "Player has no game history and will be permanently deleted",
+      "cannotUndo": "This action cannot be undone",
+      "deactivated": "deactivated",
+      "deactivatedFull": "Player has game history and will be deactivated (set as inactive)"
+    },
+    "whatHappensNext": "What happens next",
+    "deleteConsequences": {
+      "jerseyAvailable": "Jersey number will become available for other players"
+    },
+    "deactivateConsequences": {
+      "statsPreserved": "All match statistics and history will be preserved",
+      "jerseyAvailable": "Jersey number will become available for other players",
+      "canReactivate": "Player can be reactivated later if needed"
+    },
+    "buttons": {
+      "deletePlayer": "Delete Player",
+      "deactivatePlayer": "Deactivate Player",
+      "cancel": "Cancel"
+    }
+  },
+  "invitationNotification": {
+    "title": "Team Invitations",
+    "closeLabel": "Close",
+    "successJoined": "Successfully joined {{teamName}}!",
+    "inviteDescription": "You have been invited to join a team. Choose to accept or decline each invitation below.",
+    "inviteDescriptionPlural": "You have been invited to join {{count}} teams. Choose to accept or decline each invitation below.",
+    "role": "Role: {{role}}",
+    "expires": "Expires: {{date}}",
+    "invitedBy": "Invited by {{name}}",
+    "buttons": {
+      "declining": "Declining...",
+      "decline": "Decline",
+      "accepting": "Accepting...",
+      "accept": "Accept",
+      "decideLater": "I'll decide later"
+    }
+  },
+  "clubAutocomplete": {
+    "createNewClub": "Create new club",
+    "noClubsFound": "No clubs found for \"{{query}}\""
+  },
+  "playerMatching": {
+    "title": "Match Player to Provider",
+    "subtitle": "Link roster player to attendance data",
+    "rosterPlayer": "Roster Player",
+    "selectProvider": "Select a player from provider...",
+    "selectProviderLabel": "Match to Provider Player *",
+    "selectProviderHelp": "Select which player from the connected providers matches this roster player.",
+    "errors": {
+      "selectPlayer": "Please select a player from the provider",
+      "matchFailed": "Failed to match player"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "matching": "Matching...",
+      "matchPlayer": "Match Player"
+    }
+  },
+  "clubJoin": {
+    "title": "Join Club",
+    "successTitle": "Successfully Joined!",
+    "successMessage": "You have joined {{clubName}}. You can now access teams within this club.",
+    "joinBenefitsTitle": "Join this club to:",
+    "benefits": {
+      "accessTeams": "Access teams within the club",
+      "requestJoin": "Request to join existing teams",
+      "createTeams": "Create new teams for the club"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "joining": "Joining...",
+      "joinClub": "Join Club"
+    }
+  },
+  "clubMembership": {
+    "title": "Club Management",
+    "subtitle": "Manage your club memberships and discover new clubs",
+    "tabs": {
+      "myClubs": "My Clubs",
+      "findClubs": "Find Clubs",
+      "requests": "Requests"
+    },
+    "myClubs": {
+      "title": "My Clubs",
+      "empty": "You're not a member of any clubs yet",
+      "emptyHint": "Search for clubs to request membership",
+      "joined": "Joined {{date}}"
+    },
+    "search": {
+      "title": "Find Clubs",
+      "placeholder": "Search for clubs...",
+      "searching": "Searching...",
+      "searchButton": "Search",
+      "resultsTitle": "Search Results",
+      "joined": "Joined",
+      "joinClub": "Join Club",
+      "noResults": "No clubs found matching \"{{query}}\"",
+      "noResultsHint": "Try a different search term or ask a club admin to invite you"
+    },
+    "requests": {
+      "title": "Pending Requests",
+      "empty": "No pending membership requests",
+      "wantsToJoin": "wants to join {{clubName}}",
+      "requested": "Requested {{date}}",
+      "reject": "Reject",
+      "approve": "Approve"
+    }
+  },
+  "teamSelector": {
+    "title": "Select Your Team",
+    "newTeam": "New Team",
+    "current": "Current",
+    "availableTeams": "Available Teams ({{count}})",
+    "role": "Role: {{role}}",
+    "loading": "Loading teams...",
+    "noTeamsTitle": "No Teams Found",
+    "noTeamsMessage": "You don't have access to any teams yet. Create your first team to get started.",
+    "createOrJoin": "Create or Join a Team"
+  },
+  "teamMatches": {
+    "title": "Team Matches",
+    "back": "Back",
+    "loading": "Loading matches...",
+    "error": {
+      "loadFailed": "Failed to load matches",
+      "tryAgain": "Try Again",
+      "copyFailed": "Failed to copy link",
+      "deleteFailed": "Failed to delete pending match"
+    },
+    "empty": {
+      "title": "No Active Matches",
+      "description": "Your team has no pending or running matches at the moment."
+    },
+    "states": {
+      "running": "Running",
+      "pending": "Pending",
+      "upcoming": "Upcoming"
+    },
+    "notifications": {
+      "linkCopied": "Link Copied",
+      "linkCopiedMessage": "Live match link copied to clipboard!",
+      "liveMatchUrl": "Live Match URL",
+      "couldNotCopy": "Could not copy link",
+      "error": "Error",
+      "matchDeleted": "Match Deleted",
+      "matchDeletedMessage": "Pending match deleted."
+    },
+    "timestamps": {
+      "noDate": "No date",
+      "today": "Today at {{time}}",
+      "yesterday": "Yesterday at {{time}}",
+      "dateTbd": "Date TBD"
+    },
+    "buttons": {
+      "resumeSetup": "Resume Setup",
+      "openLive": "Open Live",
+      "copying": "Copying...",
+      "copyLink": "Copy Link",
+      "deleting": "Deleting...",
+      "delete": "Delete",
+      "plan": "Plan"
+    },
+    "upcoming": {
+      "title": "Upcoming Matches",
+      "description": "Future matches from connected schedules. Not planned yet.",
+      "notPlanned": "Not planned yet"
+    },
+    "planModal": {
+      "title": "Plan Matches",
+      "cancel": "Cancel",
+      "planSelected": "Plan Selected"
+    }
+  },
+  "planMatches": {
+    "title": "Plan Matches",
+    "back": "Back",
+    "teamRequired": "Team context required.",
+    "noMatches": "No matches selected.",
+    "toolbar": {
+      "sortByPractices": "Sort by practices per match",
+      "sortByAttendance": "Sort by attendance percentage",
+      "statsLoading": "Stats...",
+      "recommend": "Recommend"
+    },
+    "autoSelect": {
+      "title": "Auto Select",
+      "squadSizeMulti": "Squad size per match",
+      "squadSizeSingle": "Squad size for this match",
+      "ensureCoverage": "Each player plays at least one match?",
+      "prioritizePractices": "Prioritize practices/match score",
+      "prioritizeAttendance": "Prioritize attendance %",
+      "cancel": "Cancel",
+      "apply": "Apply"
+    },
+    "matchCard": {
+      "saving": "Saving...",
+      "saved": "Saved",
+      "save": "Save",
+      "roster": "Roster",
+      "selected": "Selected",
+      "empty": "Empty."
+    },
+    "playerSelector": {
+      "noPlayers": "No roster players.",
+      "markAvailable": "Mark available",
+      "markUnavailable": "Mark unavailable"
+    },
+    "notifications": {
+      "noPlayersTitle": "No players selected",
+      "noPlayersMessage": "Select players before planning this match.",
+      "matchPlanned": "Match planned",
+      "pendingCreated": "Pending match created.",
+      "planningFailed": "Planning failed",
+      "planningFailedMessage": "Failed to plan match."
     }
   },
   "accessRequestModal": {

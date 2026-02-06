@@ -3,12 +3,24 @@
     "title": "Tactical Board",
     "instructions": "Drag and drop players and chips to plan your tactics"
   },
+  "controls": {
+    "back": "Back",
+    "undo": "Undo",
+    "clear": "Clear",
+    "clearAll": "Clear All",
+    "drag": "Drag",
+    "draw": "Draw",
+    "full": "Full",
+    "half": "Half"
+  },
   "palette": {
     "title": "Chips",
     "players": "Players",
     "ball": "Ball",
     "cones": "Cones",
-    "clear": "Clear Board"
+    "clear": "Clear Board",
+    "dragInstruction": "Drag chips onto the pitch \u2022 Double-tap to delete",
+    "drawModeHint": "Switch back to Drag mode to add or move chips."
   },
   "chip": {
     "player": "Player",

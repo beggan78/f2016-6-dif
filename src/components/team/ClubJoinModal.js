@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
-import { 
-  Building, 
-  Users, 
+import { useTranslation } from 'react-i18next';
+import {
+  Building,
+  Users,
   AlertTriangle,
   UserPlus,
   X
 } from 'lucide-react';
 
 export function ClubJoinModal({ club, onClose, onSuccess }) {
+  const { t } = useTranslation('team');
   const {
     joinClub,
     loading,
@@ -48,11 +50,10 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               <UserPlus className="h-12 w-12 text-emerald-400 mx-auto" />
             </div>
             <h3 className="text-lg font-semibold text-emerald-300 mb-2">
-              Successfully Joined!
+              {t('clubJoin.successTitle')}
             </h3>
             <p className="text-slate-400">
-              You have joined <strong>{club.long_name || club.name}</strong>. 
-              You can now access teams within this club.
+              {t('clubJoin.successMessage', { clubName: club.long_name || club.name })}
             </p>
           </div>
         </div>
@@ -66,7 +67,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
         {/* Header */}
         <div className="p-6 border-b border-slate-700">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-sky-300">Join Club</h2>
+            <h2 className="text-xl font-semibold text-sky-300">{t('clubJoin.title')}</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-200 transition-colors"
@@ -106,12 +107,12 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               <Users className="h-5 w-5 text-sky-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-slate-300 text-sm mb-2">
-                  <strong>Join this club to:</strong>
+                  <strong>{t('clubJoin.joinBenefitsTitle')}</strong>
                 </p>
                 <ul className="text-slate-400 text-sm space-y-1">
-                  <li>• Access teams within the club</li>
-                  <li>• Request to join existing teams</li>
-                  <li>• Create new teams for the club</li>
+                  <li>{t('clubJoin.benefits.accessTeams')}</li>
+                  <li>{t('clubJoin.benefits.requestJoin')}</li>
+                  <li>{t('clubJoin.benefits.createTeams')}</li>
                 </ul>
               </div>
             </div>
@@ -125,7 +126,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               className="flex-1"
               disabled={loading}
             >
-              Cancel
+              {t('clubJoin.buttons.cancel')}
             </Button>
             <Button
               onClick={handleJoinClub}
@@ -134,7 +135,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               disabled={loading}
               Icon={loading ? null : UserPlus}
             >
-              {loading ? 'Joining...' : 'Join Club'}
+              {loading ? t('clubJoin.buttons.joining') : t('clubJoin.buttons.joinClub')}
             </Button>
           </div>
         </div>

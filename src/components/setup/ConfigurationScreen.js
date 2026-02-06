@@ -1606,14 +1606,14 @@ export function ConfigurationScreen({
         setSyncStatus({
           loading: false,
           message: '',
-          error: result.error || 'Migration failed'
+          error: result.error || t('dataMigration.failed')
         });
       }
     } catch (error) {
       setSyncStatus({
         loading: false,
         message: '',
-        error: 'Migration failed: ' + error.message
+        error: t('dataMigration.failedWithError', { error: error.message })
       });
     }
   };

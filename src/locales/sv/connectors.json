@@ -30,10 +30,17 @@
     }
   },
   "disconnect": {
-    "title": "Koppla Bort Anslutning",
-    "message": "Är du säker på att du vill koppla bort från {{provider}}? Detta kommer att stoppa automatisk truppsynkronisering.",
+    "title": "Koppla Bort {{provider}}?",
+    "subtitle": "Detta stoppar automatisk synkronisering",
+    "confirmMessage": "Är du säker på att du vill koppla bort {{provider}}?",
+    "warningAutoSync": "Automatisk datasynkronisering kommer att stoppas",
+    "warningCredentials": "Lagrade uppgifter kommer att tas bort",
+    "reassureData": "Befintlig närvaro- och matchdata bevaras",
+    "reassureReconnect": "Du kan återansluta när som helst",
+    "disconnecting": "Kopplar bort...",
     "disconnect": "Koppla Bort",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "errorFallback": "Misslyckades med att koppla bort leverantör"
   },
   "status": {
     "syncing": "Synkroniserar trupp...",
@@ -73,6 +80,29 @@
       "connecting": "Ansluter...",
       "cancel": "Avbryt"
     }
+  },
+  "connectorsSection": {
+    "title": "Kopplingar",
+    "infoBanner": "Anslut externa laghanteringsplattformar för att automatiskt synkronisera träningsnärvaro och matchscheman.",
+    "loadingConnectors": "Laddar kopplingar...",
+    "connectedProviders": "Anslutna Leverantörer",
+    "availableProviders": "Tillgängliga Leverantörer",
+    "connected": "Ansluten",
+    "connect": "Anslut",
+    "dismiss": "Avfärda",
+    "connectedSuccess": "SportAdmin ansluten! Verifiering pågår (tar upp till 5 minuter)...",
+    "syncStarted": "Synkronisering startad!",
+    "disconnectedSuccess": "Leverantör bortkopplad!",
+    "retryingConnection": "Försöker ansluta igen...",
+    "immediateSyncFailed": "Omedelbar synkronisering misslyckades, körs enligt schema."
+  },
+  "onboarding": {
+    "syncTitle": "Synkronisera Spelare från Externa Plattformar",
+    "syncDescription": "Anslut till din laghanteringsplattform för att automatiskt synkronisera trupp och träningsnärvaro."
+  },
+  "unmappedBanner": {
+    "title": "Spelare Tillgängliga att Matcha",
+    "description": "Du har omatchade spelare från {{providerName}} som väntar på att matchas till din trupp."
   },
   "connectorCard": {
     "lastVerified": "Senast verifierad:",

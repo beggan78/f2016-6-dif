@@ -30,10 +30,17 @@
     }
   },
   "disconnect": {
-    "title": "Disconnect Connector",
-    "message": "Are you sure you want to disconnect from {{provider}}? This will stop automatic roster syncing.",
+    "title": "Disconnect {{provider}}?",
+    "subtitle": "This will stop automatic synchronization",
+    "confirmMessage": "Are you sure you want to disconnect {{provider}}?",
+    "warningAutoSync": "Automatic data synchronization will stop",
+    "warningCredentials": "Stored credentials will be removed",
+    "reassureData": "Existing attendance and match data will be preserved",
+    "reassureReconnect": "You can reconnect at any time",
+    "disconnecting": "Disconnecting...",
     "disconnect": "Disconnect",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "errorFallback": "Failed to disconnect provider"
   },
   "status": {
     "syncing": "Syncing roster...",
@@ -73,6 +80,29 @@
       "connecting": "Connecting...",
       "cancel": "Cancel"
     }
+  },
+  "connectorsSection": {
+    "title": "Connectors",
+    "infoBanner": "Connect external team management platforms to automatically sync practice attendance and match schedules.",
+    "loadingConnectors": "Loading connectors...",
+    "connectedProviders": "Connected Providers",
+    "availableProviders": "Available Providers",
+    "connected": "Connected",
+    "connect": "Connect",
+    "dismiss": "Dismiss",
+    "connectedSuccess": "SportAdmin connected successfully! Verification in progress (takes up to 5 minutes)...",
+    "syncStarted": "Sync started successfully!",
+    "disconnectedSuccess": "Provider disconnected successfully!",
+    "retryingConnection": "Retrying connection...",
+    "immediateSyncFailed": "Immediate sync failed, will run on schedule."
+  },
+  "onboarding": {
+    "syncTitle": "Sync Players from External Platforms",
+    "syncDescription": "Connect to your team management platform to automatically sync your roster and practice attendance."
+  },
+  "unmappedBanner": {
+    "title": "Players Available to Match",
+    "description": "You have unmapped players from {{providerName}} waiting to be matched to your roster."
   },
   "connectorCard": {
     "lastVerified": "Last verified:",

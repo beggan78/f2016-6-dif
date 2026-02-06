@@ -10,11 +10,22 @@
     "waitingToStart": "Waiting for match to start",
     "inProgress": "Match in progress",
     "paused": "Paused",
-    "ended": "Ended"
+    "ended": "Ended",
+    "matchNotStarted": "Match Not Started",
+    "liveMatch": "LIVE Match",
+    "matchFinished": "Match Finished"
   },
   "info": {
     "period": "Period {{number}}",
+    "periodWithMinute": "Period {{period}} - {{minute}}'",
     "score": "Score",
-    "time": "Time"
+    "time": "Time",
+    "lastUpdated": "Last updated: {{time}}",
+    "loadingEvents": "Loading match events...",
+    "errorLoadingMatch": "Error Loading Match",
+    "noEventsFound": "No match events found",
+    "matchSummary": "Match Summary",
+    "gameEvents": "Game Events",
+    "substitutions": "Substitutions"
   }
 }

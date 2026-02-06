@@ -46,7 +46,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
 
   // Format date for display
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -60,16 +60,16 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     const diffMs = expiry.getTime() - now.getTime();
     
     if (diffMs <= 0) {
-      return 'Expired';
+      return t('inviteModal.invitations.status.expired');
     }
-    
+
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
-      return `${hours}h ${minutes}m remaining`;
+      return t('inviteModal.invitations.details.hoursMinutesRemaining', { hours, minutes });
     } else {
-      return `${minutes}m remaining`;
+      return t('inviteModal.invitations.details.minutesRemaining', { minutes });
     }
   };
 
@@ -301,7 +301,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
             <div>
               <h2 className="text-lg font-semibold text-sky-300">{t('inviteModal.header.title')}</h2>
               <p className="text-sm text-slate-400">
-                {team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : 'Team'}
+                {team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : t('inviteModal.header.teamFallback')}
               </p>
             </div>
           </div>

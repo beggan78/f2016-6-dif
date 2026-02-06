@@ -502,7 +502,7 @@ function TeamOverview({ team, members }) {
               {t('teamManagement.overview.teamCreated')}
             </label>
             <span className="text-slate-100 text-sm font-medium">
-              {team.created_at ? new Date(team.created_at).toLocaleDateString('en-US', {
+              {team.created_at ? new Date(team.created_at).toLocaleDateString(undefined, {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -543,7 +543,7 @@ function TeamOverview({ team, members }) {
                   ? 'bg-orange-600 text-orange-100'
                   : 'bg-slate-600 text-slate-100'
               }`}>
-                {member.role}
+                {t(`roleManagement.roles.${member.role}`, { defaultValue: member.role })}
               </span>
             </div>
           ))}
@@ -1446,7 +1446,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         });
       } catch (err) {
         console.error('Failed to load preferences:', err);
-        setError('Failed to load preferences');
+        setError(t('teamManagement.preferences.errors.loadFailed'));
       } finally {
         setLoading(false);
         autoSaveReadyRef.current = true;
@@ -1454,7 +1454,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     };
 
     loadPrefs();
-  }, [team?.id, loadTeamPreferences, deriveTeamCaptainMode]);
+  }, [team?.id, loadTeamPreferences, deriveTeamCaptainMode, t]);
 
   // Load roster for captain selection
   useEffect(() => {
@@ -1467,14 +1467,14 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         setRoster(rosterData || []);
       } catch (err) {
         console.error('Failed to load roster:', err);
-        setError('Failed to load team roster');
+        setError(t('teamManagement.preferences.errors.loadRosterFailed'));
       } finally {
         setRosterLoading(false);
       }
     };
 
     loadRoster();
-  }, [team?.id, getTeamRoster]);
+  }, [team?.id, getTeamRoster, t]);
 
   const handleFormatChange = useCallback((newFormat) => {
     // Get valid formations for the new format (default squadSize to 6)
@@ -1498,9 +1498,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
   const buildCaptainLabel = useCallback((player) => {
     const baseName = player.display_name || [player.first_name, player.last_name].filter(Boolean).join(' ').trim();
-    const safeName = baseName || 'Unnamed Player';
+    const safeName = baseName || t('teamManagement.preferences.unnamedPlayer');
     return player.jersey_number ? `#${player.jersey_number} ${safeName}` : safeName;
-  }, []);
+  }, [t]);
 
   const captainOptions = useMemo(() => {
     const activePlayers = roster.filter(player => player.on_roster);
@@ -1524,12 +1524,12 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     ) {
       options.unshift({
         value: permanentCaptainId,
-        label: 'Previously selected captain'
+        label: t('teamManagement.preferences.previousCaptain')
       });
     }
 
     return options;
-  }, [roster, buildCaptainLabel, teamCaptainMode, permanentCaptainId]);
+  }, [roster, buildCaptainLabel, teamCaptainMode, permanentCaptainId, t]);
 
   const handleTeamCaptainModeChange = useCallback((value) => {
     setTeamCaptainMode(value);
@@ -1563,12 +1563,12 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     setSuccessMessage(null);
 
     if (teamCaptainMode === 'permanent' && !teamCaptainValue) {
-      setError('Please select a player to serve as the permanent team captain.');
+      setError(t('teamManagement.preferences.errors.selectCaptain'));
       return;
     }
 
     if (['9v9', '11v11'].includes(preferences.matchFormat)) {
-      setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
+      setError(t('teamManagement.preferences.errors.unsupportedFormat'));
       return;
     }
 
@@ -1587,9 +1587,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         if (!isActive) return;
 
         if (onShowFloatingSuccess) {
-          onShowFloatingSuccess('Preferences saved successfully');
+          onShowFloatingSuccess(t('teamManagement.preferences.success.saved'));
         } else {
-          setSuccessMessage('Preferences saved successfully');
+          setSuccessMessage(t('teamManagement.preferences.success.saved'));
           if (successMessageTimeoutRef.current) {
             clearTimeout(successMessageTimeoutRef.current);
           }
@@ -1600,7 +1600,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       } catch (err) {
         console.error('Failed to save preferences:', err);
         if (!isActive) return;
-        setError('Failed to save preferences. Please try again.');
+        setError(t('teamManagement.preferences.errors.saveFailed'));
         setSuccessMessage(null);
       }
     };
@@ -1617,7 +1617,8 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     team?.id,
     onRefresh,
     saveTeamPreferences,
-    onShowFloatingSuccess
+    onShowFloatingSuccess,
+    t
   ]);
 
   if (loading) {

@@ -1,30 +1,32 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
-import { 
-  Users, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import { useTranslation } from 'react-i18next';
+import {
+  Users,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  XCircle,
   UserCheck,
   Calendar
 } from 'lucide-react';
 
-export function InvitationNotificationModal({ 
-  isOpen, 
-  invitations, 
-  onClose, 
-  onInvitationProcessed 
+export function InvitationNotificationModal({
+  isOpen,
+  invitations,
+  onClose,
+  onInvitationProcessed
 }) {
-  const { 
-    acceptTeamInvitation, 
-    declineTeamInvitation, 
-    getUserTeams, 
-    switchCurrentTeam, 
+  const { t } = useTranslation('team');
+  const {
+    acceptTeamInvitation,
+    declineTeamInvitation,
+    getUserTeams,
+    switchCurrentTeam,
     getTeamPlayers,
     getClubMemberships,
-    loading 
+    loading
   } = useTeam();
   const [processingInvitations, setProcessingInvitations] = useState(new Set());
   const [successMessage, setSuccessMessage] = useState('');
@@ -35,32 +37,32 @@ export function InvitationNotificationModal({
 
   const handleAcceptInvitation = async (invitation) => {
     if (processingInvitations.has(invitation.id)) return;
-    
+
     setProcessingInvitations(prev => new Set([...prev, invitation.id]));
-    
+
     try {
       const result = await acceptTeamInvitation(invitation.id);
-      
+
       if (result.success) {
-        setSuccessMessage(`Successfully joined ${invitation.team.name}!`);
-        
+        setSuccessMessage(t('invitationNotification.successJoined', { teamName: invitation.team.name }));
+
         // Refresh team data and set the newly joined team as current
         try {
           const refreshedTeams = await getUserTeams();
-          
+
           // Find and set the newly joined team as current
           if (refreshedTeams && refreshedTeams.length > 0) {
             const newTeam = refreshedTeams.find(team => team.id === invitation.teamId);
             if (newTeam) {
               await switchCurrentTeam(newTeam.id);
-              
+
               // Refresh club memberships to ensure hasClubs is updated
               try {
                 await getClubMemberships();
               } catch (clubError) {
                 console.error('Error refreshing club memberships:', clubError);
               }
-              
+
               // Load team players for the newly joined team
               try {
                 await getTeamPlayers(newTeam.id);
@@ -72,9 +74,9 @@ export function InvitationNotificationModal({
         } catch (refreshError) {
           console.error('Error refreshing team data:', refreshError);
         }
-        
+
         onInvitationProcessed?.(invitation, 'accepted');
-        
+
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccessMessage('');
@@ -95,12 +97,12 @@ export function InvitationNotificationModal({
 
   const handleDeclineInvitation = async (invitation) => {
     if (processingInvitations.has(invitation.id)) return;
-    
+
     setProcessingInvitations(prev => new Set([...prev, invitation.id]));
-    
+
     try {
       const result = await declineTeamInvitation(invitation.id);
-      
+
       if (result.success) {
         onInvitationProcessed?.(invitation, 'declined');
       } else {
@@ -140,13 +142,13 @@ export function InvitationNotificationModal({
             <div className="flex items-center space-x-3">
               <Users className="w-6 h-6 text-blue-400" />
               <h2 className="text-xl font-semibold text-slate-100">
-                Team Invitations
+                {t('invitationNotification.title')}
               </h2>
             </div>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-200 transition-colors"
-              aria-label="Close"
+              aria-label={t('invitationNotification.closeLabel')}
             >
               ✕
             </button>
@@ -163,8 +165,9 @@ export function InvitationNotificationModal({
           )}
 
           <p className="text-slate-300 text-sm mb-6">
-            You have been invited to join {invitations.length === 1 ? 'a team' : `${invitations.length} teams`}. 
-            Choose to accept or decline each invitation below.
+            {invitations.length === 1
+              ? t('invitationNotification.inviteDescription')
+              : t('invitationNotification.inviteDescriptionPlural', { count: invitations.length })}
           </p>
 
           {/* Invitations List */}
@@ -182,11 +185,11 @@ export function InvitationNotificationModal({
                     <div className="flex items-center space-x-4 text-sm text-slate-400">
                       <div className="flex items-center space-x-1">
                         <UserCheck className="w-4 h-4" />
-                        <span>Role: {invitation.role}</span>
+                        <span>{t('invitationNotification.role', { role: invitation.role })}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
-                        <span>Expires: {formatDate(invitation.expiresAt)}</span>
+                        <span>{t('invitationNotification.expires', { date: formatDate(invitation.expiresAt) })}</span>
                       </div>
                     </div>
                   </div>
@@ -194,7 +197,7 @@ export function InvitationNotificationModal({
 
                 {invitation.invitedBy && (
                   <p className="text-sm text-slate-300 mb-3">
-                    Invited by <span className="font-medium">{invitation.invitedBy.name}</span>
+                    {t('invitationNotification.invitedBy', { name: invitation.invitedBy.name })}
                   </p>
                 )}
 
@@ -218,10 +221,10 @@ export function InvitationNotificationModal({
                     {processingInvitations.has(invitation.id) ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400"></div>
-                        Declining...
+                        {t('invitationNotification.buttons.declining')}
                       </>
                     ) : (
-                      'Decline'
+                      t('invitationNotification.buttons.decline')
                     )}
                   </Button>
                   <Button
@@ -234,10 +237,10 @@ export function InvitationNotificationModal({
                     {processingInvitations.has(invitation.id) ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Accepting...
+                        {t('invitationNotification.buttons.accepting')}
                       </>
                     ) : (
-                      'Accept'
+                      t('invitationNotification.buttons.accept')
                     )}
                   </Button>
                 </div>
@@ -248,7 +251,7 @@ export function InvitationNotificationModal({
           <div className="mt-6 pt-4 border-t border-slate-600">
             <div className="flex items-center justify-end">
               <Button onClick={onClose} variant="secondary" Icon={Clock}>
-                I'll decide later
+                {t('invitationNotification.buttons.decideLater')}
               </Button>
             </div>
           </div>

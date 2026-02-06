@@ -150,16 +150,69 @@
   },
   "matchDetails": {
     "title": "Match Details",
+    "newMatch": "New Match",
     "opponent": "Opponent",
     "opponentName": "Opponent name",
     "venue": "Venue",
     "matchType": "Match Type",
+    "type": "Type",
+    "format": "Format",
+    "formation": "Formation",
+    "periods": "Periods",
+    "periodDuration": "Period Duration",
+    "totalTime": "Total Time",
     "duration": "Duration",
     "finalScore": "Final Score",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "editMatch": "Edit Match",
+    "deleting": "Deleting...",
     "delete": "Delete Match",
-    "deleteConfirm": "Are you sure you want to delete this match from history?",
+    "deleteTitle": "Delete Match",
+    "deleteConfirm": "Are you sure you want to delete this match from history? This action cannot be undone.",
+    "deletingEllipsis": "Deleting...",
     "deleteSuccess": "Match deleted successfully",
-    "deleteError": "Failed to delete match"
+    "deleteError": "Failed to delete match",
+    "errorSaving": "Error saving changes:",
+    "errorDeleting": "Error deleting match:",
+    "loading": "Loading match details...",
+    "notFound": "Match not found",
+    "outcomes": {
+      "win": "Win",
+      "draw": "Draw",
+      "loss": "Loss"
+    },
+    "venues": {
+      "home": "Home",
+      "away": "Away",
+      "neutral": "Neutral"
+    },
+    "playerStats": {
+      "title": "Player Statistics",
+      "subtitle": "Individual player performance for this match",
+      "player": "Player",
+      "goals": "Goals",
+      "outfieldTime": "Outfield Time",
+      "defender": "Defender",
+      "midfielder": "Midfielder",
+      "attacker": "Attacker",
+      "goalkeeper": "Goalkeeper",
+      "substitute": "Substitute",
+      "startingRole": "Starting Role",
+      "captain": "Captain",
+      "fairPlay": "Fair Play",
+      "actions": "Actions",
+      "addPlayer": "Add Player",
+      "remove": "Remove",
+      "selectPlayer": "Select player",
+      "allPlayersIncluded": "All players included",
+      "exceedsMatchDuration": "Exceeds match duration",
+      "goalWarning": "Player goals ({{playerGoals}}) exceed team total ({{teamGoals}}).",
+      "roleWarning": "Starting role inconsistency: {{issues}}.",
+      "goalkeeperCountIssue": "{{count}} goalkeepers (expected 1)",
+      "outfieldCountIssue": "{{count}} outfield players (expected {{expected}} for {{format}})"
+    }
   },
   "matchSummary": {
     "scheduled": "Scheduled:",
@@ -169,18 +222,57 @@
     "tied": "Match tied"
   },
   "filters": {
+    "title": "Filter",
+    "clearAll": "Clear All",
     "all": "All",
     "timeRange": "Time Range",
     "matchType": "Match Type",
-    "venue": "Venue"
+    "type": "Type",
+    "outcome": "Outcome",
+    "venue": "Venue",
+    "opponent": "Opponent",
+    "withPlayer": "With Player",
+    "format": "Format",
+    "outcomes": {
+      "win": "Win",
+      "draw": "Draw",
+      "loss": "Loss"
+    },
+    "venues": {
+      "home": "Home",
+      "away": "Away",
+      "neutral": "Neutral"
+    }
   },
   "timeFilter": {
-    "allTime": "All Time",
+    "allTime": "All time",
     "last30Days": "Last 30 Days",
     "last3Months": "Last 3 Months",
     "last6Months": "Last 6 Months",
     "lastYear": "Last Year",
-    "custom": "Custom Range"
+    "custom": "Custom",
+    "customRange": "Custom range...",
+    "selectTimeRange": "Select Time Range",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "apply": "Apply",
+    "cancel": "Cancel",
+    "from": "From {{date}}",
+    "until": "Until {{date}}",
+    "dateRange": "{{start}} - {{end}}",
+    "invalidStartDate": "Invalid start date",
+    "invalidEndDate": "Invalid end date",
+    "startBeforeEnd": "Start date must be before end date",
+    "startDateTooFar": "Start date cannot be more than a year in the future",
+    "endDateTooFar": "End date cannot be more than a year in the future",
+    "presets": {
+      "last-30-days": "Last 30 days",
+      "last-3-months": "Last 3 months",
+      "last-6-months": "Last 6 months",
+      "last-12-months": "Last 12 months",
+      "year-to-date": "Year to Date",
+      "all-time": "All time"
+    }
   },
   "table": {
     "player": "Player",
@@ -196,5 +288,30 @@
   "empty": {
     "title": "No Data Available",
     "description": "Statistics will appear once you've played matches"
+  },
+  "screen": {
+    "title": "Statistics",
+    "loadingSubtitle": "Loading statistics...",
+    "fetchingData": "Fetching the latest data...",
+    "signInSubtitle": "Stay close to the action",
+    "signInBody": "Sign in with your parent account to explore match history, player stats, and team trends.",
+    "signIn": "Sign In",
+    "createAccount": "Create Account",
+    "selectTeamSubtitle": "Select a team to continue",
+    "noTeamSubtitle": "No team membership detected",
+    "selectTeamBody": "Choose a team from the main dashboard to view its statistics.",
+    "noTeamBody": "You need a team membership before you can view statistics. Ask a coach or admin to add you to the team.",
+    "roleUpdateSubtitle": "Role update required",
+    "roleUpdateBody": "Statistics are available for parent accounts. Ask your team administrator to upgrade your access.",
+    "tabs": {
+      "teamStats": "Team Stats",
+      "teamStatsDescription": "Team performance overview",
+      "playerMatchStats": "Player Match Stats",
+      "playerMatchStatsDescription": "Individual player match statistics",
+      "attendanceStats": "Attendance Stats",
+      "attendanceStatsDescription": "Practice attendance tracking",
+      "matchHistory": "Match History",
+      "matchHistoryDescription": "Complete match history"
+    }
   }
 }

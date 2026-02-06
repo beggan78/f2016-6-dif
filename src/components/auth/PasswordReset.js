@@ -13,7 +13,7 @@ const RESET_MODES = {
 };
 
 export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
-  const { t } = useTranslation(['auth', 'navigation']);
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -119,7 +119,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         setSuccessMessage(message);
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('auth:passwordReset.errors.unexpected') });
     }
   };
 
@@ -142,7 +142,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         setErrors({});
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('auth:passwordReset.errors.unexpected') });
     }
   };
 
@@ -161,13 +161,13 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         setErrors({ general: error.message });
       } else if (message) {
         // Customize success message based on authentication state
-        const contextMessage = user 
-          ? 'Password updated successfully. You can now continue using the app.'
-          : 'Password updated successfully. You can now sign in with your new password.';
+        const contextMessage = user
+          ? t('auth:passwordReset.update.success.messageWithUser')
+          : t('auth:passwordReset.update.success.messageWithoutUser');
         setSuccessMessage(contextMessage);
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('auth:passwordReset.errors.unexpected') });
     }
   };
 
@@ -196,10 +196,10 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         {mode !== RESET_MODES.UPDATE && (
           <div className="bg-sky-900/50 border border-sky-600 rounded-lg p-4">
             <div className="space-y-2 text-sky-200 text-sm">
-              <p>We've sent a password reset email to <strong>{email}</strong></p>
-              <p>Enter the 6-digit verification code from the email below.</p>
+              <p>{t('auth:passwordReset.code.success.sentTo')} <strong>{email}</strong></p>
+              <p>{t('auth:passwordReset.code.success.instructions')}</p>
               <p className="text-slate-400">
-                Don't see the email? Check your spam folder.
+                {t('auth:passwordReset.code.success.spamNote')}
               </p>
             </div>
           </div>
@@ -221,7 +221,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               onClick={onClose}
               className="block text-slate-400 hover:text-slate-300 text-sm transition-colors mx-auto"
             >
-              Close
+              {t('auth:passwordReset.update.success.closeButton')}
             </button>
           </div>
         ) : (
@@ -236,7 +236,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             <form onSubmit={handleCodeSubmit} className="space-y-4">
               <div>
                 <label htmlFor="reset-code" className="block text-sm font-medium text-slate-300 mb-2">
-                  6-Digit Verification Code
+                  {t('auth:passwordReset.code.form.codeLabel')}
                 </label>
                 <Input
                   id="reset-code"
@@ -251,7 +251,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                       setErrors(prev => ({ ...prev, code: null }));
                     }
                   }}
-                  placeholder="Enter 6-digit code"
+                  placeholder={t('auth:passwordReset.code.form.codePlaceholder')}
                   disabled={loading}
                   className={`text-center text-lg tracking-widest ${errors.code ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}`}
                   maxLength={6}
@@ -261,7 +261,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                   <p className="text-rose-400 text-sm mt-1">{errors.code}</p>
                 )}
                 <p className="text-slate-500 text-xs mt-1">
-                  Check your email for the 6-digit verification code
+                  {t('auth:passwordReset.code.form.codeHint')}
                 </p>
               </div>
 
@@ -289,7 +289,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                 className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
                 disabled={loading}
               >
-                Send another reset email
+                {t('auth:passwordReset.code.links.resend')}
               </button>
               
               <button
@@ -297,7 +297,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                 onClick={onClose}
                 className="block text-slate-400 hover:text-slate-300 text-sm transition-colors mx-auto"
               >
-                Close
+                {t('auth:passwordReset.code.links.close')}
               </button>
             </div>
           </div>
@@ -311,9 +311,9 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-sky-300">Reset Password</h2>
+          <h2 className="text-2xl font-bold text-sky-300">{t('auth:passwordReset.email.header.title')}</h2>
           <p className="text-slate-400 mt-2">
-            Enter your email address and we'll send you a verification code to reset your password
+            {t('auth:passwordReset.email.header.subtitle')}
           </p>
         </div>
 
@@ -326,7 +326,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         <form onSubmit={handleEmailSubmit} className="space-y-4">
           <div>
             <label htmlFor="reset-email" className="block text-sm font-medium text-slate-300 mb-2">
-              Email Address
+              {t('auth:passwordReset.email.form.emailLabel')}
             </label>
             <Input
               id="reset-email"
@@ -359,12 +359,11 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         </form>
 
         <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
-          <h4 className="text-slate-300 font-medium mb-2">What happens next?</h4>
+          <h4 className="text-slate-300 font-medium mb-2">{t('auth:passwordReset.email.info.title')}</h4>
           <ul className="text-slate-400 text-sm space-y-1">
-            <li>• We'll send a password reset email to your address</li>
-            <li>• The email contains a 6-digit verification code</li>
-            <li>• Enter the code in the verification form</li>
-            <li>• Choose a new password and confirm the change</li>
+            {t('auth:passwordReset.email.info.steps', { returnObjects: true }).map((step, index) => (
+              <li key={index}>• {step}</li>
+            ))}
           </ul>
         </div>
 
@@ -375,7 +374,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
             disabled={loading}
           >
-            {t('backTo.signIn')}
+            {t('auth:passwordReset.email.links.backToLogin')}
           </button>
         </div>
       </div>
@@ -394,9 +393,9 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-sky-300">Set New Password</h2>
+          <h2 className="text-2xl font-bold text-sky-300">{t('auth:passwordReset.update.header.title')}</h2>
           <p className="text-slate-400 mt-2">
-            Choose a strong password for your account
+            {t('auth:passwordReset.update.header.subtitle')}
           </p>
         </div>
 
@@ -409,7 +408,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
           <div>
             <label htmlFor="new-password" className="block text-sm font-medium text-slate-300 mb-2">
-              New Password
+              {t('auth:passwordReset.update.form.newPasswordLabel')}
             </label>
             <Input
               id="new-password"
@@ -432,7 +431,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
 
           <div>
             <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-300 mb-2">
-              Confirm New Password
+              {t('auth:passwordReset.update.form.confirmPasswordLabel')}
             </label>
             <Input
               id="confirm-password"
@@ -465,11 +464,11 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         </form>
 
         <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
-          <h4 className="text-slate-300 font-medium mb-2">Password Requirements:</h4>
+          <h4 className="text-slate-300 font-medium mb-2">{t('auth:passwordReset.update.requirements.title')}</h4>
           <ul className="text-slate-400 text-sm space-y-1">
-            <li>• At least 8 characters long</li>
-            <li>• Use a mix of letters, numbers, and symbols</li>
-            <li>• Avoid common passwords or personal information</li>
+            {t('auth:passwordReset.update.requirements.items', { returnObjects: true }).map((item, index) => (
+              <li key={index}>• {item}</li>
+            ))}
           </ul>
         </div>
       </div>

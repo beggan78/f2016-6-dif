@@ -98,5 +98,12 @@
     "saving": "Sparar...",
     "cancel": "Avbryt",
     "edit": "Redigera"
+  },
+  "formatting": {
+    "notAvailable": "Ej tillgängligt",
+    "invalidDate": "Ogiltigt datum",
+    "defaultUser": "Användare",
+    "unknownClub": "Okänd klubb",
+    "unknownTeam": "Okänt lag"
   }
 }

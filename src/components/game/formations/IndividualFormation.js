@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { findPlayerById } from '../../../utils/playerUtils';
 import { getFieldPositions, getSubstitutePositions, getPositionRole } from '../../../game/logic/positionUtils';
 import { supportsInactiveUsers } from '../../../constants/gameModes';
@@ -37,6 +38,9 @@ export function IndividualFormation({
   renderSection = 'all',
   ...domProps
 }) {
+  const { t } = useTranslation('game');
+  const inactiveLabel = t('formation.inactive');
+
   // Create formation-aware team config for position utilities
   const formationAwareTeamConfig = React.useMemo(() => {
     if (selectedFormation && selectedFormation !== teamConfig.formation) {
@@ -188,7 +192,7 @@ export function IndividualFormation({
                 ({incomingPositionLabel})
               </span>
             )}
-            {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
+            {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">{inactiveLabel}</span>}
           </span>
           <div className="flex space-x-1">
             {/* Primary indicators (full opacity) - only show for active players */}

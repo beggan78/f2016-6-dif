@@ -130,7 +130,9 @@
     "description": "We found match history saved locally. Would you like to sync it to your cloud account?",
     "migrating": "Migrating...",
     "migrateButton": "Migrate Data",
-    "laterButton": "Later"
+    "laterButton": "Later",
+    "failed": "Migration failed",
+    "failedWithError": "Migration failed: {{error}}"
   },
   "saveConfig": {
     "errors": {
@@ -138,6 +140,17 @@
       "failedWithMessage": "Failed to save configuration: {{error}}",
       "noMatchId": "No match ID returned from save operation"
     }
+  },
+  "positionRecommendations": {
+    "title": "Recommended Starting Positions",
+    "timeframe": "Last 6 months",
+    "loading": "Calculating position recommendations...",
+    "error": "Unable to calculate position recommendations.",
+    "description": "Fair position assignments based on recent role distribution.",
+    "noRecommendations": "No position recommendations available.",
+    "unknown": "Unknown",
+    "dismiss": "Dismiss",
+    "acceptAll": "Accept All"
   },
   "formationVoting": {
     "description": "Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted."

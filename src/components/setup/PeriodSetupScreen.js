@@ -436,9 +436,9 @@ export function PeriodSetupScreen({
         setRecommendationState(prev => ({
           ...prev,
           subPercentages: {},
-          subError: error.message || 'Failed to calculate substitute recommendations',
+          subError: error.message || t('periodSetup.substituteRecommendations.error'),
           positionData: null,
-          positionError: error.message || 'Failed to calculate position recommendations'
+          positionError: error.message || t('positionRecommendations.error')
         }));
       }
     };
@@ -457,7 +457,8 @@ export function PeriodSetupScreen({
     formation,
     teamConfig,
     modeDefinition,
-    loadTeamPreferences
+    loadTeamPreferences,
+    t
   ]);
 
   const handleDismissSubRecommendations = useCallback(() => {

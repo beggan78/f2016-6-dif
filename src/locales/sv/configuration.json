@@ -130,7 +130,9 @@
     "description": "Vi hittade matchhistorik sparad lokalt. Vill du synkronisera den till ditt molnkonto?",
     "migrating": "Migrerar...",
     "migrateButton": "Migrera Data",
-    "laterButton": "Senare"
+    "laterButton": "Senare",
+    "failed": "Migrering misslyckades",
+    "failedWithError": "Migrering misslyckades: {{error}}"
   },
   "saveConfig": {
     "errors": {
@@ -138,6 +140,17 @@
       "failedWithMessage": "Misslyckades med att spara konfiguration: {{error}}",
       "noMatchId": "Inget match-ID returnerades från sparoperationen"
     }
+  },
+  "positionRecommendations": {
+    "title": "Rekommenderade Startpositioner",
+    "timeframe": "Senaste 6 månaderna",
+    "loading": "Beräknar positionsrekommendationer...",
+    "error": "Kan inte beräkna positionsrekommendationer.",
+    "description": "Rättvisa positionstilldelningar baserat på senaste rollfördelning.",
+    "noRecommendations": "Inga positionsrekommendationer tillgängliga.",
+    "unknown": "Okänd",
+    "dismiss": "Avfärda",
+    "acceptAll": "Acceptera Alla"
   },
   "formationVoting": {
     "description": "Endast 2-2 och 1-2-1 formationerna är för närvarande implementerade. Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare per formation räknas."

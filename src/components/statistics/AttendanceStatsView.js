@@ -359,11 +359,11 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
               title={t('attendanceStats.topAttendee')}
               value={summaryStats.topAttendee
                 ? summaryStats.topAttendee.playerName
-                : 'N/A'
+                : t('attendanceStats.noData')
               }
               subtitle={summaryStats.topAttendee
                 ? `${summaryStats.topAttendee.attendanceRate}%`
-                : 'No data'
+                : t('attendanceStats.noData')
               }
             />
           </div>

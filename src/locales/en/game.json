@@ -62,6 +62,11 @@
       "cancel": "Cancel"
     }
   },
+  "formation": {
+    "noConfig": "No team configuration available",
+    "invalidConfig": "Invalid team configuration",
+    "inactive": "(Inactive)"
+  },
   "finished": {
     "title": "Match Complete!",
     "subtitle": "Great game! Here's the summary:",
@@ -76,5 +81,22 @@
     "noGoals": "No goals scored",
     "viewReport": "View Full Report",
     "newMatch": "New Match"
+  },
+  "stats": {
+    "title": "Game Finished - Statistics",
+    "opponent": "Opponent",
+    "fairPlayAward": "Fair Play Award",
+    "notAwarded": "Not awarded",
+    "fairPlayWinner": "FAIR PLAY WINNER",
+    "savingSelection": "Saving selection...",
+    "selectionSavesAutomatically": "Selection saves automatically",
+    "matchSaved": "Match saved to history",
+    "viewMatchReport": "View Match Report",
+    "startNewGame": "Start New Game",
+    "errors": {
+      "noMatchId": "No match ID found. Please restart the match to enable saving.",
+      "signInRequired": "Please sign in to save match updates.",
+      "saveFailed": "Failed to save match updates"
+    }
   }
 }

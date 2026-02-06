@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, NotificationModal } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
+import { useTranslation } from 'react-i18next';
 import { getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
 import { planUpcomingMatch } from '../../services/matchPlanningService';
 import { useAutoSelectPreferences } from '../../hooks/useAutoSelectPreferences';
@@ -21,6 +22,7 @@ export function PlanMatchesScreen({
   removeFromNavigationStack,
   matchesToPlan = []
 }) {
+  const { t } = useTranslation('team');
   const { currentTeam, teamPlayers, loadTeamPreferences } = useTeam();
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const [showAutoSelectModal, setShowAutoSelectModal] = useState(false);
@@ -172,7 +174,7 @@ export function PlanMatchesScreen({
   }, [rosterWithStats, sortMetric]);
 
   const formatSchedule = (matchDate, matchTime) => {
-    if (!matchDate) return 'Date TBD';
+    if (!matchDate) return t('teamMatches.timestamps.dateTbd');
     if (!matchTime) return matchDate;
     const trimmed = matchTime.slice(0, 5);
     return `${matchDate} ${trimmed}`;
@@ -352,8 +354,8 @@ export function PlanMatchesScreen({
     if (selectedIds.length === 0) {
       setNotification({
         isOpen: true,
-        title: 'No players selected',
-        message: 'Select players before planning this match.'
+        title: t('planMatches.notifications.noPlayersTitle'),
+        message: t('planMatches.notifications.noPlayersMessage')
       });
       return;
     }
@@ -386,8 +388,8 @@ export function PlanMatchesScreen({
       });
       setNotification({
         isOpen: true,
-        title: 'Match planned',
-        message: result.warning || 'Pending match created.'
+        title: t('planMatches.notifications.matchPlanned'),
+        message: result.warning || t('planMatches.notifications.pendingCreated')
       });
     } else {
       setPlanningStatus((prev) => ({
@@ -396,8 +398,8 @@ export function PlanMatchesScreen({
       }));
       setNotification({
         isOpen: true,
-        title: 'Planning failed',
-        message: result.error || 'Failed to plan match.'
+        title: t('planMatches.notifications.planningFailed'),
+        message: result.error || t('planMatches.notifications.planningFailedMessage')
       });
     }
   };
@@ -406,13 +408,13 @@ export function PlanMatchesScreen({
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Plan Matches</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('planMatches.title')}</h1>
           <Button onClick={onNavigateBack} variant="secondary" size="sm">
-            Back
+            {t('planMatches.back')}
           </Button>
         </div>
         <div className="bg-slate-700 rounded-lg border border-slate-600 p-6 text-slate-300 text-sm">
-          Team context required.
+          {t('planMatches.teamRequired')}
         </div>
       </div>
     );
@@ -422,13 +424,13 @@ export function PlanMatchesScreen({
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Plan Matches</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('planMatches.title')}</h1>
           <Button onClick={onNavigateBack} variant="secondary" size="sm">
-            Back
+            {t('planMatches.back')}
           </Button>
         </div>
         <div className="bg-slate-700 rounded-lg border border-slate-600 p-6 text-slate-300 text-sm">
-          No matches selected.
+          {t('planMatches.noMatches')}
         </div>
       </div>
     );
@@ -438,10 +440,10 @@ export function PlanMatchesScreen({
     <div className="space-y-4 lg:space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-sky-300">Plan Matches</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('planMatches.title')}</h1>
         </div>
         <Button onClick={onNavigateBack} variant="secondary" size="sm">
-          Back
+          {t('planMatches.back')}
         </Button>
       </div>
 

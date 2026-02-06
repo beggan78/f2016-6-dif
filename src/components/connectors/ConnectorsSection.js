@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { Link, Info, Plus } from 'lucide-react';
 import { ConnectorCard } from './ConnectorCard';
@@ -15,6 +16,7 @@ import {
 } from '../../constants/connectorProviders';
 
 export function ConnectorsSection({ team }) {
+  const { t } = useTranslation('connectors');
   const { isTeamAdmin } = useTeam();
   const {
     connectors,
@@ -90,7 +92,7 @@ export function ConnectorsSection({ team }) {
   useEffect(() => {
     if (successMessage) {
       // Use longer timeout for verification messages
-      const timeout = successMessage.includes('Verification in progress') ? 10000 : 5000;
+      const timeout = successMessage.includes('Verification') ? 10000 : 5000;
       const timer = setTimeout(() => {
         setSuccessMessage('');
       }, timeout);
@@ -132,11 +134,11 @@ export function ConnectorsSection({ team }) {
         console.log(successLogMessage);
       } else {
         console.warn('Failed to trigger scraper workflow, will run on schedule:', response.message);
-        setNoticeMessage('Immediate sync failed, will run on schedule.');
+        setNoticeMessage(t('connectorsSection.immediateSyncFailed'));
       }
     }).catch(err => {
       console.warn('Error triggering scraper workflow:', err);
-      setNoticeMessage('Immediate sync failed, will run on schedule.');
+      setNoticeMessage(t('connectorsSection.immediateSyncFailed'));
     });
   };
 
@@ -145,7 +147,7 @@ export function ConnectorsSection({ team }) {
     try {
       await connectProvider(CONNECTOR_PROVIDERS.SPORTADMIN.id, credentials);
       setShowConnectModal(false);
-      setSuccessMessage('SportAdmin connected successfully! Verification in progress (takes up to 5 minutes)...');
+      setSuccessMessage(t('connectorsSection.connectedSuccess'));
 
       // Trigger immediate scraper run for verification (non-blocking)
       triggerImmediateSync('Scraper workflow triggered for verification');
@@ -159,7 +161,7 @@ export function ConnectorsSection({ team }) {
   const handleManualSync = async (connectorId) => {
     try {
       await manualSync(connectorId);
-      setSuccessMessage('Sync started successfully!');
+      setSuccessMessage(t('connectorsSection.syncStarted'));
 
       // Trigger immediate scraper run (non-blocking)
       triggerImmediateSync('Scraper workflow triggered for manual sync');
@@ -181,7 +183,7 @@ export function ConnectorsSection({ team }) {
       await disconnectProvider(selectedConnector.id);
       setShowDisconnectModal(false);
       setSelectedConnector(null);
-      setSuccessMessage('Provider disconnected successfully!');
+      setSuccessMessage(t('connectorsSection.disconnectedSuccess'));
     } catch (err) {
       // Error will be shown in modal
       throw err;
@@ -192,7 +194,7 @@ export function ConnectorsSection({ team }) {
   const handleRetry = async (connectorId) => {
     try {
       await retryConnector(connectorId);
-      setSuccessMessage('Retrying connection...');
+      setSuccessMessage(t('connectorsSection.retryingConnection'));
     } catch (err) {
       console.error('Retry error:', err);
     }
@@ -204,7 +206,7 @@ export function ConnectorsSection({ team }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <Link className="w-5 h-5 text-sky-400" />
-          <h4 className="text-md font-medium text-slate-300">Connectors</h4>
+          <h4 className="text-md font-medium text-slate-300">{t('connectorsSection.title')}</h4>
         </div>
       </div>
 
@@ -214,7 +216,7 @@ export function ConnectorsSection({ team }) {
           <Info className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sky-200 text-sm">
-              Connect external team management platforms to automatically sync practice attendance and match schedules.
+              {t('connectorsSection.infoBanner')}
             </p>
           </div>
         </div>
@@ -243,7 +245,7 @@ export function ConnectorsSection({ team }) {
               onClick={clearError}
               className="text-rose-300 hover:text-rose-100 text-xs underline"
             >
-              Dismiss
+              {t('connectorsSection.dismiss')}
             </button>
           </div>
         </div>
@@ -253,14 +255,14 @@ export function ConnectorsSection({ team }) {
       {loading && connectors.length === 0 && (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin h-6 w-6 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="ml-3 text-slate-300">Loading connectors...</span>
+          <span className="ml-3 text-slate-300">{t('connectorsSection.loadingConnectors')}</span>
         </div>
       )}
 
       {/* Connected Providers */}
       {connectors.length > 0 && (
         <div className="space-y-4">
-          <h5 className="text-sm font-medium text-slate-400">Connected Providers</h5>
+          <h5 className="text-sm font-medium text-slate-400">{t('connectorsSection.connectedProviders')}</h5>
           {connectors.map((connector) => (
             <ConnectorCard
               key={connector.id}
@@ -277,7 +279,7 @@ export function ConnectorsSection({ team }) {
 
       {/* Available Providers */}
       <div className="space-y-4">
-        <h5 className="text-sm font-medium text-slate-400">Available Providers</h5>
+        <h5 className="text-sm font-medium text-slate-400">{t('connectorsSection.availableProviders')}</h5>
         <div className="grid grid-cols-1 gap-4">
           {allProviders.map((provider) => {
             const isConnected = connectedProviderIds.includes(provider.id);
@@ -301,7 +303,7 @@ export function ConnectorsSection({ team }) {
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     {isConnected && (
                       <span className="px-2 py-1 bg-emerald-600 text-emerald-100 rounded text-xs font-medium">
-                        Connected
+                        {t('connectorsSection.connected')}
                       </span>
                     )}
                     {isComingSoon && (
@@ -315,7 +317,7 @@ export function ConnectorsSection({ team }) {
                         className="shrink-0"
                         Icon={Plus}
                       >
-                        Connect
+                        {t('connectorsSection.connect')}
                       </Button>
                     )}
                   </div>

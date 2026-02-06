@@ -758,8 +758,8 @@ export function ScoreManagerModal({
         const scorerId = goalScorers[event.id] || event.data?.scorerId;
         const scorerName = scorerId && getPlayerName ? getPlayerName(scorerId) : null;
         const scorerLabel = allowScorerSelection
-          ? (scorerName || 'Unknown scorer')
-          : 'Scorer not tracked';
+          ? (scorerName || t('scoreManager.unknownScorer'))
+          : t('scoreManager.scorerNotTracked');
         
         return {
           ...event,
@@ -772,7 +772,7 @@ export function ScoreManagerModal({
       .sort((a, b) => a.timestamp - b.timestamp);
     
     return goals;
-  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime, allowScorerSelection]);
+  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime, allowScorerSelection, t]);
 
   const handleClose = () => {
     onCancel();

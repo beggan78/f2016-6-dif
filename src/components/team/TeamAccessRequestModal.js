@@ -109,7 +109,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     const result = await approveTeamAccess(requestId, role);
     if (result) {
       await loadPendingRequests();
-      onSuccess?.('Request approved successfully');
+      onSuccess?.(t('accessRequestModal.success.requestApproved'));
     }
   };
 
@@ -136,7 +136,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     const result = await removeTeamMember(teamUserId);
     if (result) {
       await loadTeamMembers();
-      onSuccess?.('Member removed from team');
+      onSuccess?.(t('accessRequestModal.manage.members.removed'));
     }
   };
 
@@ -146,9 +146,9 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
     <div className="space-y-4">
       <div className="text-center mb-6">
         <Users className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-sky-300">Request Team Access</h3>
+        <h3 className="text-lg font-semibold text-sky-300">{t('accessRequestModal.request.header.title')}</h3>
         <p className="text-slate-400 text-sm mt-2">
-          Request to join <strong>{team?.club?.long_name ? `${team.club.long_name} ${team.name}` : team?.name}</strong>
+          {t('accessRequestModal.request.header.subtitle')} <strong>{team?.club?.long_name ? `${team.club.long_name} ${team.name}` : team?.name}</strong>
         </p>
       </div>
 
@@ -163,9 +163,9 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
           <div className="flex items-center gap-3">
             <Clock className="h-5 w-5 text-amber-600" />
             <div>
-              <p className="text-amber-100 font-medium">Request Pending</p>
+              <p className="text-amber-100 font-medium">{t('accessRequestModal.request.warnings.pendingTitle')}</p>
               <p className="text-amber-200 text-sm">
-                You already have a pending request for this team
+                {t('accessRequestModal.request.warnings.pendingMessage')}
               </p>
             </div>
           </div>
@@ -175,52 +175,52 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         <>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Requested Role *
+              {t('accessRequestModal.request.form.roleLabel')}
             </label>
             <Select
               value={requestForm.role}
               onChange={(value) => setRequestForm(prev => ({ ...prev, role: value }))}
               options={[
-                { value: 'coach', label: 'Coach' },
-                { value: 'parent', label: 'Parent' },
-                { value: 'admin', label: 'Admin' }
+                { value: 'coach', label: t('accessRequestModal.request.form.roles.coach') },
+                { value: 'parent', label: t('accessRequestModal.request.form.roles.parent') },
+                { value: 'admin', label: t('accessRequestModal.request.form.roles.admin') }
               ]}
             />
             <p className="text-slate-500 text-xs mt-1">
-              The team coach will review and assign your final role
+              {t('accessRequestModal.request.form.roleHint')}
             </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Message to Team Coach
+              {t('accessRequestModal.request.form.messageLabel')}
             </label>
             <textarea
               value={requestForm.message}
               onChange={(e) => setRequestForm(prev => ({ ...prev, message: e.target.value }))}
-              placeholder="Introduce yourself and explain why you'd like to join this team..."
+              placeholder={t('accessRequestModal.request.form.messagePlaceholder')}
               className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none"
               rows={4}
               maxLength={500}
             />
             <p className="text-slate-500 text-xs mt-1">
-              {requestForm.message.length}/500 characters
+              {t('accessRequestModal.request.form.characterCount', { count: requestForm.message.length })}
             </p>
           </div>
 
           <div className="flex justify-between">
-            <Button 
-              onClick={onClose} 
+            <Button
+              onClick={onClose}
               variant="secondary"
             >
-              Cancel
+              {t('accessRequestModal.request.buttons.cancel')}
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmitRequest}
               disabled={loading || !requestForm.role}
               Icon={loading ? null : MessageSquare}
             >
-              {loading ? 'Sending...' : 'Send Request'}
+              {loading ? t('accessRequestModal.request.buttons.sending') : t('accessRequestModal.request.buttons.sendRequest')}
             </Button>
           </div>
         </>
@@ -229,11 +229,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
       {/* Show Close button after successful submission */}
       {successMessage && (
         <div className="flex justify-center mt-4">
-          <Button 
-            onClick={onClose} 
+          <Button
+            onClick={onClose}
             variant="primary"
           >
-            Close
+            {t('accessRequestModal.request.buttons.close')}
           </Button>
         </div>
       )}
@@ -241,7 +241,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
       {/* Show user's previous requests */}
       {userRequests.length > 0 && (
         <div className="mt-6 pt-6 border-t border-slate-600">
-          <h4 className="font-medium text-slate-200 mb-3">Your Requests</h4>
+          <h4 className="font-medium text-slate-200 mb-3">{t('accessRequestModal.request.yourRequests.title')}</h4>
           <div className="space-y-2">
             {userRequests.map((request) => (
               <div key={request.id} className="p-3">
@@ -258,10 +258,10 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                         {request.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
                         {request.status === 'approved' && <CheckCircle className="h-3 w-3 mr-1" />}
                         {request.status === 'rejected' && <XCircle className="h-3 w-3 mr-1" />}
-                        {request.status}
+                        {t(`accessRequestModal.request.status.${request.status}`)}
                       </span>
                       <span className="text-sm text-slate-400">
-                        Role: {request.requested_role}
+                        {t('accessRequestModal.request.yourRequests.role', { role: request.requested_role })}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
@@ -275,7 +275,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                       onClick={() => handleCancelRequest(request.id)}
                       disabled={loading}
                     >
-                      Cancel
+                      {t('accessRequestModal.request.yourRequests.cancel')}
                     </Button>
                   )}
                 </div>
@@ -286,7 +286,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                 )}
                 {request.review_notes && (
                   <p className="text-sm text-slate-400 mt-2 p-2 bg-slate-600 rounded">
-                    <strong>Review:</strong> {request.review_notes}
+                    <strong>{t('accessRequestModal.request.yourRequests.reviewLabel')}</strong> {request.review_notes}
                   </p>
                 )}
               </div>
@@ -302,29 +302,29 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
       <div className="text-center mb-6">
         <UserCheck className="h-8 w-8 text-sky-400 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-sky-300">
-          Manage Team Requests
-          {isTeamAdmin && <span className="text-xs bg-emerald-600 text-emerald-100 px-2 py-1 rounded-full ml-2">Admin</span>}
-          {isCoach && !isTeamAdmin && <span className="text-xs bg-sky-600 text-sky-100 px-2 py-1 rounded-full ml-2">Coach</span>}
+          {t('accessRequestModal.manage.header.title')}
+          {isTeamAdmin && <span className="text-xs bg-emerald-600 text-emerald-100 px-2 py-1 rounded-full ml-2">{t('accessRequestModal.manage.header.badgeAdmin')}</span>}
+          {isCoach && !isTeamAdmin && <span className="text-xs bg-sky-600 text-sky-100 px-2 py-1 rounded-full ml-2">{t('accessRequestModal.manage.header.badgeCoach')}</span>}
         </h3>
         <p className="text-slate-400 text-sm mt-2">
-          Review access requests for <strong>{team?.name}</strong>
-          {isTeamAdmin && <span className="block text-xs mt-1">You have full admin privileges for this team</span>}
+          {t('accessRequestModal.manage.header.subtitle')} <strong>{team?.name}</strong>
+          {isTeamAdmin && <span className="block text-xs mt-1">{t('accessRequestModal.manage.header.adminPrivileges')}</span>}
         </p>
       </div>
 
       {pendingRequests.length === 0 ? (
         <div className="text-center py-8">
           <CheckCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-400">No pending requests</p>
+          <p className="text-slate-400">{t('accessRequestModal.manage.empty.title')}</p>
           <p className="text-slate-500 text-sm mt-2">
-            New team access requests will appear here
+            {t('accessRequestModal.manage.empty.description')}
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3 mb-4">
             <p className="text-xs text-slate-400">
-              📧 Email addresses are shown to help identify requesters and are only visible to team administrators.
+              {t('accessRequestModal.manage.privacyNotice')}
             </p>
           </div>
           {pendingRequests.map((request) => (
@@ -333,7 +333,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                 <div className="flex items-start justify-between">
                   <div>
                     <h4 className="font-medium text-slate-100">
-                      {request.user.name || 'Unnamed User'}
+                      {request.user.name || t('accessRequestModal.manage.request.unnamedUser')}
                     </h4>
                     {request.user_email && (
                       <p className="text-sm text-slate-400 mt-0.5">
@@ -341,22 +341,22 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                       </p>
                     )}
                     <p className="text-sm text-slate-400 mt-1">
-                      Requested role: <strong>{request.requested_role}</strong>
+                      {t('accessRequestModal.manage.request.requestedRole')} <strong>{request.requested_role}</strong>
                     </p>
                     <p className="text-xs text-slate-500 mt-1">
-                      {new Date(request.created_at).toLocaleDateString()} at{' '}
+                      {new Date(request.created_at).toLocaleDateString()} {t('accessRequestModal.manage.request.atTime')}{' '}
                       {new Date(request.created_at).toLocaleTimeString()}
                     </p>
                   </div>
                   <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
                     <Clock className="h-3 w-3 mr-1" />
-                    Pending
+                    {t('accessRequestModal.manage.request.statusPending')}
                   </span>
                 </div>
 
                 {request.message && (
                   <div className="p-3 bg-slate-700 rounded-lg">
-                    <p className="text-sm text-slate-200 font-medium mb-1">Message:</p>
+                    <p className="text-sm text-slate-200 font-medium mb-1">{t('accessRequestModal.manage.request.messageLabel')}</p>
                     <p className="text-sm text-slate-300">"{request.message}"</p>
                   </div>
                 )}
@@ -365,11 +365,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => handleRejectRequest(request.id, 'Request declined by team coach')}
+                    onClick={() => handleRejectRequest(request.id, t('accessRequestModal.manage.buttons.rejectReason'))}
                     disabled={loading}
                     Icon={XCircle}
                   >
-                    Reject
+                    {t('accessRequestModal.manage.buttons.reject')}
                   </Button>
                   <Button
                     size="sm"
@@ -377,7 +377,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                     disabled={loading}
                     Icon={CheckCircle}
                   >
-                    Approve as {request.requested_role}
+                    {t('accessRequestModal.manage.buttons.approve', { role: request.requested_role })}
                   </Button>
                 </div>
               </div>
@@ -391,12 +391,12 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         <div className="mt-8 pt-6 border-t border-slate-600">
           <h4 className="font-medium text-slate-200 mb-4 flex items-center">
             <Users className="h-4 w-4 mr-2" />
-            Team Members ({teamMembers.length})
+            {t('accessRequestModal.manage.members.title', { count: teamMembers.length })}
           </h4>
           
           {teamMembers.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-slate-400">No team members found</p>
+              <p className="text-slate-400">{t('accessRequestModal.manage.members.empty')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -413,10 +413,10 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                             ? 'bg-sky-100 text-sky-800'
                             : 'bg-slate-100 text-slate-800'
                         }`}>
-                          {member.role}
+                          {t(`roleManagement.roles.${member.role}`, { defaultValue: member.role })}
                         </span>
                         <span className="text-xs text-slate-500">
-                          Joined {new Date(member.created_at).toLocaleDateString()}
+                          {t('accessRequestModal.manage.members.joined', { date: new Date(member.created_at).toLocaleDateString() })}
                         </span>
                       </div>
                     </div>
@@ -427,9 +427,9 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                         variant="danger"
                         onClick={() => handleRemoveMember(member.id)}
                         disabled={loading || member.role === 'admin'}
-                        title={member.role === 'admin' ? 'Cannot remove admin' : 'Remove member'}
+                        title={member.role === 'admin' ? t('accessRequestModal.manage.members.cannotRemoveAdmin') : t('accessRequestModal.manage.members.removeMember')}
                       >
-                        Remove
+                        {t('accessRequestModal.manage.members.remove')}
                       </Button>
                     </div>
                   </div>
@@ -449,11 +449,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
   const tabs = [
     ...(canManageTeam ? [{ 
       id: 'manage', 
-      label: isTeamAdmin ? 'Team Management' : 'Manage Requests', 
+      label: isTeamAdmin ? t('accessRequestModal.tabs.teamManagement') : t('accessRequestModal.tabs.manageRequests'),
       count: pendingRequests.length 
     }] : []),
     // Only show request tab if not in standalone mode (meaning user is not already a team member)
-    ...(!isStandaloneMode ? [{ id: 'request', label: 'Request Access', count: null }] : [])
+    ...(!isStandaloneMode ? [{ id: 'request', label: t('accessRequestModal.tabs.request'), count: null }] : [])
   ];
 
   return (
@@ -461,7 +461,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
       <div className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b border-slate-700">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-sky-300">Team Access</h2>
+            <h2 className="text-xl font-semibold text-sky-300">{t('accessRequestModal.header.title')}</h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-200 transition-colors"

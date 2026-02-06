@@ -1,9 +1,11 @@
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PlayerChip } from './PlayerChip';
 import { SoccerBallChip } from './SoccerBallChip';
 import { AVAILABLE_COLORS, SOCCER_BALL_VARIATIONS } from '../../config/tacticalBoardConfig';
 
 export function ChipPalette({ onDragStart, isDragging, isInteractionDisabled = false }) {
+  const { t } = useTranslation('tactical');
   
   const handlePlayerChipPointerStart = useCallback((color, event) => {
     if (!onDragStart || isInteractionDisabled) return;
@@ -58,8 +60,8 @@ export function ChipPalette({ onDragStart, isDragging, isInteractionDisabled = f
       <div className="border-t border-slate-700 pt-4 mt-4">
         <p className="text-xs text-slate-400 text-center">
           {isInteractionDisabled
-            ? 'Switch back to Drag mode to add or move chips.'
-            : 'Drag chips onto the pitch • Double-tap to delete'}
+            ? t('palette.drawModeHint')
+            : t('palette.dragInstruction')}
         </p>
       </div>
     </div>

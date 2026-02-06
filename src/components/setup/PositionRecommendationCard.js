@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { POSITION_CONFIG } from '../../constants/positionConfig';
 
@@ -27,6 +28,7 @@ export function PositionRecommendationCard({
   loading,
   error
 }) {
+  const { t } = useTranslation('configuration');
   const hasRecommendations = recommendations?.recommendations &&
                              Object.keys(recommendations.recommendations).length > 0;
 
@@ -36,18 +38,18 @@ export function PositionRecommendationCard({
       className="p-2 bg-slate-700 rounded-lg space-y-2"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-sky-200">Recommended Starting Positions</h3>
-        <span className="text-xs text-slate-300">Last 6 months</span>
+        <h3 className="text-sm font-medium text-sky-200">{t('positionRecommendations.title')}</h3>
+        <span className="text-xs text-slate-300">{t('positionRecommendations.timeframe')}</span>
       </div>
 
       {loading ? (
-        <p className="text-xs text-slate-300">Calculating position recommendations...</p>
+        <p className="text-xs text-slate-300">{t('positionRecommendations.loading')}</p>
       ) : error ? (
-        <p className="text-xs text-rose-300">Unable to calculate position recommendations.</p>
+        <p className="text-xs text-rose-300">{t('positionRecommendations.error')}</p>
       ) : hasRecommendations ? (
         <>
           <p className="text-xs text-slate-300">
-            Fair position assignments based on recent role distribution.
+            {t('positionRecommendations.description')}
           </p>
           <ul className="space-y-1" data-testid="position-recommendations-list">
             {Object.entries(recommendations.recommendations).map(([position, data]) => {
@@ -59,7 +61,7 @@ export function PositionRecommendationCard({
                   key={position}
                   className="flex items-center justify-between rounded-md bg-slate-800/60 px-2 py-1 text-sm text-slate-100"
                 >
-                  <span>{positionConfig.title}: {player?.displayName || 'Unknown'}</span>
+                  <span>{positionConfig.title}: {player?.displayName || t('positionRecommendations.unknown')}</span>
                   <span className="text-xs text-slate-300">{data.reason}</span>
                 </li>
               );
@@ -67,7 +69,7 @@ export function PositionRecommendationCard({
           </ul>
         </>
       ) : (
-        <p className="text-xs text-slate-300">No position recommendations available.</p>
+        <p className="text-xs text-slate-300">{t('positionRecommendations.noRecommendations')}</p>
       )}
 
       <div className="flex items-center justify-end space-x-2 pt-1">
@@ -75,14 +77,14 @@ export function PositionRecommendationCard({
           variant="secondary"
           onClick={onDismiss}
         >
-          Dismiss
+          {t('positionRecommendations.dismiss')}
         </Button>
         <Button
           variant="accent"
           onClick={onAccept}
           disabled={loading || !hasRecommendations}
         >
-          Accept All
+          {t('positionRecommendations.acceptAll')}
         </Button>
       </div>
     </div>

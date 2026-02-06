@@ -16,23 +16,27 @@ import { AnonymousAlert } from './AnonymousAlert';
  * @param {Function} props.onAuthRequired - Callback when authentication is required
  * @returns {React.ReactNode}
  */
-export function AuthGuard({ 
-  children, 
-  fallback, 
-  feature = "this feature",
-  description = "Sign in to access enhanced features and save your data across devices.",
+export function AuthGuard({
+  children,
+  fallback,
+  feature,
+  description,
   requireProfile = false,
   onAuthRequired,
   authModal
 }) {
+  const { t } = useTranslation('auth');
   const { isAuthenticated, hasValidProfile, loading } = useAuth();
   const resolvedAuthModal = useAuthModalIntegration(authModal);
-  
+
+  const effectiveFeature = feature || t('authGuard.defaultFeature');
+  const effectiveDescription = description || t('authGuard.defaultDescription');
+
   // Show loading state during auth check
   if (loading) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="text-slate-400">Loading...</div>
+        <div className="text-slate-400">{t('authGuard.loading')}</div>
       </div>
     );
   }
@@ -53,8 +57,8 @@ export function AuthGuard({
     
     return (
       <AnonymousAlert
-        feature={feature}
-        description={description}
+        feature={effectiveFeature}
+        description={effectiveDescription}
         requireProfile={requireProfile && isAuthenticated}
         authModal={resolvedAuthModal}
       />

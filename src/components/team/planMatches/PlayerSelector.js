@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Ban } from 'lucide-react';
 import { Tooltip } from '../../shared';
+import { useTranslation } from 'react-i18next';
 
 export function PlayerSelector({
   players,
@@ -13,13 +14,14 @@ export function PlayerSelector({
   practicesTooltip,
   emptyMessage
 }) {
+  const { t } = useTranslation('team');
   const selectedSet = useMemo(() => new Set(selectedIds || []), [selectedIds]);
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
 
   if (!players || players.length === 0) {
     return (
       <div className="rounded border border-slate-700 bg-slate-900/30 px-2 py-2 text-xs text-slate-400">
-        {emptyMessage || 'No roster players.'}
+        {emptyMessage || t('planMatches.playerSelector.noPlayers')}
       </div>
     );
   }
@@ -77,8 +79,8 @@ export function PlayerSelector({
                       ? 'text-rose-200 hover:text-rose-100'
                       : 'text-slate-400 hover:text-rose-200'
                   }`}
-                  title={isUnavailable ? 'Mark available' : 'Mark unavailable'}
-                  aria-label={isUnavailable ? 'Mark available' : 'Mark unavailable'}
+                  title={isUnavailable ? t('planMatches.playerSelector.markAvailable') : t('planMatches.playerSelector.markUnavailable')}
+                  aria-label={isUnavailable ? t('planMatches.playerSelector.markAvailable') : t('planMatches.playerSelector.markUnavailable')}
                 >
                   <Ban className="h-3.5 w-3.5" />
                 </button>

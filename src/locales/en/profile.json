@@ -98,5 +98,12 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "edit": "Edit"
+  },
+  "formatting": {
+    "notAvailable": "N/A",
+    "invalidDate": "Invalid date",
+    "defaultUser": "User",
+    "unknownClub": "Unknown club",
+    "unknownTeam": "Unknown team"
   }
 }
