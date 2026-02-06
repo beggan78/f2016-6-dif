@@ -1,27 +1,10 @@
 {
-  "menu": {
-    "home": "Home",
-    "configure": "Configure",
-    "statistics": "Statistics",
-    "team": "Team",
-    "profile": "Profile",
-    "settings": "Settings",
-    "signOut": "Sign Out"
-  },
-  "modals": {
-    "preferences": {
-      "title": "Preferences",
-      "close": "Close"
-    },
-    "featureVote": {
-      "title": "Vote for Features",
-      "close": "Close"
-    },
-    "goalScorer": {
-      "title": "Who Scored?",
-      "selectPlayer": "Select Player",
-      "cancel": "Cancel"
-    }
+  "multiSelect": {
+    "allSelected": "All selected",
+    "selected": "selected",
+    "noOptions": "No options available",
+    "clearSelection": "Clear selection",
+    "done": "Done"
   },
   "badges": {
     "comingSoon": "Coming Soon",
@@ -31,5 +14,8 @@
   "loading": "Loading...",
   "error": "An error occurred",
   "retry": "Retry",
-  "close": "Close"
+  "close": "Close",
+  "ok": "OK",
+  "back": "Back",
+  "inactive": "Inactive"
 }

@@ -24,10 +24,92 @@
     "addTemporary": "Lägg Till Tillfällig Spelare",
     "cancel": "Avbryt"
   },
+  "addTemporaryPlayer": {
+    "title": "Lägg Till Tillfällig Spelare",
+    "description": "Denna spelare kommer endast att synas i nuvarande match och läggs inte till i laguppsättningen.",
+    "playerNameLabel": "Spelarnamn",
+    "playerNamePlaceholder": "Ange spelarnamn",
+    "cancel": "Avbryt",
+    "addPlayer": "Lägg Till Spelare"
+  },
   "goalScorer": {
     "title": "Vem Gjorde Mål?",
     "selectPlayer": "Välj spelaren som gjorde mål",
     "noPlayers": "Inga tillgängliga spelare",
+    "cancel": "Avbryt",
+    "correctGoalScorer": "Korrigera Målskytt",
+    "goalInformation": "Målinformation",
+    "goalAt": "Mål vid {{time}}",
+    "scoredGoalAt": "Gjort mål vid {{time}}",
+    "concededGoalAt": "Insläppt mål vid {{time}}",
+    "updateScorer": "Uppdatera Målskytt",
+    "confirmScorer": "Bekräfta Målskytt",
+    "currentScorer": "Nuvarande Målskytt",
+    "noScorerRecorded": "Ingen målskytt registrerad",
+    "selectNewScorer": "Välj Ny Målskytt:",
+    "selectScorer": "Välj Målskytt:",
+    "noSpecificScorer": "Ingen specifik målskytt",
+    "goalDetails": "Måldetaljer:",
+    "team": "Lag",
+    "scored": "Gjort",
+    "conceded": "Insläppt",
+    "time": "Tid",
+    "period": "Period",
+    "scorer": "Målskytt",
+    "unknown": "Okänd",
+    "readOnlyNotice": "Denna målinformation är skrivskyddad. Använd korrigeringsläge för att göra ändringar."
+  },
+  "fieldPlayer": {
+    "title": "Alternativ för Fältspelare",
+    "changePositionTitle": "Byt Position",
+    "message": "Vad vill du göra med {{playerName}}?",
+    "selectPositionSwitch": "Välj vilken spelare som ska byta position med {{playerName}}:",
+    "cancel": "Avbryt",
+    "back": "Tillbaka",
+    "removeFromNext": "Ta bort från nästa byte",
+    "setToGoOffNext": "Ställ in för att gå av nästa",
+    "substituteNow": "Byt ut nu",
+    "changePosition": "Byt position",
+    "tooltipCannotModify": "Alla avbytare är inaktiva - kan inte modifiera bytesordning",
+    "tooltipCannotSetNext": "Alla avbytare är inaktiva - kan inte sätta som nästa",
+    "tooltipCannotSubstitute": "Alla avbytare är inaktiva - kan inte byta ut"
+  },
+  "substitute": {
+    "title": "Alternativ för Avbytare",
+    "changeNextPositionTitle": "Byt Nästa Position",
+    "message": "Vad vill du göra med {{playerName}}?",
+    "selectNextPosition": "Välj vilken position {{playerName}} ska ta när hen kommer in:",
+    "cancel": "Avbryt",
+    "back": "Tillbaka",
+    "changeNextPosition": "Byt nästa position",
+    "setToGoInNext": "Ställ in för att gå in nästa",
+    "putBackInRotation": "Sätt tillbaka {{playerName}} i bytesordning",
+    "takeOutOfRotation": "Ta ut {{playerName}} ur bytesordning"
+  },
+  "goalie": {
+    "title": "Byt Målvakt",
+    "message": "Välj en ny målvakt som ersätter {{goalieName}}:",
+    "cancel": "Avbryt",
+    "inactive": "(Inaktiv)"
+  },
+  "scoreEdit": {
+    "title": "Redigera Resultat",
+    "cancel": "Avbryt",
+    "saveScore": "Spara Resultat"
+  },
+  "scoreManager": {
+    "title": "Hantera Resultat",
+    "goalsScored": "Gjorda Mål",
+    "noGoalsRecorded": "Inga mål registrerade än",
+    "opponent": "Motståndare",
+    "edit": "Redigera",
+    "delete": "Ta bort",
+    "addGoal": "Lägg Till Mål",
+    "close": "Stäng"
+  },
+  "substituteSelection": {
+    "title": "Välj Avbytare",
+    "message": "Välj vilken avbytare som ska komma in för {{fieldPlayerName}}:",
     "cancel": "Avbryt"
   },
   "preferences": {

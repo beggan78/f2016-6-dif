@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { 
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 
 export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneMode = false }) {
+  const { t } = useTranslation('team');
   const {
     requestTeamAccess,
     getTeamAccessRequests,
@@ -89,7 +91,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
 
     if (result) {
       // Show persistent success banner
-      setSuccessMessage('Request submitted successfully! The team admin will review your request.');
+      setSuccessMessage(t('accessRequestModal.request.success.submitted'));
       setJustSubmitted(true);
       
       // Don't auto-close modal - let user close manually after seeing confirmation
@@ -127,7 +129,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
 
 
   const handleRemoveMember = async (teamUserId) => {
-    if (!window.confirm('Are you sure you want to remove this member from the team?')) {
+    if (!window.confirm(t('accessRequestModal.manage.members.confirmRemove'))) {
       return;
     }
     

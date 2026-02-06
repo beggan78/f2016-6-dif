@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
-import { validateSignupForm, getPasswordRequirementsText } from '../../utils/authValidation';
+import { validateSignupForm } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
 import { EmailVerificationForm } from './EmailVerificationForm';
 

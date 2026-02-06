@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Square, Pause, Play, SquarePlay, Undo2, RefreshCcw, ArrowLeft } from 'lucide-react';
 import { Button, FieldPlayerModal, SubstitutePlayerModal, GoalieModal, ScoreManagerModal, ConfirmationModal, SubstituteSelectionModal } from '../shared/UI';
 import GoalScorerModal from '../shared/GoalScorerModal';
@@ -33,11 +34,12 @@ const substitutionCountPersistence = createPersistenceManager(STORAGE_KEYS.SUBST
 
 // Animation timing constants are now imported from animationSupport
 
-const getOrdinalSuffix = (number) => {
-  if (number % 10 === 1 && number % 100 !== 11) return `${number}st`;
-  if (number % 10 === 2 && number % 100 !== 12) return `${number}nd`;
-  if (number % 10 === 3 && number % 100 !== 13) return `${number}rd`;
-  return `${number}th`;
+const getOrdinalSuffix = (number, t) => {
+  if (number === 1) return t('period.ordinal.1st');
+  if (number === 2) return t('period.ordinal.2nd');
+  if (number === 3) return t('period.ordinal.3rd');
+  if (number === 4) return t('period.ordinal.4th');
+  return t('period.ordinal.nth', { number });
 };
 
 export function GameScreen({
@@ -88,6 +90,10 @@ export function GameScreen({
   setShowNewGameModal,
   ownTeamName
 }) {
+  // Translation hook
+  const { t } = useTranslation('game');
+
+
   // Use new modular hooks
   const modalHandlers = useGameModals(pushNavigationState, removeFromNavigationStack);
   const uiState = useGameUIState();
@@ -327,10 +333,10 @@ export function GameScreen({
 
   const substitutionButtonLabel = React.useMemo(() => {
     if (substitutionCount === 1) {
-      return 'SUB 1 PLAYER';
+      return t('substitution.buttonSingle');
     }
-    return `SUB ${substitutionCount} PLAYERS`;
-  }, [substitutionCount]);
+    return t('substitution.buttonMultiple', { count: substitutionCount });
+  }, [substitutionCount, t]);
 
   // Function to get player time stats
   const getPlayerTimeStats = React.useCallback((playerId) => {
@@ -512,46 +518,46 @@ export function GameScreen({
             {/* Descriptive Text */}
             <div className={`mt-8 space-y-2 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
               <p className="text-3xl font-bold text-white drop-shadow-lg tracking-wide">
-                Start {currentPeriodNumber === 1 ? 'Match' : `${getOrdinalSuffix(currentPeriodNumber)} Period`}
+                {currentPeriodNumber === 1 ? t('startScreen.startMatch') : t('startScreen.startPeriod', { ordinal: getOrdinalSuffix(currentPeriodNumber, t) })}
               </p>
               <p className="text-center text-sky-100/70 text-lg font-medium tracking-wide drop-shadow-sm">
-                Tap to begin the period and start timers
+                {t('startScreen.instructions')}
               </p>
             </div>
-            
+
             {/* Back to Setup Button */}
             <div className={`mt-6 transition-opacity duration-[2000ms] ${isStartAnimating ? 'opacity-0' : 'opacity-100'}`}>
               <div
                 onClick={handleBackToSetup}
                 className="group relative inline-flex items-center justify-center space-x-2 px-4 py-2 cursor-pointer select-none
-                          text-sky-100/60 hover:text-sky-100/90 
+                          text-sky-100/60 hover:text-sky-100/90
                           bg-white/5 hover:bg-white/10 rounded-md
                           transform hover:scale-105 active:scale-95
                           transition-all duration-200 ease-out
                           drop-shadow-sm hover:drop-shadow-md"
               >
                 <ArrowLeft className="h-5 w-5" />
-                <span className="text-sm font-medium tracking-wide">Back to Setup</span>
+                <span className="text-sm font-medium tracking-wide">{t('startScreen.backToSetup')}</span>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <h2 className="text-xl font-semibold text-sky-300 text-center">Period {currentPeriodNumber}</h2>
+      <h2 className="text-xl font-semibold text-sky-300 text-center">{t('period.label', { number: currentPeriodNumber })}</h2>
 
-      
+
 
       {/* Timers */}
       <div className="grid grid-cols-2 gap-4 text-center">
         <div className="p-2 bg-slate-700 rounded-lg">
-          <p className="text-xs text-sky-200 mb-0.5">Match Clock</p>
+          <p className="text-xs text-sky-200 mb-0.5">{t('timers.matchClock')}</p>
           <p className={`text-2xl font-mono ${displayMatchTimerSeconds < 0 ? 'text-red-400' : 'text-sky-400'}`}>
             {displayMatchTimerSeconds < 0 ? '+' : ''}{formatTime(Math.abs(displayMatchTimerSeconds))}
           </p>
         </div>
         <div className="p-2 bg-slate-700 rounded-lg relative">
-          <p className="text-xs text-sky-200 mb-0.5">Substitution Timer</p>
+          <p className="text-xs text-sky-200 mb-0.5">{t('timers.substitutionTimer')}</p>
           <div className="relative flex items-center justify-center">
             <p className={`text-2xl font-mono ${alertMinutes > 0 && displaySubTimerSeconds >= alertMinutes * 60 ? 'text-red-400' : 'text-emerald-400'}`}>
               {formatTime(displaySubTimerSeconds)}
@@ -559,7 +565,7 @@ export function GameScreen({
             <button
               onClick={isSubTimerPaused ? timerHandlers.handleResumeTimer : timerHandlers.handlePauseTimer}
               className="absolute right-0 p-1 hover:bg-slate-600 rounded-full transition-colors duration-150 flex-shrink-0"
-              title={isSubTimerPaused ? "Resume substitution timer" : "Pause substitution timer"}
+              title={isSubTimerPaused ? t('timers.resumeTooltip') : t('timers.pauseTooltip')}
             >
               {isSubTimerPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             </button>
@@ -589,7 +595,7 @@ export function GameScreen({
             {displayOpponentTeam}
           </button>
         </div>
-        <p className="text-xs text-slate-400 mt-1">Tap team name to add goal • Hold score to edit</p>
+        <p className="text-xs text-slate-400 mt-1">{t('score.instructions')}</p>
       </div>
 
       {/* Field Players Section */}
@@ -630,7 +636,7 @@ export function GameScreen({
           Icon={RefreshCcw}
           className="flex-1"
           disabled={!canSubstitute}
-          title={canSubstitute ? "Make substitution" : "All substitutes are inactive - cannot substitute"}
+          title={canSubstitute ? t('substitution.makeSubstitution') : t('substitution.cannotSubstitute')}
         >
           {substitutionButtonLabel}
         </Button>
@@ -642,7 +648,7 @@ export function GameScreen({
               ? 'bg-slate-600 hover:bg-slate-500 text-slate-100 shadow-md cursor-pointer'
               : 'bg-slate-800 text-slate-600 cursor-not-allowed opacity-50'
           }`}
-          title={uiState.lastSubstitution ? "Undo last substitution" : "No substitution to undo"}
+          title={uiState.lastSubstitution ? t('substitution.undoTooltip') : t('substitution.undoDisabled')}
         >
           <Undo2 className="h-5 w-5" />
         </button>
@@ -672,7 +678,7 @@ export function GameScreen({
       <div className="flex flex-col gap-3 mt-4">
         {/* End Period Button */}
         <Button onClick={handleEndPeriod} Icon={Square} variant="danger" className="w-full">
-          End Period
+          {t('actions.endPeriod')}
         </Button>
       </div>
 
@@ -744,10 +750,10 @@ export function GameScreen({
         isOpen={modalHandlers.modals.undoConfirm.isOpen}
         onConfirm={handleUndoSubstitutionClick}
         onCancel={modalHandlers.closeUndoConfirmModal}
-        title="Undo Substitution"
-        message="Are you sure you want to undo the last substitution? This will reverse player positions and time tracking."
-        confirmText="Undo"
-        cancelText="Cancel"
+        title={t('substitution.undoModal.title')}
+        message={t('substitution.undoModal.message')}
+        confirmText={t('substitution.undoModal.confirm')}
+        cancelText={t('substitution.undoModal.cancel')}
         variant="warning"
       />
 

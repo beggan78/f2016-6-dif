@@ -19,7 +19,11 @@
     "opponentLabel": "Opponent Team Name",
     "opponentPlaceholder": "Enter opponent team name (optional)",
     "matchTypeLabel": "Match Type",
-    "venueLabel": "Venue"
+    "venueLabel": "Venue",
+    "opponentSuggestions": {
+      "ariaLabel": "Previous opponent suggestions",
+      "noMatches": "No previous opponents match \"{{query}}\""
+    }
   },
   "gameSettings": {
     "periodsLabel": "Number of Periods",
@@ -108,6 +112,77 @@
       "description": "Match is played on a neutral field for both teams."
     }
   },
+  "pendingMatch": {
+    "errors": {
+      "checkFailed": "Failed to check for pending matches. Please check your internet connection and try again.",
+      "title": "Failed to Check Pending Matches",
+      "retrying": "Retrying...",
+      "tryAgain": "Try Again"
+    }
+  },
+  "cloudSync": {
+    "available": "Cloud Sync Available",
+    "description": "Keep your data safe across devices",
+    "featureDescription": "Save your team, configurations and match data. Access your data from any device and unlock season statistics."
+  },
+  "dataMigration": {
+    "title": "Migrate Local Data",
+    "description": "We found match history saved locally. Would you like to sync it to your cloud account?",
+    "migrating": "Migrating...",
+    "migrateButton": "Migrate Data",
+    "laterButton": "Later"
+  },
+  "saveConfig": {
+    "errors": {
+      "failed": "Failed to save configuration",
+      "failedWithMessage": "Failed to save configuration: {{error}}",
+      "noMatchId": "No match ID returned from save operation"
+    }
+  },
+  "formationVoting": {
+    "description": "Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted."
+  },
+  "formationPreview": {
+    "formations": {
+      "2-2": {
+        "name": "2-2 Formation",
+        "description": "2 defenders, 2 attackers"
+      },
+      "1-2-1": {
+        "name": "1-2-1 Formation",
+        "description": "1 defender, 2 midfielders, 1 attacker"
+      },
+      "2-2-2": {
+        "name": "2-2-2 Formation",
+        "description": "2 defenders, 2 midfielders, 2 attackers"
+      },
+      "2-3-1": {
+        "name": "2-3-1 Formation",
+        "description": "2 defenders, 3 midfielders, 1 attacker"
+      }
+    },
+    "positions": {
+      "leftAttacker": "Left Attacker",
+      "rightAttacker": "Right Attacker",
+      "attacker": "Attacker",
+      "leftDefender": "Left Defender",
+      "rightDefender": "Right Defender",
+      "defender": "Defender",
+      "leftMid": "Left Mid",
+      "rightMid": "Right Mid",
+      "leftMidfielder": "Left Midfielder",
+      "rightMidfielder": "Right Midfielder",
+      "centerMidfielder": "Center Midfielder",
+      "goalie": "Goalie"
+    },
+    "roles": {
+      "defenders": "Defenders",
+      "defender": "Defender",
+      "attackers": "Attackers",
+      "attacker": "Attacker",
+      "midfielders": "Midfielders"
+    }
+  },
   "periodSetup": {
     "header": {
       "title": "Period {{period}} Team Selection"
@@ -170,6 +245,11 @@
       "noPlayersAvailable": "No players available for positioning.",
       "randomizeFailed": "Failed to generate random formation.",
       "alreadyAssigned": "{{playerName}} is already assigned. Choose a different player."
+    },
+    "fallbacks": {
+      "substituteTitle": "Substitute",
+      "unknownPlayer": "Unknown",
+      "selectPosition": "Select {{title}}"
     }
   }
 }

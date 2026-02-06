@@ -15,6 +15,7 @@ import enReports from './en/reports.json';
 import enConnectors from './en/connectors.json';
 import enTactical from './en/tactical.json';
 import enLive from './en/live.json';
+import enNavigation from './en/navigation.json';
 import svCommon from './sv/common.json';
 import svConfiguration from './sv/configuration.json';
 import svAuth from './sv/auth.json';
@@ -28,6 +29,7 @@ import svReports from './sv/reports.json';
 import svConnectors from './sv/connectors.json';
 import svTactical from './sv/tactical.json';
 import svLive from './sv/live.json';
+import svNavigation from './sv/navigation.json';
 
 i18n
   .use(initReactI18next)
@@ -46,7 +48,8 @@ i18n
         reports: enReports,
         connectors: enConnectors,
         tactical: enTactical,
-        live: enLive
+        live: enLive,
+        navigation: enNavigation
       },
       sv: {
         common: svCommon,
@@ -61,7 +64,8 @@ i18n
         reports: svReports,
         connectors: svConnectors,
         tactical: svTactical,
-        live: svLive
+        live: svLive,
+        navigation: svNavigation
       }
     },
     lng: 'en', // Default language

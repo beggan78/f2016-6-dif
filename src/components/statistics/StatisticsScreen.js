@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, BarChart3, Users, History, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -49,6 +50,7 @@ const getInitialTimeRange = (timeRangePersistence) => {
 };
 
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
+  const { t } = useTranslation('navigation');
   const tabPersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
     []
@@ -324,7 +326,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
         : 'You need a team membership before you can view statistics. Ask a coach or admin to add you to the team.',
       <div className="flex justify-center">
         <Button variant="secondary" onClick={onNavigateBack}>
-          Return to app
+          {t('return.toApp')}
         </Button>
       </div>
     );
@@ -336,7 +338,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
       'Statistics are available for parent accounts. Ask your team administrator to upgrade your access.',
       <div className="flex justify-center">
         <Button variant="secondary" onClick={onNavigateBack}>
-          Go back
+          {t('back')}
         </Button>
       </div>
     );
@@ -356,7 +358,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
               variant="secondary"
               size="md"
             >
-              Back
+              {t('back')}
             </Button>
             <div>
               <h2 className="text-2xl font-bold text-sky-400">Statistics</h2>

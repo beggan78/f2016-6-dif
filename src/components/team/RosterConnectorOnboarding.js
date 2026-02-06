@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { ProviderLogo } from '../connectors/ProviderLogo';
 import { getAllProviders } from '../../constants/connectorProviders';
@@ -15,6 +16,7 @@ import { ComingSoonBadge } from '../shared/ComingSoonBadge';
  * @param {Function} onNavigateToConnectors - Callback to navigate to Connectors tab
  */
 export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
+  const { t } = useTranslation('navigation');
   const providers = getAllProviders();
 
   return (
@@ -55,7 +57,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
           size="sm"
           Icon={ArrowRight}
         >
-          Go to Connectors
+          {t('goTo.connectors')}
         </Button>
       </div>
     </div>

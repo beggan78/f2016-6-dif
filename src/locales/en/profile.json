@@ -15,10 +15,88 @@
   "validation": {
     "nameRequired": "Name is required",
     "nameTooShort": "Name must be at least 2 characters",
-    "nameInvalidChars": "Name contains invalid characters"
+    "nameInvalidChars": "Name contains invalid characters. Please use only letters, numbers, spaces, hyphens, apostrophes, and periods."
   },
   "messages": {
     "updateSuccess": "Profile updated successfully!",
-    "updateError": "Failed to update profile"
+    "updateError": "Failed to update profile",
+    "unexpectedError": "An unexpected error occurred. Please try again."
+  },
+  "screen": {
+    "title": "Profile",
+    "back": "Back"
+  },
+  "personalInfo": {
+    "title": "Personal Information",
+    "fullName": "Full Name",
+    "emailAddress": "Email Address",
+    "password": "Password",
+    "namePlaceholder": "Enter your full name",
+    "readOnly": "(Read-only)",
+    "changePassword": "Change Password",
+    "passwordHint": "Regularly updating your password helps keep your account secure",
+    "emailVerified": "Email verified"
+  },
+  "accountInfo": {
+    "title": "Account Information",
+    "created": "Account Created",
+    "updated": "Last Updated",
+    "userId": "User ID",
+    "emailStatus": "Email Status",
+    "verified": "Verified",
+    "pendingVerification": "Pending verification"
+  },
+  "teamManagement": {
+    "title": "Team Management",
+    "loading": "Loading your clubs and teams...",
+    "currentTeam": "Current Team",
+    "yourClubs": "Your Clubs ({{count}})",
+    "yourTeams": "Your Teams ({{count}})",
+    "member": "Member",
+    "inactive": "Inactive",
+    "switch": "Switch",
+    "leave": "Leave",
+    "leaving": "Leaving..."
+  },
+  "emptyStates": {
+    "noClubs": {
+      "title": "No clubs yet",
+      "description": "You haven't joined any clubs yet. Create a club or join an existing club.",
+      "action": "Create or join a club"
+    },
+    "noTeams": {
+      "title": "No Teams Yet",
+      "description": "You haven't joined any teams yet. Create your first team or ask a coach to invite you.",
+      "action": "Create or Join a Team"
+    }
+  },
+  "modals": {
+    "leaveClub": {
+      "title": "Leave club",
+      "message": "Are you sure you want to leave {{clubName}}?",
+      "confirm": "Leave club"
+    },
+    "leaveTeam": {
+      "title": "Leave team",
+      "message": "Are you sure you want to leave {{teamName}}?",
+      "confirm": "Leave team"
+    },
+    "cantLeaveClub": {
+      "title": "Can't leave club",
+      "lastMember": "You're the last member of {{teamName}}. Delete the team instead?",
+      "deleteButton": "Delete Team",
+      "deletingButton": "Deleting..."
+    },
+    "cantLeaveTeam": {
+      "title": "Can't leave team",
+      "lastMember": "You're the last member of {{teamName}}. Delete the team instead?",
+      "lastAdmin": "You're the last admin of {{teamName}}. Delete the team instead?"
+    }
+  },
+  "buttons": {
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "edit": "Edit"
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, Calendar, TrendingUp, Users as UsersIcon, Award } from 'lucide-react';
 import { useTeam } from '../../contexts/TeamContext';
 import { getAttendanceStats, getTeamConnectors } from '../../services/connectorService';
@@ -30,6 +31,7 @@ const teamManagementTabCacheManager = createPersistenceManager(
 );
 
 export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
+  const { t } = useTranslation('statistics');
   const { currentTeam } = useTeam();
   const [attendanceData, setAttendanceData] = useState([]);
   const [connectors, setConnectors] = useState([]);
@@ -145,7 +147,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
     () => [
       {
         key: SORT_COLUMNS.NAME,
-        label: 'Player',
+        label: t('attendanceStats.table.player'),
         sortable: true,
         className: 'text-left font-medium',
         render: (player) => (
@@ -157,7 +159,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
       },
       {
         key: SORT_COLUMNS.PRACTICES_PER_MATCH,
-        label: 'Practices/Match',
+        label: t('attendanceStats.table.practicesPerMatch'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -168,7 +170,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
       },
       {
         key: SORT_COLUMNS.ATTENDANCE,
-        label: 'Practices attended',
+        label: t('attendanceStats.table.practicesAttended'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -177,7 +179,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
       },
       {
         key: SORT_COLUMNS.RATE,
-        label: 'Attendance rate',
+        label: t('attendanceStats.table.attendanceRate'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -186,7 +188,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
       },
       {
         key: SORT_COLUMNS.MATCHES,
-        label: 'Matches played',
+        label: t('attendanceStats.table.matchesPlayed'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -195,7 +197,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
       },
       {
         key: SORT_COLUMNS.LOAN_MATCHES,
-        label: 'Matches loaned',
+        label: t('attendanceStats.table.matchesLoaned'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -205,7 +207,7 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
         )
       }
     ],
-    []
+    [t]
   );
 
   // Use column order persistence hook
@@ -272,12 +274,12 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
 
   // Show loading state
   if (loading || connectorsLoading) {
-    return <StatsLoadingState message="Loading attendance statistics..." />;
+    return <StatsLoadingState message={t('attendanceStats.loading')} />;
   }
 
   // Show error state
   if (error) {
-    return <StatsErrorState title="Error loading attendance statistics" message={error} />;
+    return <StatsErrorState title={t('attendanceStats.error')} message={error} />;
   }
 
   // Check if team has any connected connectors
@@ -288,22 +290,22 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
     return (
       <StatsEmptyState
         icon={Calendar}
-        title="No attendance data available"
+        title={t('attendanceStats.noConnector.title')}
         message={
           <>
             <p className="text-slate-400 text-sm mb-4">
-              Set up a Connector in the Team Management Connectors tab to collect attendance data from:
+              {t('attendanceStats.noConnector.description')}
             </p>
             <ul className="text-slate-400 text-sm mb-6 space-y-1">
-              <li>SportAdmin</li>
-              <li>Svenska Lag</li>
-              <li>MyClub</li>
+              <li>{t('attendanceStats.noConnector.platforms.sportadmin')}</li>
+              <li>{t('attendanceStats.noConnector.platforms.svenskalag')}</li>
+              <li>{t('attendanceStats.noConnector.platforms.myclub')}</li>
             </ul>
           </>
         }
         actions={
           <Button onClick={handleConnectNow}>
-            Connect Now
+            {t('attendanceStats.noConnector.connectButton')}
           </Button>
         }
       />
@@ -322,8 +324,8 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
 
       {!hasAttendanceData && (
         <StatsEmptyState
-          title="No attendance data available for the selected time range"
-          message="Try adjusting the time filter or wait for the next sync."
+          title={t('attendanceStats.noDataTimeRange')}
+          message={t('attendanceStats.adjustTimeFilter')}
         />
       )}
 
@@ -333,28 +335,28 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               icon={UsersIcon}
-              title="Total Players"
+              title={t('attendanceStats.totalPlayers')}
               value={summaryStats.totalPlayers}
-              subtitle="Tracked players"
+              subtitle={t('attendanceStats.trackedPlayers')}
             />
 
             <StatCard
               icon={Calendar}
-              title="Total Practices"
+              title={t('attendanceStats.totalPractices')}
               value={summaryStats.totalPractices}
-              subtitle="In selected period"
+              subtitle={t('attendanceStats.inSelectedPeriod')}
             />
 
             <StatCard
               icon={TrendingUp}
-              title="Avg. Attendance Rate"
+              title={t('attendanceStats.avgAttendanceRate')}
               value={`${summaryStats.averageAttendanceRate}%`}
-              subtitle="Across all players"
+              subtitle={t('attendanceStats.acrossAllPlayers')}
             />
 
             <StatCard
               icon={Award}
-              title="Top Attendee"
+              title={t('attendanceStats.topAttendee')}
               value={summaryStats.topAttendee
                 ? summaryStats.topAttendee.playerName
                 : 'N/A'
@@ -375,8 +377,8 @@ export function AttendanceStatsView({ startDate, endDate, onNavigateTo }) {
             onSort={handleSort}
             renderSortIndicator={renderSortIndicator}
             headerIcon={Calendar}
-            headerTitle="Attendance Statistics"
-            headerSubtitle="Click column headers to sort or drag to reorder."
+            headerTitle={t('attendanceStats.title')}
+            headerSubtitle={t('attendanceStats.table.sortInstruction')}
             idKey="playerId"
           />
         </>

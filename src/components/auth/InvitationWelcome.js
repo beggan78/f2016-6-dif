@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -26,6 +27,7 @@ import {
  * @returns {React.ReactNode}
  */
 export function InvitationWelcome({ invitationParams, onInvitationProcessed, onRequestSignIn }) {
+  const { t } = useTranslation('auth');
   const { user, signOut, enableProfileFetchSkip, disableProfileFetchSkip } = useAuth();
   const { acceptTeamInvitation, loading, error } = useTeam();
   const [password, setPassword] = useState('');
@@ -43,7 +45,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+      setPasswordError(t('invitation.errors.passwordMismatch'));
       return;
     }
     
@@ -181,7 +183,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
     }
     
     // For custom invitations, team name isn't readily available in URL
-    return invitationContext?.teamName || 'Loading team details...';
+    return invitationContext?.teamName || t('invitation.loadingTeam');
   };
 
   const RoleIcon = getRoleIcon(invitationContext?.role);
@@ -194,8 +196,8 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
           <div className="w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <Mail className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl font-bold text-sky-300">Team Invitation</h2>
-          <p className="text-slate-400 mt-2">You've been invited to join a team!</p>
+          <h2 className="text-xl font-bold text-sky-300">{t('invitation.title')}</h2>
+          <p className="text-slate-400 mt-2">{t('invitation.subtitle')}</p>
         </div>
 
         {/* Invitation Details */}
@@ -205,15 +207,15 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               <div className="flex items-center space-x-3">
                 <Users className="w-5 h-5 text-sky-400" />
                 <div>
-                  <p className="text-slate-300 font-medium">Team</p>
+                  <p className="text-slate-300 font-medium">{t('invitation.teamLabel')}</p>
                   <p className="text-slate-400 text-sm">{getTeamName()}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <RoleIcon className="w-5 h-5 text-emerald-400" />
                 <div>
-                  <p className="text-slate-300 font-medium">Role</p>
+                  <p className="text-slate-300 font-medium">{t('invitation.roleLabel')}</p>
                   <p className="text-slate-400 text-sm">{invitationContext.displayRole}</p>
                 </div>
               </div>
@@ -228,17 +230,16 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               <div className="flex items-start space-x-2">
                 <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
                 <div>
-                  <p className="text-emerald-200 text-lg font-medium mb-2">Password Set Successfully!</p>
+                  <p className="text-emerald-200 text-lg font-medium mb-2">{t('invitation.passwordSuccess.title')}</p>
                   <p className="text-emerald-300 text-sm mb-3">
-                    Your account is ready. To complete your team invitation and ensure secure access, 
-                    please sign in with your new password.
+                    {t('invitation.passwordSuccess.message')}
                   </p>
                   <div className="bg-emerald-800/50 rounded-lg p-3 mb-3">
-                    <p className="text-emerald-200 text-sm font-medium">What happens next:</p>
+                    <p className="text-emerald-200 text-sm font-medium">{t('invitation.passwordSuccess.nextStepsTitle')}</p>
                     <ul className="text-emerald-300 text-sm mt-1 space-y-1">
-                      <li>• You'll be signed out for security</li>
-                      <li>• Sign in with: <span className="font-mono text-emerald-200">{user?.email}</span></li>
-                      <li>• Your team invitation will be processed automatically</li>
+                      <li>• {t('invitation.passwordSuccess.step1')}</li>
+                      <li>• {t('invitation.passwordSuccess.step2', { email: user?.email })}</li>
+                      <li>• {t('invitation.passwordSuccess.step3')}</li>
                     </ul>
                   </div>
                 </div>
@@ -252,7 +253,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               disabled={isProcessing}
               className="w-full"
             >
-              {isProcessing ? 'Signing you out...' : 'Continue to Sign In'}
+              {isProcessing ? t('invitation.passwordSuccess.buttonProcessing') : t('invitation.passwordSuccess.button')}
             </Button>
           </div>
         ) : invitationStatus.type === 'account_setup' && needsSetup && (
@@ -261,8 +262,8 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               <div className="flex items-start space-x-2">
                 <CheckCircle className="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sky-200 text-sm font-medium">Almost there!</p>
-                  <p className="text-sky-300 text-sm">Set up your password to complete your account and join the team.</p>
+                  <p className="text-sky-200 text-sm font-medium">{t('invitation.accountSetup.statusTitle')}</p>
+                  <p className="text-sky-300 text-sm">{t('invitation.accountSetup.statusMessage')}</p>
                 </div>
               </div>
             </div>
@@ -270,14 +271,14 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
             <form onSubmit={handlePasswordSetup} className="space-y-4">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                  Create Password
+                  {t('invitation.accountSetup.passwordLabel')}
                 </label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  placeholder={t('invitation.accountSetup.passwordPlaceholder')}
                   disabled={isProcessing}
                 />
                 <p className="text-slate-500 text-xs mt-1">
@@ -287,14 +288,14 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
 
               <div>
                 <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  Confirm Password
+                  {t('invitation.accountSetup.confirmLabel')}
                 </label>
                 <Input
                   id="confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
+                  placeholder={t('invitation.accountSetup.confirmPlaceholder')}
                   disabled={isProcessing}
                 />
               </div>
@@ -315,7 +316,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
                 disabled={isProcessing || !password || !confirmPassword}
                 className="w-full"
               >
-                {isProcessing ? 'Setting up account...' : 'Complete Account Setup'}
+                {isProcessing ? t('invitation.accountSetup.submittingButton') : t('invitation.accountSetup.submitButton')}
               </Button>
             </form>
           </div>
@@ -327,8 +328,8 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               <div className="flex items-start space-x-2">
                 <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-emerald-200 text-sm font-medium">Ready to join!</p>
-                  <p className="text-emerald-300 text-sm">Click below to accept your invitation and join the team.</p>
+                  <p className="text-emerald-200 text-sm font-medium">{t('invitation.readyToJoin.statusTitle')}</p>
+                  <p className="text-emerald-300 text-sm">{t('invitation.readyToJoin.statusMessage')}</p>
                 </div>
               </div>
             </div>
@@ -349,7 +350,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
               disabled={isProcessing || loading}
               className="w-full"
             >
-              {isProcessing || loading ? 'Joining team...' : 'Accept Invitation'}
+              {isProcessing || loading ? t('invitation.readyToJoin.processingButton') : t('invitation.readyToJoin.acceptButton')}
             </Button>
           </div>
         )}
@@ -358,12 +359,12 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
           <div className="space-y-4">
             <div className="bg-slate-700 rounded-lg p-4">
               <p className="text-slate-300 text-sm text-center">
-                Please sign in or create an account to accept this invitation.
+                {t('invitation.signInRequired.message')}
               </p>
             </div>
 
             <div className="text-center text-xs text-slate-500">
-              Close this modal to access the sign-in options
+              {t('invitation.signInRequired.closeInstruction')}
             </div>
           </div>
         )}
@@ -371,7 +372,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
         {/* Close instruction */}
         <div className="mt-6 text-center">
           <p className="text-xs text-slate-500">
-            This invitation will remain valid until you accept it or it expires.
+            {t('invitation.validity')}
           </p>
         </div>
       </div>

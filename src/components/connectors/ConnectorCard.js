@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { StatusBadge } from '../shared/StatusBadge';
 import {
@@ -36,6 +37,7 @@ const SYNC_JOB_ICON_MAP = {
 };
 
 export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, loading, latestSyncJob }) {
+  const { t } = useTranslation('connectors');
   const [isSyncing, setIsSyncing] = useState(false);
 
   const provider = getProviderById(connector.provider);
@@ -59,7 +61,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
   };
 
   const formatDateTime = (dateString) => {
-    if (!dateString) return 'Never';
+    if (!dateString) return t('connectorCard.never');
     const date = new Date(dateString);
     return date.toLocaleString('sv-SE', {
       year: 'numeric',
@@ -97,7 +99,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
         {connector.last_verified_at && (
           <div className="flex items-center text-slate-300">
             <CheckCircle className="w-4 h-4 mr-2 text-emerald-400" />
-            <span className="text-slate-400">Last verified:</span>
+            <span className="text-slate-400">{t('connectorCard.lastVerified')}</span>
             <span className="ml-2">{formatDateTime(connector.last_verified_at)}</span>
           </div>
         )}
@@ -105,7 +107,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
         {connector.last_sync_at && (
           <div className="flex items-center text-slate-300">
             <Clock className="w-4 h-4 mr-2 text-sky-400" />
-            <span className="text-slate-400">Last sync:</span>
+            <span className="text-slate-400">{t('connectorCard.lastSync')}</span>
             <span className="ml-2">{formatDateTime(connector.last_sync_at)}</span>
           </div>
         )}
@@ -115,7 +117,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
       {latestSyncJob && (
         <div className="bg-slate-800 rounded-lg p-3 mb-4 border border-slate-600">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-300 text-sm font-medium">Connection Created</span>
+            <span className="text-slate-300 text-sm font-medium">{t('connectorCard.connectionCreated')}</span>
             <StatusBadge
               icon={syncJobIcon}
               iconClassName={`w-3 h-3 ${latestSyncJob.status === SYNC_JOB_STATUS.RUNNING ? 'animate-spin' : ''}`}
@@ -133,7 +135,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
 
             {latestSyncJob.error_message && (
               <div className="mt-2 text-rose-300">
-                Error: {latestSyncJob.error_message}
+                {t('connectorCard.errorPrefix')} {latestSyncJob.error_message}
               </div>
             )}
           </div>
@@ -146,7 +148,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
           <div className="flex items-start space-x-2">
             <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-rose-200 text-sm font-medium">Connection Error</p>
+              <p className="text-rose-200 text-sm font-medium">{t('connectorCard.connectionError')}</p>
               <p className="text-rose-300 text-xs mt-1">{connector.last_error}</p>
             </div>
           </div>
@@ -164,7 +166,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
             Icon={RefreshCw}
             disabled={isSyncing}
           >
-            Retry Connection
+            {t('connectorCard.buttons.retryConnection')}
           </Button>
         ) : (
           <Button
@@ -175,7 +177,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
             Icon={RefreshCw}
             disabled={!canSync}
           >
-            {isSyncing ? 'Syncing...' : 'Manual Sync'}
+            {isSyncing ? t('connectorCard.buttons.syncing') : t('connectorCard.buttons.manualSync')}
           </Button>
         )}
 
@@ -186,7 +188,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
           Icon={Unplug}
           disabled={isSyncing}
         >
-          Disconnect
+          {t('connectorCard.buttons.disconnect')}
         </Button>
       </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
+  const { t } = useTranslation('team');
   const {
     inviteUserToTeam,
     getTeamInvitations,
@@ -155,26 +157,26 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Enhanced email validation with sanitization
     const sanitizedEmail = sanitizeEmailInput(formData.email);
     if (!sanitizedEmail) {
-      newErrors.email = 'Email address is required';
+      newErrors.email = t('inviteModal.validation.emailRequired');
     } else if (!isValidEmailInput(sanitizedEmail)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('inviteModal.validation.emailInvalid');
     }
-    
+
     // Role validation
     if (!formData.role) {
-      newErrors.role = 'Please select a role';
+      newErrors.role = t('inviteModal.validation.roleRequired');
     }
-    
+
     // Enhanced message validation with sanitization
     const sanitizedMessage = sanitizeMessageInput(formData.message);
     if (sanitizedMessage.length > 500) {
-      newErrors.message = 'Message must be less than 500 characters';
+      newErrors.message = t('inviteModal.validation.messageTooLong');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -199,22 +201,21 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       });
 
       if (result.success) {
-        const successMsg = 'Invitation sent successfully!';
-        setSuccessMessage(successMsg);
-        
+        setSuccessMessage(t('inviteModal.success.invitationSent'));
+
         // Reset form after success
         setFormData({
           email: '',
           role: 'coach',
           message: ''
         });
-        
+
         // Refresh pending invitations list
         fetchPendingInvitations();
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
-      setErrors({ general: 'Failed to send invitation. Please try again.' });
+      setErrors({ general: t('inviteModal.validation.sendFailed') });
     }
   };
 
@@ -229,15 +230,15 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       });
 
       if (result.success) {
-        setSuccessMessage(result.message || 'Invitation refreshed successfully!');
+        setSuccessMessage(result.message || t('inviteModal.success.invitationRefreshed'));
         // Refresh the invitations list
         fetchPendingInvitations();
       } else {
-        setErrors({ general: result.error || 'Failed to refresh invitation. Please try again.' });
+        setErrors({ general: result.error || t('inviteModal.validation.sendFailed') });
       }
     } catch (error) {
       console.error('Error refreshing invitation:', error);
-      setErrors({ general: 'Failed to refresh invitation. Please try again.' });
+      setErrors({ general: t('inviteModal.validation.sendFailed') });
     }
   };
 
@@ -246,15 +247,15 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
       const result = await deleteInvitation(invitation.id);
 
       if (result.success) {
-        setSuccessMessage(result.message || 'Invitation deleted successfully!');
+        setSuccessMessage(result.message || t('inviteModal.success.invitationDeleted'));
         // Refresh the invitations list
         fetchPendingInvitations();
       } else {
-        setErrors({ general: result.error || 'Failed to delete invitation. Please try again.' });
+        setErrors({ general: result.error || t('inviteModal.validation.sendFailed') });
       }
     } catch (error) {
       console.error('Error deleting invitation:', error);
-      setErrors({ general: 'Failed to delete invitation. Please try again.' });
+      setErrors({ general: t('inviteModal.validation.sendFailed') });
     }
   };
 
@@ -298,7 +299,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
               <Mail className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-sky-300">Invite Team Member</h2>
+              <h2 className="text-lg font-semibold text-sky-300">{t('inviteModal.header.title')}</h2>
               <p className="text-sm text-slate-400">
                 {team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : 'Team'}
               </p>
@@ -307,7 +308,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label="Close modal"
+            aria-label={t('inviteModal.header.closeLabel')}
           >
             <X className="w-6 h-6" />
           </button>
@@ -331,7 +332,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
               {/* Email Input */}
               <div>
                 <label htmlFor="invite-email" className="block text-sm font-medium text-slate-300 mb-2">
-                  Email Address
+                  {t('inviteModal.form.labels.email')}
                 </label>
                 <Input
                   id="invite-email"
@@ -340,13 +341,13 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   onChange={(e) => {
                     const newEmail = e.target.value;
                     setFormData(prev => ({ ...prev, email: newEmail }));
-                    
+
                     // Only clear email error if the input is now valid
                     if (errors.email && newEmail && isValidEmailInput(sanitizeEmailInput(newEmail))) {
                       setErrors(prev => ({ ...prev, email: null }));
                     }
                   }}
-                  placeholder="Enter email address"
+                  placeholder={t('inviteModal.form.placeholders.email')}
                   disabled={loading}
                   className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
@@ -358,25 +359,25 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
               {/* Role Selection */}
               <div>
                 <label htmlFor="invite-role" className="block text-sm font-medium text-slate-300 mb-2">
-                  Team Role
+                  {t('inviteModal.form.labels.role')}
                 </label>
                 <Select
                   id="invite-role"
                   value={formData.role}
                   onChange={(value) => {
                     setFormData(prev => ({ ...prev, role: value }));
-                    
+
                     // Only clear role error if a valid role is selected
                     if (errors.role && value) {
                       setErrors(prev => ({ ...prev, role: null }));
                     }
                   }}
                   options={[
-                    { value: 'coach', label: 'Coach' },
-                    { value: 'parent', label: 'Parent' },
-                    { value: 'player', label: 'Player' },
+                    { value: 'coach', label: t('inviteModal.form.roles.coach') },
+                    { value: 'parent', label: t('inviteModal.form.roles.parent') },
+                    { value: 'player', label: t('inviteModal.form.roles.player') },
                     ...(user?.id === team?.created_by ? [
-                      { value: 'admin', label: 'Admin' }
+                      { value: 'admin', label: t('inviteModal.form.roles.admin') }
                     ] : [])
                   ]}
                   disabled={loading}
@@ -386,14 +387,14 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   <p className="text-rose-400 text-sm mt-1">{errors.role}</p>
                 )}
                 <p className="text-slate-500 text-xs mt-1">
-                  Choose the appropriate role for this team member
+                  {t('inviteModal.form.hints.role')}
                 </p>
               </div>
 
               {/* Personal Message */}
               <div>
                 <label htmlFor="invite-message" className="block text-sm font-medium text-slate-300 mb-2">
-                  Personal Message <span className="text-slate-500">(optional)</span>
+                  {t('inviteModal.form.labels.message')} <span className="text-slate-500">{t('inviteModal.form.hints.messageOptional')}</span>
                 </label>
                 <textarea
                   id="invite-message"
@@ -401,13 +402,13 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   onChange={(e) => {
                     const newMessage = e.target.value;
                     setFormData(prev => ({ ...prev, message: newMessage }));
-                    
+
                     // Only clear message error if the input is now valid
                     if (errors.message && isValidMessageInput(newMessage)) {
                       setErrors(prev => ({ ...prev, message: null }));
                     }
                   }}
-                  placeholder="Add a personal message to include with the invitation..."
+                  placeholder={t('inviteModal.form.placeholders.message')}
                   className={`w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none ${
                     errors.message ? 'border-rose-500 focus:ring-rose-400' : ''
                   }`}
@@ -419,7 +420,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   <p className="text-rose-400 text-sm mt-1">{errors.message}</p>
                 )}
                 <p className="text-slate-500 text-xs mt-1">
-                  {formData.message.length}/500 characters
+                  {t('inviteModal.form.hints.characterCount', { count: formData.message.length })}
                 </p>
               </div>
 
@@ -432,7 +433,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 className="w-full"
                 Icon={loading ? Users : Mail}
               >
-                {loading ? 'Sending Invitation...' : 'Send Invitation'}
+                {loading ? t('inviteModal.buttons.sending') : t('inviteModal.buttons.send')}
               </Button>
             </form>
 
@@ -444,10 +445,10 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 <div className="flex items-center space-x-2 mb-4">
                   <Clock className="w-5 h-5 text-amber-400" />
                   <h4 className="text-slate-300 font-medium">
-                    Pending Invitations
+                    {t('inviteModal.invitations.pendingHeader')}
                     {pendingInvitations.length > 0 && (
                       <span className="ml-2 text-sm font-normal text-slate-400">
-                        ({pendingInvitations.length})
+                        {t('inviteModal.invitations.countLabel', { count: pendingInvitations.length })}
                       </span>
                     )}
                   </h4>
@@ -456,12 +457,12 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 {loadingInvitations ? (
                   <div className="flex items-center justify-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-400"></div>
-                    <span className="ml-2 text-slate-400 text-sm">Loading invitations...</span>
+                    <span className="ml-2 text-slate-400 text-sm">{t('inviteModal.invitations.loading')}</span>
                   </div>
                 ) : pendingInvitations.length === 0 ? (
                   <div className="text-center py-4 text-slate-400">
                     <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No pending invitations</p>
+                    <p className="text-sm">{t('inviteModal.invitations.noPending')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -484,17 +485,17 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                               </div>
                             </div>
                             <div className="flex items-center space-x-4 text-xs text-slate-400">
-                              <span>Sent: {formatDate(invitation.created_at)}</span>
+                              <span>{t('inviteModal.invitations.details.sent', { date: formatDate(invitation.created_at) })}</span>
                               {invitation.expires_at && (
                                 <span className="font-medium text-amber-400">
-                                  {formatTimeRemaining(invitation.expires_at)}
+                                  {t('inviteModal.invitations.details.remaining', { time: formatTimeRemaining(invitation.expires_at) })}
                                 </span>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center space-x-1">
                             <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                            <span className="text-amber-400 text-xs font-medium">Pending</span>
+                            <span className="text-amber-400 text-xs font-medium">{t('inviteModal.invitations.status.pending')}</span>
                           </div>
                         </div>
                       </div>
@@ -509,9 +510,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   <div className="flex items-center space-x-2 mb-4">
                     <AlertTriangle className="w-5 h-5 text-rose-400" />
                     <h4 className="text-slate-300 font-medium">
-                      Expired Invitations
+                      {t('inviteModal.invitations.expiredHeader')}
                       <span className="ml-2 text-sm font-normal text-slate-400">
-                        ({expiredInvitations.length})
+                        {t('inviteModal.invitations.countLabel', { count: expiredInvitations.length })}
                       </span>
                     </h4>
                   </div>
@@ -536,9 +537,9 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                               </div>
                             </div>
                             <div className="flex items-center space-x-4 text-xs text-slate-400">
-                              <span>Sent: {formatDate(invitation.created_at)}</span>
+                              <span>{t('inviteModal.invitations.details.sent', { date: formatDate(invitation.created_at) })}</span>
                               <span className="font-medium text-rose-400">
-                                Expired
+                                {t('inviteModal.invitations.status.expired')}
                               </span>
                             </div>
                           </div>
@@ -547,19 +548,19 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                               onClick={() => handleRefreshInvitation(invitation)}
                               disabled={loading}
                               className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-400/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Refresh invitation"
+                              title={t('inviteModal.buttons.refresh')}
                             >
                               <RefreshCw className="w-3 h-3" />
-                              <span>Refresh</span>
+                              <span>{t('inviteModal.buttons.refresh')}</span>
                             </button>
                             <button
                               onClick={() => handleDeleteInvitation(invitation)}
                               disabled={loading}
                               className="flex items-center space-x-1 px-2 py-1 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-400/10 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Delete invitation"
+                              title={t('inviteModal.buttons.delete')}
                             >
                               <Trash2 className="w-3 h-3" />
-                              <span>Delete</span>
+                              <span>{t('inviteModal.buttons.delete')}</span>
                             </button>
                           </div>
                         </div>
@@ -575,12 +576,12 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
               <div className="flex items-start space-x-3">
                 <Users className="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-slate-300 font-medium mb-2">What happens next?</h4>
+                  <h4 className="text-slate-300 font-medium mb-2">{t('inviteModal.info.title')}</h4>
                   <ul className="text-slate-400 text-sm space-y-1">
-                    <li>• The invitee will receive an email with a secure invitation link</li>
-                    <li>• They can create an account or sign in if they already have one</li>
-                    <li>• Once accepted, they'll be automatically added to your team</li>
-                    <li>• You can manage their role and permissions anytime</li>
+                    <li>• {t('inviteModal.info.steps.emailSent')}</li>
+                    <li>• {t('inviteModal.info.steps.accountSetup')}</li>
+                    <li>• {t('inviteModal.info.steps.autoAdded')}</li>
+                    <li>• {t('inviteModal.info.steps.manageRoles')}</li>
                   </ul>
                 </div>
               </div>

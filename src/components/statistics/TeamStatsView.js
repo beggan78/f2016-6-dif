@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Calendar, TrendingUp, TrendingDown, Target, PieChart, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTeam } from '../../contexts/TeamContext';
 import { getFinishedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
@@ -8,6 +9,7 @@ import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
+  const { t } = useTranslation('statistics');
   const { currentTeam } = useTeam();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -140,7 +142,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">Loading team statistics...</div>
+          <div className="text-slate-400">{t('teamStats.loading')}</div>
         </div>
       </div>
     );
@@ -151,7 +153,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-red-400 mb-2">Error loading team statistics</div>
+          <div className="text-red-400 mb-2">{t('teamStats.error')}</div>
           <div className="text-slate-400 text-sm">{error}</div>
         </div>
       </div>
@@ -163,7 +165,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">No team statistics available</div>
+          <div className="text-slate-400">{t('teamStats.noStats')}</div>
         </div>
       </div>
     );
@@ -191,8 +193,8 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
           onClearAllFilters={clearAllFilters}
         />
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">No matches found with the selected filters</div>
-          <p className="text-slate-500 text-sm mt-2">Try adjusting your filter criteria</p>
+          <div className="text-slate-400">{t('teamStats.noMatchesFiltered')}</div>
+          <p className="text-slate-500 text-sm mt-2">{t('teamStats.adjustFilters')}</p>
         </div>
       </div>
     );
@@ -222,9 +224,9 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const goalDifference = goalsScored - goalsConceded;
 
   const matchOutcomes = [
-    { label: 'Matches Won', count: wins },
-    { label: 'Matches Drawn', count: draws },
-    { label: 'Matches Lost', count: losses }
+    { label: t('teamStats.labels.matchesWon'), count: wins },
+    { label: t('teamStats.labels.matchesDrawn'), count: draws },
+    { label: t('teamStats.labels.matchesLost'), count: losses }
   ];
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend }) => (
@@ -283,30 +285,30 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Calendar}
-          title="Total Matches"
+          title={t('teamStats.totalMatches')}
           value={totalMatches}
           subtitle={`${wins}W ${draws}D ${losses}L`}
         />
 
         <StatCard
           icon={Trophy}
-          title="Win Rate"
+          title={t('teamStats.winRate')}
           value={`${winPercentage}%`}
-          subtitle={`${wins} victories`}
+          subtitle={`${wins} ${t('teamStats.victories')}`}
         />
 
         <StatCard
           icon={TrendingUp}
-          title="Avg. Goals Scored"
+          title={t('teamStats.avgGoalsScored')}
           value={averageGoalsScored}
-          subtitle={`${goalsScored} total goals`}
+          subtitle={`${goalsScored} ${t('teamStats.totalGoals')}`}
         />
 
         <StatCard
           icon={TrendingDown}
-          title="Avg. Goals Conceded"
+          title={t('teamStats.avgGoalsConceded')}
           value={averageGoalsConceded}
-          subtitle={`${goalsConceded} total goals`}
+          subtitle={`${goalsConceded} ${t('teamStats.totalGoals')}`}
         />
       </div>
 
@@ -316,19 +318,19 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
           <div className="flex items-center space-x-2 mb-4">
             <Target className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">Goals</h3>
+            <h3 className="text-lg font-semibold text-sky-400">{t('teamStats.sections.goals')}</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-slate-300">Goals Scored</span>
+              <span className="text-slate-300">{t('teamStats.labels.goalsScored')}</span>
               <span className="text-slate-100 font-semibold">{goalsScored}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-300">Goals Conceded</span>
+              <span className="text-slate-300">{t('teamStats.labels.goalsConceded')}</span>
               <span className="text-slate-100 font-semibold">{goalsConceded}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-300 font-medium">Goal Difference</span>
+              <span className="text-slate-300 font-medium">{t('teamStats.labels.goalDifference')}</span>
               <span className={`font-bold ${
                 goalDifference > 0 ? 'text-emerald-400' :
                 goalDifference < 0 ? 'text-rose-400' : 'text-slate-400'
@@ -343,7 +345,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
           <div className="flex items-center space-x-2 mb-4">
             <PieChart className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">Match Outcomes</h3>
+            <h3 className="text-lg font-semibold text-sky-400">{t('teamStats.sections.matchOutcomes')}</h3>
           </div>
           <div className="space-y-3">
             {matchOutcomes.map(({ label, count }) => (
@@ -368,7 +370,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
       <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
         <div className="flex items-center space-x-2 mb-4">
           <Clock className="h-5 w-5 text-sky-400" />
-          <h3 className="text-lg font-semibold text-sky-400">Recent Matches</h3>
+          <h3 className="text-lg font-semibold text-sky-400">{t('teamStats.sections.recentMatches')}</h3>
         </div>
         <div className="space-y-3">
           {recentMatches.map((match) => (
@@ -393,7 +395,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
                     {match.score}
                   </div>
                   <span className={getResultBadge(match.result)}>
-                    {match.result === 'W' ? 'Win' : match.result === 'D' ? 'Draw' : 'Loss'}
+                    {match.result === 'W' ? t('teamStats.outcomes.win') : match.result === 'D' ? t('teamStats.outcomes.draw') : t('teamStats.outcomes.loss')}
                   </span>
                 </div>
               </div>
@@ -405,36 +407,36 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h4 className="text-slate-300 font-medium mb-2">Home Record</h4>
+          <h4 className="text-slate-300 font-medium mb-2">{t('teamStats.sections.homeRecord')}</h4>
           <div className="text-slate-100">
             <span className="text-xl font-semibold">{homeRecord.wins}</span>
-            <span className="text-slate-400 text-sm ml-1">wins</span>
+            <span className="text-slate-400 text-sm ml-1">{t('teamStats.record.wins')}</span>
           </div>
           <div className="text-slate-400 text-sm">
-            {homeRecord.draws} draws, {homeRecord.losses} {homeRecord.losses === 1 ? 'loss' : 'losses'}
-            {homeRecord.total > 0 && ` (${homeRecord.total} total)`}
+            {homeRecord.draws} {t('teamStats.record.draws')}, {homeRecord.losses} {homeRecord.losses === 1 ? t('teamStats.record.loss') : t('teamStats.record.losses')}
+            {homeRecord.total > 0 && ` (${homeRecord.total} ${t('teamStats.labels.total')})`}
           </div>
         </div>
 
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h4 className="text-slate-300 font-medium mb-2">Away Record</h4>
+          <h4 className="text-slate-300 font-medium mb-2">{t('teamStats.sections.awayRecord')}</h4>
           <div className="text-slate-100">
             <span className="text-xl font-semibold">{awayRecord.wins}</span>
-            <span className="text-slate-400 text-sm ml-1">wins</span>
+            <span className="text-slate-400 text-sm ml-1">{t('teamStats.record.wins')}</span>
           </div>
           <div className="text-slate-400 text-sm">
-            {awayRecord.draws} draws, {awayRecord.losses} {awayRecord.losses === 1 ? 'loss' : 'losses'}
-            {awayRecord.total > 0 && ` (${awayRecord.total} total)`}
+            {awayRecord.draws} {t('teamStats.record.draws')}, {awayRecord.losses} {awayRecord.losses === 1 ? t('teamStats.record.loss') : t('teamStats.record.losses')}
+            {awayRecord.total > 0 && ` (${awayRecord.total} ${t('teamStats.labels.total')})`}
           </div>
         </div>
 
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <h4 className="text-slate-300 font-medium mb-2">Clean Sheets</h4>
+          <h4 className="text-slate-300 font-medium mb-2">{t('teamStats.sections.cleanSheets')}</h4>
           <div className="text-slate-100">
             <span className="text-xl font-semibold">{cleanSheets}</span>
-            <span className="text-slate-400 text-sm ml-1">matches</span>
+            <span className="text-slate-400 text-sm ml-1">{t('teamStats.labels.matches')}</span>
           </div>
-          <div className="text-slate-400 text-sm">{cleanSheetPercentage}% of total</div>
+          <div className="text-slate-400 text-sm">{cleanSheetPercentage}% {t('teamStats.labels.ofTotal')}</div>
         </div>
       </div>
     </div>

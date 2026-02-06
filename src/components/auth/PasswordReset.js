@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateOtpCode } from '../../utils/authValidation';
@@ -12,6 +13,7 @@ const RESET_MODES = {
 };
 
 export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
+  const { t } = useTranslation(['auth', 'navigation']);
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -61,13 +63,13 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
 
   const validateEmailForm = () => {
     const newErrors = {};
-    
+
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth:passwordReset.errors.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('auth:passwordReset.errors.emailInvalid');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,19 +86,19 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
 
   const validatePasswordForm = () => {
     const newErrors = {};
-    
+
     if (!newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = t('auth:passwordReset.errors.newPasswordRequired');
     } else if (newPassword.length < 8) {
-      newErrors.newPassword = 'Password must be at least 8 characters long';
+      newErrors.newPassword = t('auth:passwordReset.errors.newPasswordTooShort');
     }
-    
+
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('auth:passwordReset.errors.confirmPasswordRequired');
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth:passwordReset.errors.passwordsMismatch');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -186,7 +188,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-sky-300">
-            {mode === RESET_MODES.UPDATE ? 'Password Updated!' : 'Check Your Email'}
+            {mode === RESET_MODES.UPDATE ? t('auth:passwordReset.update.success.title') : t('auth:passwordReset.code.success.title')}
           </h2>
           <p className="text-slate-400 mt-2">{successMessage}</p>
         </div>
@@ -211,7 +213,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               size="lg"
               className="w-full"
             >
-              {user ? 'Continue' : 'Sign In Now'}
+              {user ? t('auth:passwordReset.update.success.continueButton') : t('auth:passwordReset.update.success.signInButton')}
             </Button>
             
             <button
@@ -270,7 +272,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                 disabled={loading || code.length !== 6}
                 className="w-full"
               >
-                {loading ? 'Verifying Code...' : 'Verify Code'}
+                {loading ? t('auth:passwordReset.code.form.submittingButton') : t('auth:passwordReset.code.form.submitButton')}
               </Button>
             </form>
 
@@ -336,7 +338,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                   setErrors(prev => ({ ...prev, email: null }));
                 }
               }}
-              placeholder="Enter your email address"
+              placeholder={t('auth:passwordReset.email.form.emailPlaceholder')}
               disabled={loading}
               className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -352,7 +354,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             disabled={loading}
             className="w-full"
           >
-            {loading ? 'Sending Reset Email...' : 'Send Reset Email'}
+            {loading ? t('auth:passwordReset.email.form.submittingButton') : t('auth:passwordReset.email.form.submitButton')}
           </Button>
         </form>
 
@@ -373,7 +375,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
             disabled={loading}
           >
-            Back to Sign In
+            {t('backTo.signIn')}
           </button>
         </div>
       </div>
@@ -419,7 +421,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                   setErrors(prev => ({ ...prev, newPassword: null }));
                 }
               }}
-              placeholder="Enter your new password"
+              placeholder={t('auth:passwordReset.update.form.newPasswordPlaceholder')}
               disabled={loading}
               className={errors.newPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -442,7 +444,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                   setErrors(prev => ({ ...prev, confirmPassword: null }));
                 }
               }}
-              placeholder="Confirm your new password"
+              placeholder={t('auth:passwordReset.update.form.confirmPasswordPlaceholder')}
               disabled={loading}
               className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -458,7 +460,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
             disabled={loading}
             className="w-full"
           >
-            {loading ? 'Updating Password...' : 'Update Password'}
+            {loading ? t('auth:passwordReset.update.form.submittingButton') : t('auth:passwordReset.update.form.submitButton')}
           </Button>
         </form>
 

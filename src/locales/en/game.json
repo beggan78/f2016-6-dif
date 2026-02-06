@@ -26,11 +26,20 @@
   },
   "substitution": {
     "button": "SUB NOW",
-    "buttonMultiple": "SUB {{count}}",
+    "buttonSingle": "SUB 1 PLAYER",
+    "buttonMultiple": "SUB {{count}} PLAYERS",
     "makeSubstitution": "Make substitution",
     "cannotSubstitute": "All substitutes are inactive - cannot substitute",
     "undoTooltip": "Undo last substitution",
-    "undoDisabled": "No substitution to undo"
+    "undoDisabled": "No substitution to undo",
+    "decreaseCount": "Decrease number of players to substitute",
+    "increaseCount": "Increase number of players to substitute",
+    "undoModal": {
+      "title": "Undo Substitution",
+      "message": "Are you sure you want to undo the last substitution? This will reverse player positions and time tracking.",
+      "confirm": "Undo",
+      "cancel": "Cancel"
+    }
   },
   "actions": {
     "endPeriod": "End Period"

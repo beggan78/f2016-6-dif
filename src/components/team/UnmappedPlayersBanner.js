@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Users, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 
 /**
@@ -14,6 +15,8 @@ import { Button } from '../shared/UI';
  * @param {Function} onNavigateToRoster - Callback to navigate to Roster Management tab
  */
 export function UnmappedPlayersBanner({ firstProviderName, onNavigateToRoster }) {
+  const { t } = useTranslation('navigation');
+
   return (
     <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4 text-center">
       {/* Header Section */}
@@ -36,7 +39,7 @@ export function UnmappedPlayersBanner({ firstProviderName, onNavigateToRoster })
           variant="primary"
           Icon={ArrowRight}
         >
-          Go to Roster Management
+          {t('goTo.rosterManagement')}
         </Button>
       </div>
     </div>

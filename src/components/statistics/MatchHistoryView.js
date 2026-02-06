@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Calendar, MapPin, Trophy, History, PlusCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTeam } from '../../contexts/TeamContext';
 import { getFinishedMatches } from '../../services/matchStateManager';
 import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
@@ -11,6 +12,7 @@ import { Button } from '../shared/UI';
 import { BREAKPOINTS } from '../../constants/layoutConstants';
 
 export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endDate, refreshKey = 0 }) {
+  const { t } = useTranslation('statistics');
   const { currentTeam } = useTeam();
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
       if (result.success) {
         setMatches(result.matches || []);
       } else {
-        setError(result.error || 'Failed to load match history');
+        setError(result.error || t('matchHistory.errorDetails'));
         setMatches([]);
       }
 
@@ -61,7 +63,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
     }
 
     fetchMatches();
-  }, [currentTeam?.id, startDate, endDate, refreshKey]);
+  }, [currentTeam?.id, startDate, endDate, refreshKey, t]);
 
   // Detect screen size for responsive layout
   useEffect(() => {
@@ -111,7 +113,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">Loading match history...</div>
+          <div className="text-slate-400">{t('matchHistory.loading')}</div>
         </div>
       </div>
     );
@@ -122,7 +124,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
     return (
       <div className="space-y-6">
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-red-400 mb-2">Error loading match history</div>
+          <div className="text-red-400 mb-2">{t('matchHistory.error')}</div>
           <div className="text-slate-400 text-sm">{error}</div>
         </div>
       </div>
@@ -154,16 +156,16 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div className="flex items-center space-x-2">
             <History className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">Match History</h3>
+            <h3 className="text-lg font-semibold text-sky-400">{t('matchHistory.title')}</h3>
           </div>
           {onCreateMatch && (
             <Button onClick={onCreateMatch} Icon={PlusCircle} size="sm">
-              Add Match
+              {t('matchHistory.addMatch')}
             </Button>
           )}
         </div>
         <p className="text-slate-400 text-sm mb-4">
-          {filteredMatches.length} matches found. Click on a match to view detailed statistics.
+          {t('matchHistory.matchesFound', { count: filteredMatches.length })}
         </p>
         <div className="space-y-3">
           {filteredMatches.map((match) => (
@@ -198,7 +200,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
                         <div className="flex items-center gap-1 text-slate-400">
                           <MapPin className="h-3 w-3" />
                           <span className="text-sm">
-                            {match.venueType === 'home' ? 'Home' : match.venueType === 'neutral' ? 'Neutral' : 'Away'}
+                            {match.venueType === 'home' ? t('matchHistory.venues.home') : match.venueType === 'neutral' ? t('matchHistory.venues.neutral') : t('matchHistory.venues.away')}
                           </span>
                         </div>
                       )}
@@ -224,8 +226,8 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
                   {/* Win/Loss/Draw - Hidden on extra narrow screens */}
                   {isAtLeastSm && (
                     <span className={getOutcomeBadgeClasses(match.outcome)}>
-                      {match.outcome === 'W' ? 'Win' :
-                       match.outcome === 'D' ? 'Draw' : 'Loss'}
+                      {match.outcome === 'W' ? t('matchHistory.outcomes.win') :
+                       match.outcome === 'D' ? t('matchHistory.outcomes.draw') : t('matchHistory.outcomes.loss')}
                     </span>
                   )}
                 </div>
@@ -236,8 +238,8 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
           {filteredMatches.length === 0 && (
             <div className="p-8 text-center text-slate-400">
               <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No matches found with the selected filters.</p>
-              <p className="text-sm mt-1">Try adjusting your filter criteria.</p>
+              <p>{t('matchHistory.noMatchesFiltered')}</p>
+              <p className="text-sm mt-1">{t('matchHistory.adjustFilters')}</p>
             </div>
           )}
         </div>

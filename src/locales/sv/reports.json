@@ -31,6 +31,29 @@
     "timeAsAttacker": "Tid som Forward",
     "noStats": "Ingen spelarstatistik tillgänglig"
   },
+  "table": {
+    "columns": {
+      "player": "Spelare",
+      "startingRole": "Startroll",
+      "outfield": "Utespelare",
+      "defender": "Back",
+      "midfielder": "Mittfält",
+      "attacker": "Forward",
+      "goalie": "Målvakt",
+      "substitute": "Avbytare",
+      "goals": "Mål"
+    },
+    "roles": {
+      "goalie": "Målvakt",
+      "defender": "Back",
+      "midfielder": "Mittfält",
+      "attacker": "Forward",
+      "substitute": "Avb",
+      "field": "Ute",
+      "none": "--"
+    },
+    "noStats": "Ingen spelarstatistik tillgänglig"
+  },
   "summary": {
     "finalScore": "Slutresultat",
     "duration": "Längd",

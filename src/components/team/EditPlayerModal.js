@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
 import { Edit3, X } from 'lucide-react';
 
 export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAvailableJerseyNumbers }) {
+  const { t } = useTranslation('team');
   const [playerData, setPlayerData] = useState({
     first_name: player?.first_name || '',
     last_name: player?.last_name || '',
@@ -30,31 +32,31 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
     const newErrors = {};
 
     if (!playerData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = t('editRosterPlayerModal.validation.firstNameRequired');
     } else if (playerData.first_name.trim().length < 2) {
-      newErrors.first_name = 'First name must be at least 2 characters';
+      newErrors.first_name = t('editRosterPlayerModal.validation.firstNameMinLength');
     } else if (playerData.first_name.trim().length > 50) {
-      newErrors.first_name = 'First name must be at most 50 characters';
+      newErrors.first_name = t('editRosterPlayerModal.validation.firstNameMaxLength');
     }
 
     if (playerData.last_name && playerData.last_name.trim().length > 50) {
-      newErrors.last_name = 'Last name must be at most 50 characters';
+      newErrors.last_name = t('editRosterPlayerModal.validation.lastNameMaxLength');
     }
 
     if (!playerData.display_name.trim()) {
-      newErrors.display_name = 'Display name is required';
+      newErrors.display_name = t('editRosterPlayerModal.validation.displayNameRequired');
     } else if (playerData.display_name.trim().length < 2) {
-      newErrors.display_name = 'Display name must be at least 2 characters';
+      newErrors.display_name = t('editRosterPlayerModal.validation.displayNameMinLength');
     } else if (playerData.display_name.trim().length > 50) {
-      newErrors.display_name = 'Display name must be at most 50 characters';
+      newErrors.display_name = t('editRosterPlayerModal.validation.displayNameMaxLength');
     }
 
     if (playerData.jersey_number) {
       const jerseyNum = parseInt(playerData.jersey_number);
       if (jerseyNum < 1 || jerseyNum > 99) {
-        newErrors.jersey_number = 'Jersey number must be between 1 and 99';
+        newErrors.jersey_number = t('editRosterPlayerModal.validation.jerseyNumberRange');
       } else if (jerseyNum !== player.jersey_number && !availableNumbers.includes(jerseyNum)) {
-        newErrors.jersey_number = 'This jersey number is already taken';
+        newErrors.jersey_number = t('editRosterPlayerModal.validation.jerseyNumberTaken');
       }
     }
 
@@ -81,8 +83,8 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
       await onPlayerUpdated(player.id, updates);
     } catch (error) {
       console.error('Error updating player:', error);
-      setErrors({ general: error.message || 'Failed to update player' });
-    } finally {
+      setErrors({ general: error.message || t('editRosterPlayerModal.validation.failedToUpdate') });
+    } finally{
       setLoading(false);
     }
   };
@@ -106,9 +108,9 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
   // Jersey number options
   const currentJersey = player.jersey_number;
   const jerseyOptions = [
-    { value: '', label: 'No jersey number' },
+    { value: '', label: t('editRosterPlayerModal.jerseyNumber.noNumber') },
     // Include current jersey number even if it would normally be unavailable
-    ...(currentJersey ? [{ value: currentJersey.toString(), label: `#${currentJersey} (current)` }] : []),
+    ...(currentJersey ? [{ value: currentJersey.toString(), label: t('editRosterPlayerModal.jerseyNumber.currentLabel', { number: currentJersey }) }] : []),
     ...availableNumbers
       .filter(num => num !== currentJersey) // Don't duplicate current jersey
       .map(num => ({
@@ -129,8 +131,8 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               <Edit3 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Edit Player</h2>
-              <p className="text-sm text-slate-400">Update {player.display_name}'s information</p>
+              <h2 className="text-lg font-semibold text-slate-100">{t('editRosterPlayerModal.header.title')}</h2>
+              <p className="text-sm text-slate-400">{t('editRosterPlayerModal.header.subtitle', { playerName: player.display_name })}</p>
             </div>
           </div>
           <button
@@ -152,14 +154,14 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              First Name *
+              {t('editRosterPlayerModal.form.labels.firstName')}
             </label>
             <Input
               name="first_name"
               value={playerData.first_name}
               onChange={(e) => handleInputChange('first_name', e.target.value)}
               onBlur={handleFirstNameBlur}
-              placeholder="Enter first name"
+              placeholder={t('editRosterPlayerModal.form.placeholders.firstName')}
               disabled={loading}
               className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -171,13 +173,13 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
           {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Last Name
+              {t('editRosterPlayerModal.form.labels.lastName')}
             </label>
             <Input
               name="last_name"
               value={playerData.last_name}
               onChange={(e) => handleInputChange('last_name', e.target.value)}
-              placeholder="Enter last name (optional)"
+              placeholder={t('editRosterPlayerModal.form.placeholders.lastName')}
               disabled={loading}
               className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -189,13 +191,13 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
           {/* Display Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Display Name *
+              {t('editRosterPlayerModal.form.labels.displayName')}
             </label>
             <Input
               name="display_name"
               value={playerData.display_name}
               onChange={(e) => handleInputChange('display_name', e.target.value)}
-              placeholder="Enter display name"
+              placeholder={t('editRosterPlayerModal.form.placeholders.displayName')}
               disabled={loading}
               className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -203,14 +205,14 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               <p className="mt-1 text-sm text-rose-400">{errors.display_name}</p>
             )}
             <p className="mt-1 text-xs text-slate-400">
-              This is the name displayed in the app
+              {t('editRosterPlayerModal.form.helperText.displayName')}
             </p>
           </div>
 
           {/* Jersey Number */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Jersey Number
+              {t('editRosterPlayerModal.form.labels.jerseyNumber')}
             </label>
             <Select
               value={playerData.jersey_number}
@@ -224,7 +226,7 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
             )}
             {availableNumbers.length === 0 && !currentJersey && (
               <p className="mt-1 text-sm text-amber-400">
-                All jersey numbers (1-99) are taken
+                {t('editRosterPlayerModal.jerseyNumber.allTaken')}
               </p>
             )}
           </div>
@@ -253,27 +255,27 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
                 </svg>
               )}
             </div>
-            <label 
-              htmlFor="on_roster" 
+            <label
+              htmlFor="on_roster"
               className={`text-sm text-slate-300 cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Active on roster
+              {t('editRosterPlayerModal.form.labels.onRoster')}
             </label>
           </div>
 
           {/* Player Info */}
           <div className="bg-slate-700 rounded-lg p-3 border border-slate-600">
-            <div className="text-xs text-slate-400 mb-1">Player Information</div>
+            <div className="text-xs text-slate-400 mb-1">{t('editRosterPlayerModal.playerInfo.header')}</div>
             <div className="space-y-1">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-300">Created:</span>
+                <span className="text-slate-300">{t('editRosterPlayerModal.playerInfo.created')}</span>
                 <span className="text-slate-100">
-                  {player.created_at ? new Date(player.created_at).toLocaleDateString() : 'Unknown'}
+                  {player.created_at ? new Date(player.created_at).toLocaleDateString() : t('editRosterPlayerModal.playerInfo.unknown')}
                 </span>
               </div>
               {player.updated_at && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-300">Last Updated:</span>
+                  <span className="text-slate-300">{t('editRosterPlayerModal.playerInfo.lastUpdated')}</span>
                   <span className="text-slate-100">
                     {new Date(player.updated_at).toLocaleDateString()}
                   </span>
@@ -290,7 +292,7 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               disabled={loading}
               className="flex-1"
             >
-              {loading ? 'Updating...' : 'Update Player'}
+              {loading ? t('editRosterPlayerModal.buttons.updating') : t('editRosterPlayerModal.buttons.updatePlayer')}
             </Button>
             <Button
               type="button"
@@ -298,7 +300,7 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('editRosterPlayerModal.buttons.cancel')}
             </Button>
           </div>
         </form>

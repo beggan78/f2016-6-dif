@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
@@ -196,6 +197,7 @@ export function MatchDetailsView({
   onMatchUpdated,
   onMatchDeleted
 }) {
+  const { t } = useTranslation('navigation');
   const isCreateMode = mode === 'create';
   const [playerToAdd, setPlayerToAdd] = useState('');
 
@@ -437,7 +439,7 @@ export function MatchDetailsView({
       <div className="text-center py-8">
         <p className="text-red-400 mb-2">{error || 'Match not found'}</p>
         <Button onClick={onNavigateBack} variant="secondary" className="mt-4">
-          Back to Match History
+          {t('backTo.matchHistory')}
         </Button>
       </div>
     );

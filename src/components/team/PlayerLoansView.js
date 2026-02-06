@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, ChevronDown, ChevronUp, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, ConfirmationModal, MultiSelect, Select } from '../shared/UI';
 import { PlayerLoanModal } from './PlayerLoanModal';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
@@ -106,6 +107,7 @@ const groupLoansByMatch = (loans, rosterLookup) => {
 };
 
 export default function PlayerLoansView({ currentTeam, canManageTeam }) {
+  const { t } = useTranslation('team');
   const { getTeamRoster } = useTeam();
   const { pushNavigationState, removeFromNavigationStack } = useBrowserBackIntercept();
   const isBelowLgBreakpoint = useCallback(() => {
@@ -183,11 +185,11 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       setLoans(result.loans || []);
     } else {
       setLoans([]);
-      setError(result.error || 'Failed to load player loans');
+      setError(result.error || t('loansView.messages.loadFailed'));
     }
 
     setLoading(false);
-  }, [currentTeam?.id, timeRangeStart, timeRangeEnd, selectedPresetId]);
+  }, [currentTeam?.id, timeRangeStart, timeRangeEnd, selectedPresetId, t]);
 
   const fetchRoster = useCallback(async () => {
     if (!currentTeam?.id) {
@@ -201,9 +203,9 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     } catch (err) {
       console.error('Failed to load roster for loans:', err);
       setRoster([]);
-      setError('Failed to load roster for loans');
+      setError(t('loansView.messages.rosterLoadFailed'));
     }
-  }, [currentTeam?.id, getTeamRoster]);
+  }, [currentTeam?.id, getTeamRoster, t]);
 
   const handleRetry = useCallback(() => {
     fetchLoans();
@@ -427,9 +429,10 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       throw new Error(createResult.error || 'Failed to record loan');
     }
 
-    const successSuffix = playerIds.length === 1 ? 'player' : 'players';
-    const successVerb = editingMatch ? 'updated' : 'recorded';
-    setSuccessMessage(`Loan match ${successVerb} for ${playerIds.length} ${successSuffix}.`);
+    const successKey = editingMatch
+      ? (playerIds.length === 1 ? 'loansView.messages.loanUpdatedSingle' : 'loansView.messages.loanUpdatedMultiple')
+      : (playerIds.length === 1 ? 'loansView.messages.loanRecordedSingle' : 'loansView.messages.loanRecordedMultiple');
+    setSuccessMessage(t(successKey, { count: playerIds.length }));
 
     await fetchLoans();
   };
@@ -449,14 +452,14 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     });
 
     if (result.success) {
-      setSuccessMessage(`Removed ${deletingMatch.players.length} player(s) from loan match.`);
+      setSuccessMessage(t('loansView.messages.loanDeleted', { count: deletingMatch.players.length }));
       setDeletingMatch(null);
       removeFromNavigationStack();
       await fetchLoans();
       return;
     }
 
-    setError(result.error || 'Failed to delete loan match');
+    setError(result.error || t('loansView.messages.deleteFailed'));
   };
 
   return (
@@ -464,11 +467,11 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center space-x-2">
           <Repeat className="h-5 w-5 text-sky-400" />
-          <h3 className="text-lg font-semibold text-sky-300">Player Loans</h3>
+          <h3 className="text-lg font-semibold text-sky-300">{t('loansView.header.title')}</h3>
         </div>
         {canManageTeam && (
         <Button onClick={handleOpenLoanModal} Icon={PlusCircle} size="sm">
-          New Loan
+          {t('loansView.header.newLoanButton')}
         </Button>
         )}
       </div>
@@ -480,12 +483,12 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
             onClick={() => needsCollapse && setIsFilterCollapsed(!isFilterCollapsed)}
           >
             <Filter className="h-4 w-4 text-sky-400" />
-            <span className="text-sm font-semibold">Filters</span>
+            <span className="text-sm font-semibold">{t('loansView.filters.title')}</span>
             {needsCollapse && (
               <button
                 type="button"
                 className="text-sky-400 hover:text-sky-300 transition-colors"
-                aria-label={isFilterCollapsed ? "Expand filters" : "Collapse filters"}
+                aria-label={isFilterCollapsed ? t('loansView.filters.expandLabel') : t('loansView.filters.collapseLabel')}
               >
                 {isFilterCollapsed ? (
                   <ChevronDown className="h-4 w-4" />
@@ -501,7 +504,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
               onClick={handleClearFilters}
               className="text-xs text-sky-400 hover:text-sky-300"
             >
-              Clear filters
+              {t('loansView.filters.clearButton')}
             </button>
           )}
         </div>
@@ -515,43 +518,43 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">
-                Players
+                {t('loansView.filters.labels.players')}
               </label>
               <MultiSelect
                 value={playerFilter}
                 onChange={setPlayerFilter}
                 options={playerOptions}
-                placeholder="All players"
+                placeholder={t('loansView.filters.placeholders.allPlayers')}
               />
             </div>
             <div>
             <label className="block text-xs font-medium text-slate-400 mb-2">
-              Teams
+              {t('loansView.filters.labels.teams')}
             </label>
               <MultiSelect
                 value={receivingTeamFilter}
                 onChange={setReceivingTeamFilter}
                 options={receivingTeamOptions}
-                placeholder="All teams"
+                placeholder={t('loansView.filters.placeholders.allTeams')}
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">
-                Status
+                {t('loansView.filters.labels.status')}
               </label>
               <Select
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={[
-                  { value: 'all', label: 'All' },
-                  { value: 'future', label: 'Upcoming' },
-                  { value: 'past', label: 'Past' }
+                  { value: 'all', label: t('loansView.filters.statusOptions.all') },
+                  { value: 'future', label: t('loansView.filters.statusOptions.upcoming') },
+                  { value: 'past', label: t('loansView.filters.statusOptions.past') }
                 ]}
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">
-                Time Period
+                {t('loansView.filters.labels.timePeriod')}
               </label>
               <TimeFilter
                 startDate={timeRangeStart}
@@ -569,7 +572,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
         <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3 flex items-center justify-between gap-4">
           <p className="text-rose-200 text-sm">{error}</p>
           <Button onClick={handleRetry} variant="secondary" size="sm">
-            Retry
+            {t('loansView.messages.retry')}
           </Button>
         </div>
       )}
@@ -582,7 +585,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
 
       {loading ? (
         <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">Loading loan matches...</div>
+          <div className="text-slate-400">{t('loansView.emptyStates.loading')}</div>
         </div>
       ) : (
         <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
@@ -600,7 +603,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                       </div>
                       {isFutureLoan(match.loanDate) && (
                         <span className="bg-sky-900/50 border-sky-600 text-sky-200 px-2 py-1 rounded text-xs border">
-                          Upcoming
+                          {t('loansView.match.upcomingBadge')}
                         </span>
                       )}
                     </div>
@@ -616,7 +619,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                         type="button"
                         onClick={() => handleEditMatch(match)}
                         className="p-1 text-slate-400 hover:text-sky-400"
-                        aria-label="Edit match"
+                        aria-label={t('loansView.match.editLabel')}
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -624,7 +627,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                         type="button"
                         onClick={() => handleDeleteMatchConfirm(match)}
                         className="p-1 text-slate-400 hover:text-rose-400"
-                        aria-label="Delete match"
+                        aria-label={t('loansView.match.deleteLabel')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -634,7 +637,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
 
                 <div className="space-y-2 mt-3 pt-3 border-t border-slate-600">
                   <div className="text-xs text-slate-400">
-                    Players ({match.players.length}):
+                    {t('loansView.match.playersLabel', { count: match.players.length })}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {match.players.map((player) => (
@@ -670,13 +673,13 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
             {loans.length === 0 && (
               <div className="p-8 text-center text-slate-400">
                 <Repeat className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">No loan matches recorded yet</p>
+                <p className="text-lg font-medium mb-2">{t('loansView.emptyStates.noLoans.title')}</p>
                 <p className="text-sm mb-4">
-                  Track when your players appear for other teams.
+                  {t('loansView.emptyStates.noLoans.description')}
                 </p>
                 {canManageTeam && (
                   <Button onClick={handleOpenLoanModal} Icon={PlusCircle}>
-                    Record First Match
+                    {t('loansView.emptyStates.noLoans.button')}
                   </Button>
                 )}
               </div>
@@ -685,11 +688,11 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
             {loans.length > 0 && groupedMatches.length === 0 && (
               <div className="p-8 text-center text-slate-400">
                 <Repeat className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">No loans found</p>
-                <p className="text-sm mb-4">Try adjusting your filters.</p>
+                <p className="text-lg font-medium mb-2">{t('loansView.emptyStates.noResults.title')}</p>
+                <p className="text-sm mb-4">{t('loansView.emptyStates.noResults.description')}</p>
                 {hasActiveFilters && (
                   <Button onClick={handleClearFilters} variant="secondary">
-                    Clear Filters
+                    {t('loansView.emptyStates.noResults.button')}
                   </Button>
                 )}
               </div>
@@ -715,14 +718,18 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
           removeFromNavigationStack();
         }}
         onConfirm={handleDeleteMatch}
-        title="Delete loan match"
+        title={t('loansView.deleteConfirmation.title')}
         message={
           deletingMatch
-            ? `Remove ${deletingMatch.players.length} player(s) from the loan match ${deletingMatch.receivingTeamName} on ${deletingMatch.loanDate}?`
+            ? t('loansView.deleteConfirmation.message', {
+                count: deletingMatch.players.length,
+                teamName: deletingMatch.receivingTeamName,
+                date: deletingMatch.loanDate
+              })
             : ''
         }
-        confirmText="Delete Match"
-        cancelText="Cancel"
+        confirmText={t('loansView.deleteConfirmation.confirmButton')}
+        cancelText={t('loansView.deleteConfirmation.cancelButton')}
       />
     </div>
   );

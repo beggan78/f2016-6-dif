@@ -31,6 +31,29 @@
     "timeAsAttacker": "Time as Attacker",
     "noStats": "No player statistics available"
   },
+  "table": {
+    "columns": {
+      "player": "Player",
+      "startingRole": "Starting Role",
+      "outfield": "Outfield",
+      "defender": "Defender",
+      "midfielder": "Midfielder",
+      "attacker": "Attacker",
+      "goalie": "Goalie",
+      "substitute": "Substitute",
+      "goals": "Goals"
+    },
+    "roles": {
+      "goalie": "Goalie",
+      "defender": "Defender",
+      "midfielder": "Midfielder",
+      "attacker": "Attacker",
+      "substitute": "Sub",
+      "field": "Field",
+      "none": "--"
+    },
+    "noStats": "No player statistics available"
+  },
   "summary": {
     "finalScore": "Final Score",
     "duration": "Duration",

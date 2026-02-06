@@ -15,7 +15,44 @@
     "perMatch": "Per match",
     "wins": "Vinster",
     "draws": "Oavgjorda",
-    "losses": "Förluster"
+    "losses": "Förluster",
+    "loading": "Laddar lagstatistik...",
+    "error": "Fel vid laddning av lagstatistik",
+    "noStats": "Ingen lagstatistik tillgänglig",
+    "noMatchesFiltered": "Inga matcher hittades med valda filter",
+    "adjustFilters": "Prova att justera dina filterkriterier",
+    "victories": "vinster",
+    "totalGoals": "totalt antal mål",
+    "sections": {
+      "goals": "Mål",
+      "matchOutcomes": "Matchutfall",
+      "recentMatches": "Senaste Matcher",
+      "homeRecord": "Hemmastatistik",
+      "awayRecord": "Bortastatistik",
+      "cleanSheets": "Hållna Nollor"
+    },
+    "labels": {
+      "matchesWon": "Vunna Matcher",
+      "matchesDrawn": "Oavgjorda Matcher",
+      "matchesLost": "Förlorade Matcher",
+      "goalsScored": "Gjorda Mål",
+      "goalsConceded": "Insläppta Mål",
+      "goalDifference": "Målskillnad",
+      "matches": "matcher",
+      "total": "totalt",
+      "ofTotal": "av totalt"
+    },
+    "outcomes": {
+      "win": "Vinst",
+      "draw": "Oavgjort",
+      "loss": "Förlust"
+    },
+    "record": {
+      "wins": "vinster",
+      "draws": "oavgjorda",
+      "loss": "förlust",
+      "losses": "förluster"
+    }
   },
   "playerStats": {
     "title": "Spelarstatistik",
@@ -24,7 +61,36 @@
     "avgGoals": "Snitt mål",
     "topScorer": "Skyttekung",
     "noStats": "Ingen spelarstatistik tillgänglig",
-    "adjustTimeRange": "Lägg till matcher eller justera valt tidsintervall"
+    "adjustTimeRange": "Lägg till matcher eller justera valt tidsintervall",
+    "loading": "Laddar spelarstatistik...",
+    "error": "Fel vid laddning av spelarstatistik",
+    "errorDetails": "Misslyckades med att ladda spelarstatistik",
+    "noMatchesAvailable": "Ingen spelarstatistik tillgänglig",
+    "addMatchesOrAdjust": "Lägg till matcher eller justera valt tidsintervall.",
+    "noMatchesFiltered": "Inga matcher hittades med valda filter",
+    "adjustFilters": "Prova att justera filterkriterier.",
+    "noStatsRecorded": "Ingen spelarstatistik registrerad för valda filter",
+    "activePlayers": "Aktiva spelare",
+    "perMatch": "Per match",
+    "totalGoalsLabel": "Totalt antal mål:",
+    "goals": "mål",
+    "noData": "Ingen data",
+    "tableSubtitle": "Klicka på kolumnrubriker för att sortera eller dra för att ändra ordning. Utlånade matcher viktas med {{weight}}.",
+    "columns": {
+      "player": "Spelare",
+      "matches": "Matcher",
+      "loanMatches": "Utlånade Matcher",
+      "goals": "Mål",
+      "avgTime": "Snitt Tid",
+      "outfieldTime": "Utespelartid",
+      "startedAsSub": "Startade som Avbytare",
+      "defender": "Back",
+      "midfielder": "Mittfält",
+      "attacker": "Forward",
+      "goalkeeper": "Målvakt",
+      "captain": "Kapten",
+      "fairPlay": "Fair Play"
+    }
   },
   "attendanceStats": {
     "title": "Närvarostatistik",
@@ -32,12 +98,55 @@
     "trackedPlayers": "Spårade spelare",
     "totalPractices": "Totalt Antal Träningar",
     "inSelectedPeriod": "I vald period",
-    "noData": "Ingen närvarodata tillgänglig"
+    "avgAttendanceRate": "Snitt Närvaro",
+    "acrossAllPlayers": "Alla spelare",
+    "topAttendee": "Bästa Närvaro",
+    "noData": "Ingen närvarodata tillgänglig",
+    "noDataTimeRange": "Ingen närvarodata tillgänglig för valt tidsintervall",
+    "adjustTimeFilter": "Prova att justera tidsfiltret eller vänta på nästa synk.",
+    "loading": "Laddar närvarostatistik...",
+    "error": "Fel vid laddning av närvarostatistik",
+    "noConnector": {
+      "title": "Ingen närvarodata tillgänglig",
+      "description": "Konfigurera en Connector under Laghantering Connectors-fliken för att samla närvarodata från:",
+      "platforms": {
+        "sportadmin": "SportAdmin",
+        "svenskalag": "Svenska Lag",
+        "myclub": "MyClub"
+      },
+      "connectButton": "Anslut Nu"
+    },
+    "table": {
+      "player": "Spelare",
+      "practicesPerMatch": "Träningar/Match",
+      "practicesAttended": "Träningar närvarande",
+      "attendanceRate": "Närvaroprocent",
+      "matchesPlayed": "Spelade matcher",
+      "matchesLoaned": "Utlånade matcher",
+      "sortInstruction": "Klicka på kolumnrubriker för att sortera eller dra för att ändra ordning."
+    }
   },
   "matchHistory": {
     "title": "Matchhistorik",
     "noMatches": "Inga matcher än",
-    "addMatches": "Matcher du spelar kommer att visas här"
+    "addMatches": "Matcher du spelar kommer att visas här",
+    "loading": "Laddar matchhistorik...",
+    "error": "Fel vid laddning av matchhistorik",
+    "errorDetails": "Misslyckades med att ladda matchhistorik",
+    "addMatch": "Lägg till Match",
+    "matchesFound": "{{count}} matcher hittades. Klicka på en match för att se detaljerad statistik.",
+    "noMatchesFiltered": "Inga matcher hittades med valda filter.",
+    "adjustFilters": "Prova att justera dina filterkriterier.",
+    "venues": {
+      "home": "Hemma",
+      "away": "Borta",
+      "neutral": "Neutral"
+    },
+    "outcomes": {
+      "win": "Vinst",
+      "draw": "Oavgjort",
+      "loss": "Förlust"
+    }
   },
   "matchDetails": {
     "title": "Matchdetaljer",
@@ -51,6 +160,13 @@
     "deleteConfirm": "Är du säker på att du vill ta bort denna match från historiken?",
     "deleteSuccess": "Match borttagen",
     "deleteError": "Misslyckades med att ta bort match"
+  },
+  "matchSummary": {
+    "scheduled": "Schemalagd:",
+    "noStartTime": "Ingen starttid registrerad",
+    "durationUnknown": "Längd okänd",
+    "wins": "{{teamName}} vinner",
+    "tied": "Oavgjort"
   },
   "filters": {
     "all": "Alla",

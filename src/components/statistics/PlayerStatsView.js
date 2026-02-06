@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { User, Award, Clock, Users, Target } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTeam } from '../../contexts/TeamContext';
 import { getFinishedMatches, getPlayerStats } from '../../services/matchStateManager';
 import { getTeamLoans, getDefaultLoanMatchWeight } from '../../services/playerLoanService';
@@ -33,6 +34,7 @@ const SORT_COLUMNS = {
 };
 
 export function PlayerStatsView({ startDate, endDate }) {
+  const { t } = useTranslation('statistics');
   const { currentTeam, loadTeamPreferences } = useTeam();
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -161,7 +163,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       if (result.success) {
         setPlayers(result.players || []);
       } else {
-        setError(result.error || 'Failed to load player statistics');
+        setError(result.error || t('playerStats.errorDetails'));
         setPlayers([]);
       }
 
@@ -178,7 +180,8 @@ export function PlayerStatsView({ startDate, endDate }) {
     venueFilter,
     opponentFilter,
     playerFilter,
-    formatFilter
+    formatFilter,
+    t
   ]);
 
   const enhancedPlayers = useMemo(() => {
@@ -255,7 +258,7 @@ export function PlayerStatsView({ startDate, endDate }) {
     () => [
       {
         key: SORT_COLUMNS.NAME,
-        label: 'Player',
+        label: t('playerStats.columns.player'),
         sortable: true,
         className: 'text-left font-medium',
         render: (player) => (
@@ -267,7 +270,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.MATCHES,
-        label: 'Matches',
+        label: t('playerStats.columns.matches'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -283,7 +286,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.LOAN_MATCHES,
-        label: 'Loan Matches',
+        label: t('playerStats.columns.loanMatches'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -294,7 +297,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.GOALS,
-        label: 'Goals',
+        label: t('playerStats.columns.goals'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -303,7 +306,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.AVG_TIME,
-        label: 'Avg Time',
+        label: t('playerStats.columns.avgTime'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -314,7 +317,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.TOTAL_TIME,
-        label: 'Outfield Time',
+        label: t('playerStats.columns.outfieldTime'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -323,7 +326,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.SUB_START,
-        label: 'Started as Sub',
+        label: t('playerStats.columns.startedAsSub'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -332,7 +335,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.DEFENDER,
-        label: 'Defender',
+        label: t('playerStats.columns.defender'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -341,7 +344,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.MIDFIELDER,
-        label: 'Midfielder',
+        label: t('playerStats.columns.midfielder'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -350,7 +353,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.ATTACKER,
-        label: 'Attacker',
+        label: t('playerStats.columns.attacker'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -359,7 +362,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.GOALKEEPER,
-        label: 'Goalkeeper',
+        label: t('playerStats.columns.goalkeeper'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -368,7 +371,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.CAPTAIN,
-        label: 'Captain',
+        label: t('playerStats.columns.captain'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -377,7 +380,7 @@ export function PlayerStatsView({ startDate, endDate }) {
       },
       {
         key: SORT_COLUMNS.FAIR_PLAY,
-        label: 'Fair Play',
+        label: t('playerStats.columns.fairPlay'),
         sortable: true,
         className: 'text-center',
         render: (player) => (
@@ -385,7 +388,7 @@ export function PlayerStatsView({ startDate, endDate }) {
         )
       }
     ],
-    [formatMatchCount]
+    [formatMatchCount, t]
   );
 
   // Use column order persistence hook
@@ -434,12 +437,12 @@ export function PlayerStatsView({ startDate, endDate }) {
 
   // Show loading state
   if (loading) {
-    return <StatsLoadingState message="Loading player statistics..." />;
+    return <StatsLoadingState message={t('playerStats.loading')} />;
   }
 
   // Show error state
   if (error) {
-    return <StatsErrorState title="Error loading player statistics" message={error} />;
+    return <StatsErrorState title={t('playerStats.error')} message={error} />;
   }
 
   const hasPlayerData = sortedPlayers.length > 0;
@@ -481,21 +484,21 @@ export function PlayerStatsView({ startDate, endDate }) {
 
       {noMatchesAvailable && (
         <StatsEmptyState
-          title="No player statistics available"
-          message="Add matches or adjust the selected time range."
+          title={t('playerStats.noMatchesAvailable')}
+          message={t('playerStats.addMatchesOrAdjust')}
         />
       )}
 
       {!noMatchesAvailable && noMatchesForFilters && (
         <StatsEmptyState
-          title="No matches found with the selected filters"
-          message="Try adjusting the filter criteria."
+          title={t('playerStats.noMatchesFiltered')}
+          message={t('playerStats.adjustFilters')}
         />
       )}
 
       {!noMatchesAvailable && !noMatchesForFilters && !hasPlayerData && !matchesLoading && (
         <StatsEmptyState
-          title="No player statistics recorded for the selected filters"
+          title={t('playerStats.noStatsRecorded')}
         />
       )}
 
@@ -505,30 +508,30 @@ export function PlayerStatsView({ startDate, endDate }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               icon={Users}
-              title="Total Players"
+              title={t('playerStats.totalPlayers')}
               value={summaryStats.totalPlayers}
-              subtitle="Active players"
+              subtitle={t('playerStats.activePlayers')}
             />
 
             <StatCard
               icon={Clock}
-              title="Avg. Playing Time"
+              title={t('playerStats.avgPlayingTime')}
               value={formatMinutesAsTime(summaryStats.averageFieldTime)}
-              subtitle="Per match"
+              subtitle={t('playerStats.perMatch')}
             />
 
             <StatCard
               icon={Target}
-              title="Average goals"
+              title={t('playerStats.avgGoals')}
               value={summaryStats.averageGoalsPerPlayer.toFixed(1)}
-              subtitle={`Total goals: ${summaryStats.totalGoals}`}
+              subtitle={`${t('playerStats.totalGoalsLabel')} ${summaryStats.totalGoals}`}
             />
 
             <StatCard
               icon={Award}
-              title="Top Scorer"
+              title={t('playerStats.topScorer')}
               value={summaryStats.topScorer ? summaryStats.topScorer.displayName : '-'}
-              subtitle={summaryStats.topScorer ? `${summaryStats.topScorer.goalsScored} goals` : 'No data'}
+              subtitle={summaryStats.topScorer ? `${summaryStats.topScorer.goalsScored} ${t('playerStats.goals')}` : t('playerStats.noData')}
             />
           </div>
 
@@ -541,8 +544,8 @@ export function PlayerStatsView({ startDate, endDate }) {
             onSort={handleSort}
             renderSortIndicator={renderSortIndicator}
             headerIcon={Users}
-            headerTitle="Player Statistics"
-            headerSubtitle={`Click column headers to sort or drag to reorder. Loan matches are weighted at ${formatMatchCount(loanWeight)}.`}
+            headerTitle={t('playerStats.title')}
+            headerSubtitle={t('playerStats.tableSubtitle', { weight: formatMatchCount(loanWeight) })}
             idKey="id"
           />
         </>

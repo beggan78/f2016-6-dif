@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, ConfirmationModal, Input } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -11,6 +12,7 @@ const SUCCESS_MESSAGE_DURATION = 3000; // 3 seconds
 const LEAVE_TEAM_BLOCKING_ERRORS = ['last_team_member', 'last_team_admin'];
 
 export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
+  const { t } = useTranslation('profile');
   const { user, userProfile, updateProfile, loading, authError, clearAuthError, profileName, markProfileCompleted } = useAuth();
   const {
     currentTeam,
@@ -102,17 +104,17 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     const trimmedName = editedName.trim();
-    
+
     if (!trimmedName) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('validation.nameRequired');
     } else if (trimmedName.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = t('validation.nameTooShort');
     } else if (!isValidNameInput(trimmedName)) {
-      newErrors.name = 'Name contains invalid characters. Please use only letters, numbers, spaces, hyphens, apostrophes, and periods.';
+      newErrors.name = t('validation.nameInvalidChars');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -134,14 +136,14 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         setErrors({ general: error.message });
       } else if (profile) {
         setIsEditing(false);
-        setSuccessMessage('Profile updated successfully!');
+        setSuccessMessage(t('messages.updateSuccess'));
         // Mark profile as completed if name was added
         if (profile.name && profile.name.trim()) {
           markProfileCompleted();
         }
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('messages.unexpectedError') });
     }
   };
 
@@ -204,9 +206,9 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     if (!leaveTeamBlocked?.team) return '';
     const teamName = formatTeamName(leaveTeamBlocked.team);
     if (leaveTeamBlocked.reason === 'last_team_member') {
-      return `You're the last member of ${teamName}. Delete the team instead?`;
+      return t('modals.cantLeaveTeam.lastMember', { teamName });
     }
-    return `You're the last admin of ${teamName}. Delete the team instead?`;
+    return t('modals.cantLeaveTeam.lastAdmin', { teamName });
   };
 
   const getLeaveClubBlockedTeams = () => {
@@ -222,16 +224,16 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     const blockedTeams = getLeaveClubBlockedTeams();
     if (blockedTeams.length > 0) {
       const teamName = formatTeamName(blockedTeams[0]);
-      return `You're the last member of ${teamName}. Delete the team instead?`;
+      return t('modals.cantLeaveClub.lastMember', { teamName });
     }
 
     const fallbackTeams = Array.isArray(leaveClubBlocked.teams) ? leaveClubBlocked.teams : [];
     if (fallbackTeams.length > 0) {
       const clubPrefix = leaveClubBlocked.club?.long_name || leaveClubBlocked.club?.name;
       const fallbackName = clubPrefix ? `${clubPrefix} ${fallbackTeams[0]}` : fallbackTeams[0];
-      return `You're the last member of ${fallbackName}. Delete the team instead?`;
+      return t('modals.cantLeaveClub.lastMember', { teamName: fallbackName });
     }
-    return "You're the last member of this team. Delete the team instead?";
+    return t('modals.cantLeaveClub.lastMember', { teamName: 'this team' });
   };
 
   const handleLeaveClub = (membership) => {
@@ -376,13 +378,13 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-sky-300">Profile</h1>
+        <h1 className="text-2xl font-bold text-sky-300">{t('screen.title')}</h1>
         <Button
           onClick={onNavigateBack}
           variant="secondary"
           size="sm"
         >
-          Back
+          {t('screen.back')}
         </Button>
       </div>
 
@@ -425,7 +427,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                   <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-emerald-300 text-sm">Email verified</span>
+                  <span className="text-emerald-300 text-sm">{t('personalInfo.emailVerified')}</span>
                 </div>
               )}
             </div>
@@ -436,13 +438,13 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         <div className="p-6 space-y-6">
           {/* Personal Information */}
           <div>
-            <h3 className="text-lg font-semibold text-slate-200 mb-4">Personal Information</h3>
-            
+            <h3 className="text-lg font-semibold text-slate-200 mb-4">{t('personalInfo.title')}</h3>
+
             <div className="space-y-4">
               {/* Name Field */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Full Name
+                  {t('personalInfo.fullName')}
                 </label>
                 {isEditing ? (
                   <div className="space-y-2">
@@ -456,7 +458,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                         }
                       }}
                       onKeyDown={handleKeyDown}
-                      placeholder="Enter your full name"
+                      placeholder={t('personalInfo.namePlaceholder')}
                       disabled={loading}
                       className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                     />
@@ -470,7 +472,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                         size="sm"
                         disabled={loading}
                       >
-                        {loading ? 'Saving...' : 'Save'}
+                        {loading ? t('buttons.saving') : t('buttons.save')}
                       </Button>
                       <Button
                         onClick={handleCancel}
@@ -478,7 +480,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                         size="sm"
                         disabled={loading}
                       >
-                        Cancel
+                        {t('buttons.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -493,7 +495,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                       size="sm"
                       className={profileName === 'Not set' ? 'animate-glow-and-fade' : ''}
                     >
-                      Edit
+                      {t('buttons.edit')}
                     </Button>
                   </div>
                 )}
@@ -502,18 +504,18 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
               {/* Email Field (Read-only) */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Email Address
+                  {t('personalInfo.emailAddress')}
                 </label>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-100">{user?.email}</span>
-                  <span className="text-xs text-slate-400">(Read-only)</span>
+                  <span className="text-xs text-slate-400">{t('personalInfo.readOnly')}</span>
                 </div>
               </div>
 
               {/* Password Field */}
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Password
+                  {t('personalInfo.password')}
                 </label>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 text-sm">••••••••••••</span>
@@ -522,11 +524,11 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                     variant="secondary"
                     size="sm"
                   >
-                    Change Password
+                    {t('personalInfo.changePassword')}
                   </Button>
                 </div>
                 <p className="text-slate-500 text-xs mt-1">
-                  Regularly updating your password helps keep your account secure
+                  {t('personalInfo.passwordHint')}
                 </p>
               </div>
             </div>
@@ -538,7 +540,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
               onClick={() => setShowAccountInfo(!showAccountInfo)}
               className="w-full flex items-center justify-between text-left hover:bg-slate-600 hover:bg-opacity-30 rounded-lg p-2 -m-2 transition-colors"
             >
-              <h3 className="text-lg font-semibold text-slate-200">Account Information</h3>
+              <h3 className="text-lg font-semibold text-slate-200">{t('accountInfo.title')}</h3>
               <svg
                 className={`w-5 h-5 text-slate-400 transition-transform ${
                   showAccountInfo ? 'rotate-180' : ''
@@ -555,41 +557,41 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Account Created
+                    {t('accountInfo.created')}
                   </label>
                   <span className="text-slate-100 text-sm">
                     {formatDate(user?.created_at)}
                   </span>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Last Updated
+                    {t('accountInfo.updated')}
                   </label>
                   <span className="text-slate-100 text-sm">
                     {formatDate(userProfile?.updated_at)}
                   </span>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">
-                    User ID
+                    {t('accountInfo.userId')}
                   </label>
                   <span className="text-slate-400 text-xs font-mono break-all">
                     {user?.id}
                   </span>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Email Status
+                    {t('accountInfo.emailStatus')}
                   </label>
                   <span className={`text-sm ${
-                    user?.email_confirmed_at 
-                      ? 'text-emerald-400' 
+                    user?.email_confirmed_at
+                      ? 'text-emerald-400'
                       : 'text-amber-400'
                   }`}>
-                    {user?.email_confirmed_at ? 'Verified' : 'Pending verification'}
+                    {user?.email_confirmed_at ? t('accountInfo.verified') : t('accountInfo.pendingVerification')}
                   </span>
                 </div>
               </div>
@@ -598,11 +600,11 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
 
           {/* Team Management */}
           <div className="border-t border-slate-600 pt-6">
-            <h3 className="text-lg font-semibold text-slate-200 mb-4">Team Management</h3>
-            
+            <h3 className="text-lg font-semibold text-slate-200 mb-4">{t('teamManagement.title')}</h3>
+
             {teamLoading ? (
               <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
-                <p className="text-slate-400 text-sm text-center">Loading your clubs and teams...</p>
+                <p className="text-slate-400 text-sm text-center">{t('teamManagement.loading')}</p>
               </div>
             ) : !hasClubs ? (
               <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
@@ -611,9 +613,9 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
-                <h4 className="font-medium text-slate-200 mb-2">No clubs yet</h4>
+                <h4 className="font-medium text-slate-200 mb-2">{t('emptyStates.noClubs.title')}</h4>
                 <p className="text-slate-400 text-sm mb-4">
-                  You haven't joined any clubs yet. Create a club or join an existing club.
+                  {t('emptyStates.noClubs.description')}
                 </p>
                 <Button
                   onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
@@ -621,14 +623,14 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                   size="sm"
                   className="mx-auto"
                 >
-                  Create or join a club
+                  {t('emptyStates.noClubs.action')}
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 {/* Clubs */}
                 <div>
-                  <h4 className="font-medium text-slate-300 mb-3">Your Clubs ({clubMemberships.length})</h4>
+                  <h4 className="font-medium text-slate-300 mb-3">{t('teamManagement.yourClubs', { count: clubMemberships.length })}</h4>
                   <div className="space-y-2">
                     {clubMemberships.map((membership) => (
                       <div
@@ -641,7 +643,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                               {formatClubName(membership)}
                             </p>
                             <p className="text-slate-400 text-sm">
-                              {membership.role || 'Member'}
+                              {membership.role || t('teamManagement.member')}
                             </p>
                           </div>
                           <Button
@@ -650,7 +652,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                             size="sm"
                             disabled={leavingClubId === membership.id}
                           >
-                            {leavingClubId === membership.id ? 'Leaving...' : 'Leave'}
+                            {leavingClubId === membership.id ? t('teamManagement.leaving') : t('teamManagement.leave')}
                           </Button>
                         </div>
                       </div>
@@ -666,7 +668,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-left">
-                        <h4 className="font-medium text-sky-200">Current Team</h4>
+                        <h4 className="font-medium text-sky-200">{t('teamManagement.currentTeam')}</h4>
                         <p className="text-sky-100 font-semibold">
                           {currentTeam.club?.long_name ? `${currentTeam.club.long_name} ${currentTeam.name}` : currentTeam.name}
                         </p>
@@ -681,7 +683,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
 
                 {hasTeams ? (
                   <div>
-                    <h4 className="font-medium text-slate-300 mb-3">Your Teams ({teams.length})</h4>
+                    <h4 className="font-medium text-slate-300 mb-3">{t('teamManagement.yourTeams', { count: teams.length })}</h4>
                     <div className="space-y-2">
                       {teams.map((team) => (
                         <div
@@ -698,8 +700,8 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                                 {team.club?.long_name ? `${team.club.long_name} ${team.name}` : team.name}
                               </p>
                               <p className="text-slate-400 text-sm">
-                                {team.userRole || 'Member'}
-                                {team.active === false && ' • Inactive'}
+                                {team.userRole || t('teamManagement.member')}
+                                {team.active === false && ` • ${t('teamManagement.inactive')}`}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -711,7 +713,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                                   }}
                                   className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
                                 >
-                                  Switch
+                                  {t('teamManagement.switch')}
                                 </button>
                               )}
                               <Button
@@ -720,7 +722,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                                 size="sm"
                                 disabled={leavingTeamId === team.id}
                               >
-                                {leavingTeamId === team.id ? 'Leaving...' : 'Leave'}
+                                {leavingTeamId === team.id ? t('teamManagement.leaving') : t('teamManagement.leave')}
                               </Button>
                             </div>
                           </div>
@@ -735,9 +737,9 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </div>
-                    <h4 className="font-medium text-slate-200 mb-2">No Teams Yet</h4>
+                    <h4 className="font-medium text-slate-200 mb-2">{t('emptyStates.noTeams.title')}</h4>
                     <p className="text-slate-400 text-sm mb-4">
-                      You haven't joined any teams yet. Create your first team or ask a coach to invite you.
+                      {t('emptyStates.noTeams.description')}
                     </p>
                     <Button
                       onClick={() => onNavigateTo(VIEWS.TEAM_MANAGEMENT)}
@@ -745,7 +747,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                       size="sm"
                       className="mx-auto"
                     >
-                      Create or Join a Team
+                      {t('emptyStates.noTeams.action')}
                     </Button>
                   </div>
                 )}
@@ -765,14 +767,14 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         isOpen={Boolean(leaveClubConfirmation)}
         onConfirm={confirmLeaveClub}
         onCancel={() => setLeaveClubConfirmation(null)}
-        title="Leave club"
+        title={t('modals.leaveClub.title')}
         message={
           leaveClubConfirmation
-            ? `Are you sure you want to leave ${formatClubName(leaveClubConfirmation)}?`
+            ? t('modals.leaveClub.message', { clubName: formatClubName(leaveClubConfirmation) })
             : ''
         }
-        confirmText="Leave club"
-        cancelText="Cancel"
+        confirmText={t('modals.leaveClub.confirm')}
+        cancelText={t('buttons.cancel')}
         variant="danger"
       />
 
@@ -780,14 +782,14 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         isOpen={Boolean(leaveTeamConfirmation)}
         onConfirm={confirmLeaveTeam}
         onCancel={() => setLeaveTeamConfirmation(null)}
-        title="Leave team"
+        title={t('modals.leaveTeam.title')}
         message={
           leaveTeamConfirmation
-            ? `Are you sure you want to leave ${formatTeamName(leaveTeamConfirmation)}?`
+            ? t('modals.leaveTeam.message', { teamName: formatTeamName(leaveTeamConfirmation) })
             : ''
         }
-        confirmText="Leave team"
-        cancelText="Cancel"
+        confirmText={t('modals.leaveTeam.confirm')}
+        cancelText={t('buttons.cancel')}
         variant="danger"
       />
 
@@ -795,10 +797,10 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         isOpen={Boolean(leaveClubBlocked)}
         onConfirm={confirmDeleteClubTeam}
         onCancel={handleLeaveClubBlockedCancel}
-        title="Can't leave club"
+        title={t('modals.cantLeaveClub.title')}
         message={getLeaveClubBlockedMessage()}
-        confirmText={isDeletingClubTeam ? 'Deleting...' : 'Delete Team'}
-        cancelText="Cancel"
+        confirmText={isDeletingClubTeam ? t('modals.cantLeaveClub.deletingButton') : t('modals.cantLeaveClub.deleteButton')}
+        cancelText={t('buttons.cancel')}
         variant="danger"
       />
 
@@ -806,10 +808,10 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
         isOpen={Boolean(leaveTeamBlocked)}
         onConfirm={confirmDeleteTeam}
         onCancel={handleLeaveTeamBlockedCancel}
-        title="Can't leave team"
+        title={t('modals.cantLeaveTeam.title')}
         message={getLeaveTeamBlockedMessage()}
-        confirmText={isDeletingTeam ? 'Deleting...' : 'Delete Team'}
-        cancelText="Cancel"
+        confirmText={isDeletingTeam ? t('modals.cantLeaveClub.deletingButton') : t('modals.cantLeaveClub.deleteButton')}
+        cancelText={t('buttons.cancel')}
         variant="danger"
       />
     </div>

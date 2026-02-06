@@ -339,15 +339,15 @@ export function ConfigurationScreen({
     } catch (error) {
       console.error('❌ Failed to check for pending matches:', error);
       setPendingMatchError({
-        message: 'Failed to check for pending matches. Please check your internet connection and try again.',
+        message: t('configuration:pendingMatch.errors.checkFailed'),
         detail: error.message,
         canRetry: true
       });
     } finally {
       setPendingMatchLoading(false);
     }
-  }, []);
-  
+  }, [t]);
+
   // Direct pending match detection (no navigation complexity)
   React.useEffect(() => {
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
@@ -1703,7 +1703,7 @@ export function ConfigurationScreen({
         setSaveConfigStatus({
           loading: false,
           message: '',
-          error: result.error || 'Failed to save configuration'
+          error: result.error || t('configuration:saveConfig.errors.failed')
         });
       }
     } catch (error) {
@@ -1711,7 +1711,7 @@ export function ConfigurationScreen({
       setSaveConfigStatus({
         loading: false,
         message: '',
-        error: 'Failed to save configuration: ' + error.message
+        error: t('configuration:saveConfig.errors.failedWithMessage', { error: error.message })
       });
     }
   };
@@ -1740,7 +1740,7 @@ export function ConfigurationScreen({
         const matchId = result.matchId;
 
         if (!matchId) {
-          throw new Error('No match ID returned from save operation');
+          throw new Error(t('configuration:saveConfig.errors.noMatchId'));
         }
 
         const copyResult = await copyLiveMatchUrlToClipboard(matchId);
@@ -1811,7 +1811,7 @@ export function ConfigurationScreen({
         <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
           <div className="flex items-start space-x-3">
             <div className="flex-1">
-              <div className="text-red-300 font-medium text-sm">Failed to Check Pending Matches</div>
+              <div className="text-red-300 font-medium text-sm">{t('configuration:pendingMatch.errors.title')}</div>
               <div className="text-red-200 text-sm mt-1">
                 {pendingMatchError.message}
               </div>
@@ -1829,7 +1829,7 @@ export function ConfigurationScreen({
                     disabled={pendingMatchLoading}
                     className="text-red-300 border-red-500/50 hover:bg-red-500/20"
                   >
-                    {pendingMatchLoading ? 'Retrying...' : 'Try Again'}
+                    {pendingMatchLoading ? t('configuration:pendingMatch.errors.retrying') : t('configuration:pendingMatch.errors.tryAgain')}
                   </Button>
                 </div>
               )}
@@ -1849,9 +1849,9 @@ export function ConfigurationScreen({
                   <Upload className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-emerald-300 text-sm">Migrate Local Data</h3>
+                  <h3 className="font-semibold text-emerald-300 text-sm">{t('configuration:dataMigration.title')}</h3>
                   <p className="text-emerald-200 text-sm mt-1">
-                    We found match history saved locally. Would you like to sync it to your cloud account?
+                    {t('configuration:dataMigration.description')}
                   </p>
                   <div className="flex gap-2 mt-3">
                     <Button
@@ -1861,7 +1861,7 @@ export function ConfigurationScreen({
                       disabled={syncStatus.loading}
                       className="bg-emerald-600 hover:bg-emerald-700"
                     >
-                      {syncStatus.loading ? 'Migrating...' : 'Migrate Data'}
+                      {syncStatus.loading ? t('configuration:dataMigration.migrating') : t('configuration:dataMigration.migrateButton')}
                     </Button>
                     <Button
                       onClick={handleDismissMigration}
@@ -1869,7 +1869,7 @@ export function ConfigurationScreen({
                       size="sm"
                       disabled={syncStatus.loading}
                     >
-                      Later
+                      {t('configuration:dataMigration.laterButton')}
                     </Button>
                   </div>
                 </div>
@@ -1907,7 +1907,7 @@ export function ConfigurationScreen({
         /* Cloud Sync Features for Anonymous Users */
         <FeatureGate
           feature="cloud synchronization"
-          description="Save your team, configurations and match data. Access your data from any device and unlock season statistics."
+          description={t('configuration:cloudSync.featureDescription')}
           variant="inline"
           authModal={authModal}
         >
@@ -1915,8 +1915,8 @@ export function ConfigurationScreen({
             <div className="flex items-center space-x-3">
               <Cloud className="w-8 h-8 text-slate-400" />
               <div>
-                <div className="text-slate-300 font-medium">Cloud Sync Available</div>
-                <div className="text-slate-400 text-sm">Keep your data safe across devices</div>
+                <div className="text-slate-300 font-medium">{t('configuration:cloudSync.available')}</div>
+                <div className="text-slate-400 text-sm">{t('configuration:cloudSync.description')}</div>
               </div>
             </div>
           </div>
@@ -2238,7 +2238,7 @@ export function ConfigurationScreen({
         isAuthenticated={isVoteAuthenticated}
         authModal={authModal}
       >
-        <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
+        <p>{t('configuration:formationVoting.description')}</p>
       </FeatureVoteModal>
 
       <ThreeOptionModal

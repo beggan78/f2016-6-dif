@@ -19,7 +19,11 @@
     "opponentLabel": "Motståndare",
     "opponentPlaceholder": "Ange motståndarlags namn (valfritt)",
     "matchTypeLabel": "Matchtyp",
-    "venueLabel": "Arena"
+    "venueLabel": "Arena",
+    "opponentSuggestions": {
+      "ariaLabel": "Tidigare motståndarförslag",
+      "noMatches": "Inga tidigare motståndare matchar \"{{query}}\""
+    }
   },
   "gameSettings": {
     "periodsLabel": "Antal Perioder",
@@ -108,6 +112,77 @@
       "description": "Matchen spelas på neutral plan för båda lagen."
     }
   },
+  "pendingMatch": {
+    "errors": {
+      "checkFailed": "Misslyckades med att kontrollera pågående matcher. Kontrollera din internetanslutning och försök igen.",
+      "title": "Misslyckades med att Kontrollera Pågående Matcher",
+      "retrying": "Försöker igen...",
+      "tryAgain": "Försök Igen"
+    }
+  },
+  "cloudSync": {
+    "available": "Molnsynkronisering Tillgänglig",
+    "description": "Håll dina data säkra på alla enheter",
+    "featureDescription": "Spara ditt lag, konfigurationer och matchdata. Kom åt dina data från vilken enhet som helst och lås upp säsongsstatistik."
+  },
+  "dataMigration": {
+    "title": "Migrera Lokal Data",
+    "description": "Vi hittade matchhistorik sparad lokalt. Vill du synkronisera den till ditt molnkonto?",
+    "migrating": "Migrerar...",
+    "migrateButton": "Migrera Data",
+    "laterButton": "Senare"
+  },
+  "saveConfig": {
+    "errors": {
+      "failed": "Misslyckades med att spara konfiguration",
+      "failedWithMessage": "Misslyckades med att spara konfiguration: {{error}}",
+      "noMatchId": "Inget match-ID returnerades från sparoperationen"
+    }
+  },
+  "formationVoting": {
+    "description": "Endast 2-2 och 1-2-1 formationerna är för närvarande implementerade. Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare per formation räknas."
+  },
+  "formationPreview": {
+    "formations": {
+      "2-2": {
+        "name": "2-2 Formation",
+        "description": "2 backar, 2 forwards"
+      },
+      "1-2-1": {
+        "name": "1-2-1 Formation",
+        "description": "1 back, 2 mittfält, 1 forward"
+      },
+      "2-2-2": {
+        "name": "2-2-2 Formation",
+        "description": "2 backar, 2 mittfält, 2 forwards"
+      },
+      "2-3-1": {
+        "name": "2-3-1 Formation",
+        "description": "2 backar, 3 mittfält, 1 forward"
+      }
+    },
+    "positions": {
+      "leftAttacker": "Vänsterforward",
+      "rightAttacker": "Högerforward",
+      "attacker": "Forward",
+      "leftDefender": "Vänsterback",
+      "rightDefender": "Högerback",
+      "defender": "Back",
+      "leftMid": "Vänster Mitt",
+      "rightMid": "Höger Mitt",
+      "leftMidfielder": "Vänster Mittfält",
+      "rightMidfielder": "Höger Mittfält",
+      "centerMidfielder": "Mittfält Center",
+      "goalie": "Målvakt"
+    },
+    "roles": {
+      "defenders": "Backar",
+      "defender": "Back",
+      "attackers": "Forwards",
+      "attacker": "Forward",
+      "midfielders": "Mittfält"
+    }
+  },
   "periodSetup": {
     "header": {
       "title": "Period {{period}} Laguppställning"
@@ -170,6 +245,11 @@
       "noPlayersAvailable": "Inga spelare tillgängliga för positionering.",
       "randomizeFailed": "Misslyckades med att generera slumpmässig formation.",
       "alreadyAssigned": "{{playerName}} är redan tilldelad. Välj en annan spelare."
+    },
+    "fallbacks": {
+      "substituteTitle": "Avbytare",
+      "unknownPlayer": "Okänd",
+      "selectPosition": "Välj {{title}}"
     }
   }
 }

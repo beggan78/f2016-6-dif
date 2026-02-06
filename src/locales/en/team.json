@@ -80,5 +80,598 @@
     "title": "Select Team",
     "noTeams": "No teams available",
     "createTeam": "Create Team"
+  },
+  "addRosterPlayerModal": {
+    "header": {
+      "title": "Add Player",
+      "subtitle": "Add a new player to {{teamName}}"
+    },
+    "form": {
+      "labels": {
+        "firstName": "First Name *",
+        "lastName": "Last Name",
+        "displayName": "Display Name *",
+        "jerseyNumber": "Jersey Number"
+      },
+      "placeholders": {
+        "firstName": "Enter first name",
+        "lastName": "Enter last name (optional)",
+        "displayName": "Enter display name"
+      },
+      "helperText": {
+        "displayName": "This is the name displayed in the app (auto-fills from first name)"
+      }
+    },
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "firstNameMinLength": "First name must be at least 2 characters",
+      "firstNameMaxLength": "First name must be at most 50 characters",
+      "lastNameMaxLength": "Last name must be at most 50 characters",
+      "displayNameRequired": "Display name is required",
+      "displayNameMinLength": "Display name must be at least 2 characters",
+      "displayNameMaxLength": "Display name must be at most 50 characters",
+      "jerseyNumberInvalid": "Please select a valid jersey number",
+      "failedToAdd": "Failed to add player"
+    },
+    "jerseyNumber": {
+      "noNumber": "No jersey number",
+      "allTaken": "All jersey numbers (1-100) are taken"
+    },
+    "buttons": {
+      "addPlayer": "Add Player",
+      "adding": "Adding...",
+      "cancel": "Cancel"
+    },
+    "success": {
+      "playerAdded": "{{playerName}} added successfully!"
+    }
+  },
+  "editRosterPlayerModal": {
+    "header": {
+      "title": "Edit Player",
+      "subtitle": "Update {{playerName}}'s information"
+    },
+    "form": {
+      "labels": {
+        "firstName": "First Name *",
+        "lastName": "Last Name",
+        "displayName": "Display Name *",
+        "jerseyNumber": "Jersey Number",
+        "onRoster": "Active on roster"
+      },
+      "placeholders": {
+        "firstName": "Enter first name",
+        "lastName": "Enter last name (optional)",
+        "displayName": "Enter display name"
+      },
+      "helperText": {
+        "displayName": "This is the name displayed in the app"
+      }
+    },
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "firstNameMinLength": "First name must be at least 2 characters",
+      "firstNameMaxLength": "First name must be at most 50 characters",
+      "lastNameMaxLength": "Last name must be at most 50 characters",
+      "displayNameRequired": "Display name is required",
+      "displayNameMinLength": "Display name must be at least 2 characters",
+      "displayNameMaxLength": "Display name must be at most 50 characters",
+      "jerseyNumberRange": "Jersey number must be between 1 and 99",
+      "jerseyNumberTaken": "This jersey number is already taken",
+      "failedToUpdate": "Failed to update player"
+    },
+    "jerseyNumber": {
+      "noNumber": "No jersey number",
+      "currentLabel": "#{{number}} (current)",
+      "allTaken": "All jersey numbers (1-99) are taken"
+    },
+    "playerInfo": {
+      "header": "Player Information",
+      "created": "Created:",
+      "lastUpdated": "Last Updated:",
+      "unknown": "Unknown"
+    },
+    "buttons": {
+      "updatePlayer": "Update Player",
+      "updating": "Updating...",
+      "cancel": "Cancel"
+    }
+  },
+  "wizard": {
+    "clubSelection": {
+      "title": "Select Your Club",
+      "description": "Search for your club or create a new one",
+      "placeholder": "Type your club name...",
+      "cancel": "Cancel"
+    },
+    "clubCreation": {
+      "title": "Create New Club",
+      "description": "Set up your club information",
+      "fullNameLabel": "Full Club Name *",
+      "fullNamePlaceholder": "e.g., Sample Football Club",
+      "displayNameLabel": "Display Name *",
+      "displayNamePlaceholder": "Enter club name",
+      "shortNameLabel": "Short Name (optional)",
+      "shortNamePlaceholder": "e.g., DIF",
+      "shortNameHelper": "Used for abbreviations and quick identification",
+      "creating": "Creating...",
+      "createButton": "Create Club"
+    },
+    "teamSelection": {
+      "title": "Select Team",
+      "description": "Choose an existing team or create a new one for <strong>{{clubName}}</strong>",
+      "existingTeamsHeader": "Existing Teams",
+      "createButton": "Create New Team"
+    },
+    "teamCreation": {
+      "title": "Create New Team",
+      "description": "Set up your team for <strong>{{clubName}}</strong>",
+      "teamNameLabel": "Team Name *",
+      "teamNamePlaceholder": "Enter team name",
+      "teamNameHelper": "e.g., \"F16-6\", \"U16 Boys\", \"Junior Team\"",
+      "creating": "Creating...",
+      "createButton": "Create Team"
+    },
+    "playerCreation": {
+      "title": "Add Players",
+      "description": "Add players to <strong>{{teamName}}</strong>",
+      "playerNamePlaceholder": "Player display name",
+      "addButton": "Add",
+      "addedPlayersHeader": "Added Players ({{count}})",
+      "laterNote": "You can add more players later from the team management screen.",
+      "completeButton": "Complete Setup"
+    },
+    "complete": {
+      "title": "Team Setup Complete!",
+      "description": "Your team <strong>{{teamName}}</strong> has been created successfully."
+    },
+    "validation": {
+      "clubNameRequired": "Club name is required",
+      "teamNameRequired": "Team name is required",
+      "playerNameRequired": "Player name is required"
+    }
+  },
+  "inviteModal": {
+    "header": {
+      "title": "Invite Team Member",
+      "closeLabel": "Close modal"
+    },
+    "form": {
+      "labels": {
+        "email": "Email Address",
+        "role": "Team Role",
+        "message": "Personal Message"
+      },
+      "placeholders": {
+        "email": "Enter email address",
+        "message": "Add a personal message to include with the invitation..."
+      },
+      "hints": {
+        "role": "Choose the appropriate role for this team member",
+        "messageOptional": "(optional)",
+        "characterCount": "{{count}}/500 characters"
+      },
+      "roles": {
+        "coach": "Coach",
+        "parent": "Parent",
+        "player": "Player",
+        "admin": "Admin"
+      }
+    },
+    "buttons": {
+      "send": "Send Invitation",
+      "sending": "Sending Invitation...",
+      "refresh": "Refresh",
+      "delete": "Delete"
+    },
+    "validation": {
+      "emailRequired": "Email address is required",
+      "emailInvalid": "Please enter a valid email address",
+      "roleRequired": "Please select a role",
+      "messageTooLong": "Message must be less than 500 characters",
+      "sendFailed": "Failed to send invitation. Please try again."
+    },
+    "success": {
+      "invitationSent": "Invitation sent successfully!",
+      "invitationRefreshed": "Invitation refreshed successfully!",
+      "invitationDeleted": "Invitation deleted successfully!"
+    },
+    "invitations": {
+      "pendingHeader": "Pending Invitations",
+      "expiredHeader": "Expired Invitations",
+      "countLabel": "({{count}})",
+      "noPending": "No pending invitations",
+      "loading": "Loading invitations...",
+      "status": {
+        "pending": "Pending",
+        "expired": "Expired"
+      },
+      "details": {
+        "sent": "Sent: {{date}}",
+        "remaining": "{{time}} remaining"
+      }
+    },
+    "info": {
+      "title": "What happens next?",
+      "steps": {
+        "emailSent": "The invitee will receive an email with a secure invitation link",
+        "accountSetup": "They can create an account or sign in if they already have one",
+        "autoAdded": "Once accepted, they'll be automatically added to your team",
+        "manageRoles": "You can manage their role and permissions anytime"
+      }
+    }
+  },
+  "loanModal": {
+    "header": {
+      "titleNew": "Record Loan",
+      "titleEdit": "Edit Loan",
+      "subtitleNew": "Track a player appearance for another team",
+      "subtitleEdit": "Update loan appearance details",
+      "closeLabel": "Close"
+    },
+    "form": {
+      "labels": {
+        "players": "Player(s)",
+        "receivingTeam": "Receiving Team",
+        "loanDate": "Loan Date"
+      },
+      "placeholders": {
+        "players": "Select one or more players",
+        "receivingTeam": "Enter receiving team name"
+      }
+    },
+    "validation": {
+      "playersRequired": "Select at least one player",
+      "receivingTeamRequired": "Receiving team is required",
+      "receivingTeamMaxLength": "Receiving team must be 200 characters or less",
+      "loanDateRequired": "Loan date is required",
+      "saveFailed": "Failed to save loan record"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "recordLoan": "Record Loan",
+      "saveChanges": "Save Changes"
+    }
+  },
+  "loansView": {
+    "header": {
+      "title": "Player Loans",
+      "newLoanButton": "New Loan"
+    },
+    "filters": {
+      "title": "Filters",
+      "expandLabel": "Expand filters",
+      "collapseLabel": "Collapse filters",
+      "clearButton": "Clear filters",
+      "labels": {
+        "players": "Players",
+        "teams": "Teams",
+        "status": "Status",
+        "timePeriod": "Time Period"
+      },
+      "placeholders": {
+        "allPlayers": "All players",
+        "allTeams": "All teams"
+      },
+      "statusOptions": {
+        "all": "All",
+        "upcoming": "Upcoming",
+        "past": "Past"
+      }
+    },
+    "match": {
+      "upcomingBadge": "Upcoming",
+      "playersLabel": "Players ({{count}}):",
+      "editLabel": "Edit match",
+      "deleteLabel": "Delete match"
+    },
+    "emptyStates": {
+      "noLoans": {
+        "title": "No loan matches recorded yet",
+        "description": "Track when your players appear for other teams.",
+        "button": "Record First Match"
+      },
+      "noResults": {
+        "title": "No loans found",
+        "description": "Try adjusting your filters.",
+        "button": "Clear Filters"
+      },
+      "loading": "Loading loan matches..."
+    },
+    "messages": {
+      "retry": "Retry",
+      "loanRecordedSingle": "Loan match recorded for 1 player.",
+      "loanRecordedMultiple": "Loan match recorded for {{count}} players.",
+      "loanUpdatedSingle": "Loan match updated for 1 player.",
+      "loanUpdatedMultiple": "Loan match updated for {{count}} players.",
+      "loanDeleted": "Removed {{count}} player(s) from loan match.",
+      "loadFailed": "Failed to load player loans",
+      "rosterLoadFailed": "Failed to load roster for loans",
+      "deleteFailed": "Failed to delete loan match"
+    },
+    "deleteConfirmation": {
+      "title": "Delete loan match",
+      "message": "Remove {{count}} player(s) from the loan match {{teamName}} on {{date}}?",
+      "confirmButton": "Delete Match",
+      "cancelButton": "Cancel"
+    }
+  },
+  "teamManagement": {
+    "header": {
+      "title": "Team Management",
+      "teamSetup": "Team Setup",
+      "back": "Back"
+    },
+    "loading": {
+      "teamInfo": "Loading team information..."
+    },
+    "success": {
+      "teamCreated": "Team created successfully!",
+      "accessProcessed": "Access request processed successfully!"
+    },
+    "tabs": {
+      "overview": {
+        "label": "Overview",
+        "description": "Team information and members"
+      },
+      "roster": {
+        "label": "Roster",
+        "description": "Manage team players"
+      },
+      "loans": {
+        "label": "Loans",
+        "description": "Track player loan matches"
+      },
+      "access": {
+        "label": "Access Management",
+        "description": "Approve requests and invite users"
+      },
+      "connectors": {
+        "label": "Connectors",
+        "description": "Manage external provider integrations"
+      },
+      "preferences": {
+        "label": "Preferences",
+        "description": "Team settings and preferences"
+      }
+    },
+    "teamHeader": {
+      "noClub": "No club",
+      "roleAdmin": "Team Admin",
+      "roleCoach": "Coach",
+      "roleUser": "Team User",
+      "users": "user",
+      "usersPlural": "users"
+    },
+    "overview": {
+      "title": "Team Information",
+      "teamName": "Team Name",
+      "club": "Club",
+      "teamCreated": "Team Created",
+      "unknown": "Unknown",
+      "teamUsers": "Team Users",
+      "unknownUser": "Unknown User",
+      "noUsers": "No team users found"
+    },
+    "access": {
+      "title": "Access Management",
+      "manageAccess": "Manage Access",
+      "pendingRequests": "{{count}} pending access request",
+      "pendingRequestsPlural": "{{count}} pending access requests",
+      "reviewDescription": "Review and approve new team member requests",
+      "noPendingDescription": "No pending requests at this time",
+      "reviewRequests": "Review Requests",
+      "inviteUsers": "Invite Users",
+      "inviteDescription": "Send invitations to new team members",
+      "invitations": "Invitations",
+      "memberRoles": "Member Roles",
+      "rolesDescription": "Manage team member permissions",
+      "manageRoles": "Manage Roles"
+    },
+    "roster": {
+      "title": "Roster Management",
+      "playersCount": "{{count}} players",
+      "addPlayer": "Add Player",
+      "loadingRoster": "Loading roster...",
+      "showFormer": "Show Former Players",
+      "hideFormer": "Hide Former Players",
+      "noPlayersYet": "No Players Yet",
+      "buildRoster": "Start building your team roster by adding players.",
+      "addFirstPlayer": "Add First Player",
+      "noActivePlayers": "No active players found.",
+      "table": {
+        "player": "Player",
+        "connectionStatus": "Connection Status",
+        "number": "#",
+        "actions": "Actions"
+      },
+      "ghost": {
+        "from": "From {{provider}}",
+        "accept": "Accept",
+        "adding": "Adding...",
+        "dismiss": "Dismiss",
+        "dismissing": "Dismissing..."
+      },
+      "player": {
+        "former": "Former",
+        "editTitle": "Edit player",
+        "loanTitle": "Record Loan",
+        "removeTitle": "Remove player"
+      },
+      "connection": {
+        "connectedProviders": "Connected Providers:",
+        "matchedAs": "Matched as:",
+        "needsMatching": "Needs Matching",
+        "notMatched": "This player is not matched to any provider data yet.",
+        "matchPlayer": "Match Player"
+      },
+      "success": {
+        "playerMatched": "Player successfully matched to attendance data",
+        "ghostAdded": "{{playerName}} added to roster",
+        "ghostDismissed": "{{playerName}} dismissed",
+        "playerDeactivated": "{{playerName}} has been deactivated but kept in records due to game history.",
+        "playerRemoved": "{{playerName}} has been removed from the roster.",
+        "loanRecorded": "{{playerName}} loan match recorded.",
+        "loanRecordedMultiple": "{{count}} players loan match recorded."
+      },
+      "error": {
+        "loadFailed": "Failed to load team roster",
+        "addFailed": "Failed to add player to roster",
+        "dismissFailed": "Failed to dismiss player"
+      }
+    },
+    "preferences": {
+      "title": "Team Preferences",
+      "loadingPreferences": "Loading preferences...",
+      "matchSettings": "Match Settings",
+      "matchFormat": "Match Format",
+      "formation": "Formation",
+      "comingSoon": "Coming Soon",
+      "timeSettings": "Time Settings",
+      "periodLength": "Period Length (minutes)",
+      "numPeriods": "Number of Periods",
+      "period": "Period",
+      "periods": "Periods",
+      "substitutionSettings": "Substitution Settings",
+      "alternateRoles": "Alternate roles fairly over time",
+      "alternateRolesTooltip": {
+        "title": "Fair Role Rotation",
+        "description": "When enabled, the app will suggest substitutions that ensure all players experience similar time in each role (defender, midfielder, attacker) over the course of the season."
+      },
+      "substitutionLogic": "Substitution Logic",
+      "substitutionOptions": {
+        "equalTime": "Equal Time in Each Role",
+        "sameRole": "Keep Same Role"
+      },
+      "gameFeatures": "Game Features",
+      "trackGoalScorer": "Track Goal Scorers",
+      "fairPlayAward": "Fair Play Award",
+      "fairPlayOptions": {
+        "none": "No Awards",
+        "leagueOnly": "Only League",
+        "competitive": "League, Cup and Tournament",
+        "allGames": "All Games"
+      },
+      "teamCaptain": "Team Captain",
+      "teamCaptainOptions": {
+        "none": "No Team Captain",
+        "permanent": "Permanent Team Captain",
+        "assignEach": "Assign Each Match"
+      },
+      "permanentCaptain": "Permanent Team Captain",
+      "selectCaptain": "Select Team Captain",
+      "loadingPlayers": "Loading players...",
+      "addPlayersForCaptain": "Add players to your roster to choose a team captain.",
+      "statistics": "Statistics",
+      "loanMatchWeight": "Loan Match Weight",
+      "loanWeightOptions": {
+        "full": "Full Match (1.0)",
+        "half": "Half Match (0.5)",
+        "none": "No Credit (0.0)"
+      },
+      "loanWeightDescription": "Controls how loan matches count toward season statistics.",
+      "errors": {
+        "selectCaptain": "Please select a player to serve as the permanent team captain.",
+        "unsupportedFormat": "Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.",
+        "saveFailed": "Failed to save preferences. Please try again.",
+        "loadFailed": "Failed to load preferences"
+      },
+      "success": {
+        "saved": "Preferences saved successfully"
+      }
+    }
+  },
+  "accessRequestModal": {
+    "header": {
+      "title": "Team Access"
+    },
+    "tabs": {
+      "request": "Request Access",
+      "manageRequests": "Manage Requests",
+      "teamManagement": "Team Management"
+    },
+    "request": {
+      "header": {
+        "title": "Request Team Access",
+        "subtitle": "Request to join"
+      },
+      "form": {
+        "roleLabel": "Requested Role *",
+        "roleHint": "The team coach will review and assign your final role",
+        "messageLabel": "Message to Team Coach",
+        "messagePlaceholder": "Introduce yourself and explain why you'd like to join this team...",
+        "characterCount": "{{count}}/500 characters",
+        "roles": {
+          "coach": "Coach",
+          "parent": "Parent",
+          "admin": "Admin"
+        }
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "sending": "Sending...",
+        "sendRequest": "Send Request",
+        "close": "Close"
+      },
+      "success": {
+        "submitted": "Request submitted successfully! The team admin will review your request."
+      },
+      "warnings": {
+        "pendingTitle": "Request Pending",
+        "pendingMessage": "You already have a pending request for this team"
+      },
+      "yourRequests": {
+        "title": "Your Requests",
+        "role": "Role: {{role}}",
+        "messageLabel": "Message:",
+        "reviewLabel": "Review:",
+        "cancel": "Cancel"
+      },
+      "status": {
+        "pending": "pending",
+        "approved": "approved",
+        "rejected": "rejected"
+      }
+    },
+    "manage": {
+      "header": {
+        "title": "Manage Team Requests",
+        "badgeAdmin": "Admin",
+        "badgeCoach": "Coach",
+        "subtitle": "Review access requests for",
+        "adminPrivileges": "You have full admin privileges for this team"
+      },
+      "empty": {
+        "title": "No pending requests",
+        "description": "New team access requests will appear here"
+      },
+      "privacyNotice": "📧 Email addresses are shown to help identify requesters and are only visible to team administrators.",
+      "request": {
+        "unnamedUser": "Unnamed User",
+        "requestedRole": "Requested role:",
+        "messageLabel": "Message:",
+        "statusPending": "Pending",
+        "atTime": "at"
+      },
+      "buttons": {
+        "reject": "Reject",
+        "approve": "Approve as {{role}}",
+        "rejectReason": "Request declined by team coach"
+      },
+      "members": {
+        "title": "Team Members ({{count}})",
+        "empty": "No team members found",
+        "joined": "Joined {{date}}",
+        "remove": "Remove",
+        "cannotRemoveAdmin": "Cannot remove admin",
+        "removeMember": "Remove member",
+        "confirmRemove": "Are you sure you want to remove this member from the team?",
+        "removed": "Member removed from team"
+      }
+    },
+    "success": {
+      "requestApproved": "Request approved successfully"
+    }
   }
 }

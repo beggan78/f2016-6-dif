@@ -29,6 +29,7 @@ const getPositionConfig = (positionKey) => {
   }
 
   if (positionKey.startsWith('substitute_')) {
+    // Note: useTranslation not available in helper function - component handles translation
     return { title: 'Substitute', position: positionKey };
   }
 
@@ -36,7 +37,7 @@ const getPositionConfig = (positionKey) => {
 };
 
 // Dynamic component for rendering individual position cards
-function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
   const modeDefinition = getModeDefinition(teamConfig);
   if (!modeDefinition) {
     return null;
@@ -49,16 +50,18 @@ function IndividualPositionCards({ positions = null, teamConfig, formation, onPl
     <>
       {allPositions.map(position => {
         const config = getPositionConfig(position);
+        const displayTitle = config.title === 'Substitute' ? t('periodSetup.fallbacks.substituteTitle') : config.title;
 
         return (
           <IndividualPositionCard
             key={position}
-            title={config.title}
+            title={displayTitle}
             position={config.position}
             playerId={formation[position]}
             onPlayerAssign={onPlayerAssign}
             getAvailableOptions={getAvailableOptions}
             currentPeriodNumber={currentPeriodNumber}
+            t={t}
           />
         );
       })}
@@ -1134,6 +1137,7 @@ export function PeriodSetupScreen({
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}
           currentPeriodNumber={currentPeriodNumber}
+          t={t}
         />
       )}
 
@@ -1175,6 +1179,7 @@ export function PeriodSetupScreen({
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}
           currentPeriodNumber={currentPeriodNumber}
+          t={t}
         />
       )}
 
@@ -1227,7 +1232,7 @@ export function PeriodSetupScreen({
             ? t('periodSetup.modals.inactiveGoalie.message', { playerName: confirmationModal.playerName })
             : confirmationModal.type === 'recommendation-rerun'
             ? t('periodSetup.modals.recommendationRerun.message', {
-                formerGoalie: getPlayerDisplayNameByIdUtil(allPlayers, confirmationModal.formerGoalieId) || 'Unknown',
+                formerGoalie: getPlayerDisplayNameByIdUtil(allPlayers, confirmationModal.formerGoalieId) || t('periodSetup.fallbacks.unknownPlayer'),
                 newGoalie: confirmationModal.playerName
               })
             : t('periodSetup.modals.activatePlayer.message', { playerName: confirmationModal.playerName })
@@ -1248,7 +1253,7 @@ export function PeriodSetupScreen({
   );
 }
 
-export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
@@ -1263,7 +1268,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
         value={playerId || ""}
         onChange={value => onPlayerAssign(position, value)}
         options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-        placeholder={`Select ${title}`}
+        placeholder={t('periodSetup.fallbacks.selectPosition', { title })}
       />
     </div>
   );

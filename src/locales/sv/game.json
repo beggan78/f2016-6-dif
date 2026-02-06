@@ -26,11 +26,20 @@
   },
   "substitution": {
     "button": "BYT NU",
-    "buttonMultiple": "BYT {{count}}",
+    "buttonSingle": "BYT 1 SPELARE",
+    "buttonMultiple": "BYT {{count}} SPELARE",
     "makeSubstitution": "Genomför byte",
     "cannotSubstitute": "Alla avbytare är inaktiva - kan inte göra byte",
     "undoTooltip": "Ångra senaste byte",
-    "undoDisabled": "Inget byte att ångra"
+    "undoDisabled": "Inget byte att ångra",
+    "decreaseCount": "Minska antal spelare att byta",
+    "increaseCount": "Öka antal spelare att byta",
+    "undoModal": {
+      "title": "Ångra Byte",
+      "message": "Är du säker på att du vill ångra det senaste bytet? Detta kommer att återställa spelarpositioner och tidmätning.",
+      "confirm": "Ångra",
+      "cancel": "Avbryt"
+    }
   },
   "actions": {
     "endPeriod": "Avsluta Period"

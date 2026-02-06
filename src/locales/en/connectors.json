@@ -41,5 +41,51 @@
     "neverSynced": "Never synced",
     "syncSuccess": "Roster synced successfully",
     "syncError": "Failed to sync roster"
+  },
+  "sportAdminConnect": {
+    "header": {
+      "title": "Connect SportAdmin",
+      "subtitle": "Sync attendance and match data"
+    },
+    "info": {
+      "description": "Enter your SportAdmin credentials to enable automatic synchronization.",
+      "security": "Your credentials will be encrypted and stored securely."
+    },
+    "form": {
+      "labels": {
+        "username": "Username",
+        "password": "Password"
+      },
+      "placeholders": {
+        "username": "Your SportAdmin username",
+        "password": "Your SportAdmin password"
+      }
+    },
+    "validation": {
+      "usernameRequired": "Username is required",
+      "usernameMaxLength": "Username must be 100 characters or less",
+      "passwordRequired": "Password is required",
+      "passwordMaxLength": "Password must be 200 characters or less",
+      "connectionFailed": "Failed to connect SportAdmin. Please check your credentials and try again."
+    },
+    "buttons": {
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "cancel": "Cancel"
+    }
+  },
+  "connectorCard": {
+    "lastVerified": "Last verified:",
+    "lastSync": "Last sync:",
+    "never": "Never",
+    "connectionCreated": "Connection Created",
+    "errorPrefix": "Error:",
+    "connectionError": "Connection Error",
+    "buttons": {
+      "retryConnection": "Retry Connection",
+      "manualSync": "Manual Sync",
+      "syncing": "Syncing...",
+      "disconnect": "Disconnect"
+    }
   }
 }

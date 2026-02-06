@@ -24,10 +24,92 @@
     "addTemporary": "Add Temporary Player",
     "cancel": "Cancel"
   },
+  "addTemporaryPlayer": {
+    "title": "Add Temporary Player",
+    "description": "This player will only appear in the current match and won't be added to the team roster.",
+    "playerNameLabel": "Player Name",
+    "playerNamePlaceholder": "Enter player name",
+    "cancel": "Cancel",
+    "addPlayer": "Add Player"
+  },
   "goalScorer": {
     "title": "Who Scored?",
     "selectPlayer": "Select the player who scored",
     "noPlayers": "No eligible players",
+    "cancel": "Cancel",
+    "correctGoalScorer": "Correct Goal Scorer",
+    "goalInformation": "Goal Information",
+    "goalAt": "Goal at {{time}}",
+    "scoredGoalAt": "Scored goal at {{time}}",
+    "concededGoalAt": "Conceded goal at {{time}}",
+    "updateScorer": "Update Scorer",
+    "confirmScorer": "Confirm Scorer",
+    "currentScorer": "Current Scorer",
+    "noScorerRecorded": "No scorer recorded",
+    "selectNewScorer": "Select New Scorer:",
+    "selectScorer": "Select Scorer:",
+    "noSpecificScorer": "No specific scorer",
+    "goalDetails": "Goal Details:",
+    "team": "Team",
+    "scored": "Scored",
+    "conceded": "Conceded",
+    "time": "Time",
+    "period": "Period",
+    "scorer": "Scorer",
+    "unknown": "Unknown",
+    "readOnlyNotice": "This goal information is read-only. Use the correction mode to make changes."
+  },
+  "fieldPlayer": {
+    "title": "Field Player Options",
+    "changePositionTitle": "Change Position",
+    "message": "What would you like to do with {{playerName}}?",
+    "selectPositionSwitch": "Select which player to switch positions with {{playerName}}:",
+    "cancel": "Cancel",
+    "back": "Back",
+    "removeFromNext": "Remove from next to go off",
+    "setToGoOffNext": "Set to go off next",
+    "substituteNow": "Substitute now",
+    "changePosition": "Change position",
+    "tooltipCannotModify": "All substitutes are inactive - cannot modify rotation",
+    "tooltipCannotSetNext": "All substitutes are inactive - cannot set as next",
+    "tooltipCannotSubstitute": "All substitutes are inactive - cannot substitute"
+  },
+  "substitute": {
+    "title": "Substitute Options",
+    "changeNextPositionTitle": "Change Next Position",
+    "message": "What would you like to do with {{playerName}}?",
+    "selectNextPosition": "Select which position {{playerName}} should take when coming in:",
+    "cancel": "Cancel",
+    "back": "Back",
+    "changeNextPosition": "Change next position",
+    "setToGoInNext": "Set to go in next",
+    "putBackInRotation": "Put {{playerName}} back into rotation",
+    "takeOutOfRotation": "Take {{playerName}} out of rotation"
+  },
+  "goalie": {
+    "title": "Replace Goalie",
+    "message": "Select a new goalie to replace {{goalieName}}:",
+    "cancel": "Cancel",
+    "inactive": "(Inactive)"
+  },
+  "scoreEdit": {
+    "title": "Edit Score",
+    "cancel": "Cancel",
+    "saveScore": "Save Score"
+  },
+  "scoreManager": {
+    "title": "Manage Score",
+    "goalsScored": "Goals Scored",
+    "noGoalsRecorded": "No goals recorded yet",
+    "opponent": "Opponent",
+    "edit": "Edit",
+    "delete": "Delete",
+    "addGoal": "Add Goal",
+    "close": "Close"
+  },
+  "substituteSelection": {
+    "title": "Select Substitute",
+    "message": "Select which substitute to bring on for {{fieldPlayerName}}:",
     "cancel": "Cancel"
   },
   "preferences": {

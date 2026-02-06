@@ -41,5 +41,51 @@
     "neverSynced": "Aldrig synkroniserad",
     "syncSuccess": "Trupp synkroniserad",
     "syncError": "Misslyckades med att synkronisera trupp"
+  },
+  "sportAdminConnect": {
+    "header": {
+      "title": "Anslut SportAdmin",
+      "subtitle": "Synkronisera närvaro och matchdata"
+    },
+    "info": {
+      "description": "Ange dina SportAdmin-uppgifter för att aktivera automatisk synkronisering.",
+      "security": "Dina uppgifter kommer att krypteras och lagras säkert."
+    },
+    "form": {
+      "labels": {
+        "username": "Användarnamn",
+        "password": "Lösenord"
+      },
+      "placeholders": {
+        "username": "Ditt SportAdmin användarnamn",
+        "password": "Ditt SportAdmin lösenord"
+      }
+    },
+    "validation": {
+      "usernameRequired": "Användarnamn krävs",
+      "usernameMaxLength": "Användarnamn får vara högst 100 tecken",
+      "passwordRequired": "Lösenord krävs",
+      "passwordMaxLength": "Lösenord får vara högst 200 tecken",
+      "connectionFailed": "Misslyckades ansluta SportAdmin. Kontrollera dina uppgifter och försök igen."
+    },
+    "buttons": {
+      "connect": "Anslut",
+      "connecting": "Ansluter...",
+      "cancel": "Avbryt"
+    }
+  },
+  "connectorCard": {
+    "lastVerified": "Senast verifierad:",
+    "lastSync": "Senast synkroniserad:",
+    "never": "Aldrig",
+    "connectionCreated": "Anslutning Skapad",
+    "errorPrefix": "Fel:",
+    "connectionError": "Anslutningsfel",
+    "buttons": {
+      "retryConnection": "Försök Igen",
+      "manualSync": "Manuell Synkronisering",
+      "syncing": "Synkroniserar...",
+      "disconnect": "Koppla Bort"
+    }
   }
 }

@@ -1,27 +1,10 @@
 {
-  "menu": {
-    "home": "Hem",
-    "configure": "Konfigurera",
-    "statistics": "Statistik",
-    "team": "Lag",
-    "profile": "Profil",
-    "settings": "Inställningar",
-    "signOut": "Logga Ut"
-  },
-  "modals": {
-    "preferences": {
-      "title": "Inställningar",
-      "close": "Stäng"
-    },
-    "featureVote": {
-      "title": "Rösta på Funktioner",
-      "close": "Stäng"
-    },
-    "goalScorer": {
-      "title": "Vem Gjorde Mål?",
-      "selectPlayer": "Välj Spelare",
-      "cancel": "Avbryt"
-    }
+  "multiSelect": {
+    "allSelected": "Alla valda",
+    "selected": "valda",
+    "noOptions": "Inga alternativ tillgängliga",
+    "clearSelection": "Rensa val",
+    "done": "Klar"
   },
   "badges": {
     "comingSoon": "Kommer Snart",
@@ -31,5 +14,8 @@
   "loading": "Laddar...",
   "error": "Ett fel uppstod",
   "retry": "Försök Igen",
-  "close": "Stäng"
+  "close": "Stäng",
+  "ok": "OK",
+  "back": "Tillbaka",
+  "inactive": "Inaktiv"
 }
