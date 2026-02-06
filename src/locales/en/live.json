@@ -1,0 +1,20 @@
+{
+  "screen": {
+    "title": "Live Match",
+    "spectatorView": "Spectator View",
+    "loading": "Loading match...",
+    "notFound": "Match not found",
+    "ended": "This match has ended"
+  },
+  "status": {
+    "waitingToStart": "Waiting for match to start",
+    "inProgress": "Match in progress",
+    "paused": "Paused",
+    "ended": "Ended"
+  },
+  "info": {
+    "period": "Period {{number}}",
+    "score": "Score",
+    "time": "Time"
+  }
+}

@@ -10,6 +10,11 @@ import enGame from './en/game.json';
 import enStatistics from './en/statistics.json';
 import enTeam from './en/team.json';
 import enShared from './en/shared.json';
+import enModals from './en/modals.json';
+import enReports from './en/reports.json';
+import enConnectors from './en/connectors.json';
+import enTactical from './en/tactical.json';
+import enLive from './en/live.json';
 import svCommon from './sv/common.json';
 import svConfiguration from './sv/configuration.json';
 import svAuth from './sv/auth.json';
@@ -18,6 +23,11 @@ import svGame from './sv/game.json';
 import svStatistics from './sv/statistics.json';
 import svTeam from './sv/team.json';
 import svShared from './sv/shared.json';
+import svModals from './sv/modals.json';
+import svReports from './sv/reports.json';
+import svConnectors from './sv/connectors.json';
+import svTactical from './sv/tactical.json';
+import svLive from './sv/live.json';
 
 i18n
   .use(initReactI18next)
@@ -31,7 +41,12 @@ i18n
         game: enGame,
         statistics: enStatistics,
         team: enTeam,
-        shared: enShared
+        shared: enShared,
+        modals: enModals,
+        reports: enReports,
+        connectors: enConnectors,
+        tactical: enTactical,
+        live: enLive
       },
       sv: {
         common: svCommon,
@@ -41,7 +56,12 @@ i18n
         game: svGame,
         statistics: svStatistics,
         team: svTeam,
-        shared: svShared
+        shared: svShared,
+        modals: svModals,
+        reports: svReports,
+        connectors: svConnectors,
+        tactical: svTactical,
+        live: svLive
       }
     },
     lng: 'en', // Default language

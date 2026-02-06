@@ -1,0 +1,48 @@
+{
+  "abandonMatch": {
+    "title": "Abandon Match?",
+    "message": "Are you sure you want to abandon this match? All progress will be lost.",
+    "abandon": "Abandon Match",
+    "cancel": "Cancel"
+  },
+  "matchRecovery": {
+    "title": "Recover Match",
+    "message": "We found an unfinished match. Would you like to continue where you left off?",
+    "recover": "Recover Match",
+    "startNew": "Start New Match"
+  },
+  "pendingMatchResume": {
+    "title": "Resume Pending Match?",
+    "message": "You have a pending match that hasn't been started. Would you like to resume setup or start fresh?",
+    "resume": "Resume Setup",
+    "startNew": "Start New Match"
+  },
+  "addPlayer": {
+    "title": "Add Player",
+    "message": "Choose how you'd like to add a player.",
+    "addToTeam": "Add Player to Team",
+    "addTemporary": "Add Temporary Player",
+    "cancel": "Cancel"
+  },
+  "goalScorer": {
+    "title": "Who Scored?",
+    "selectPlayer": "Select the player who scored",
+    "noPlayers": "No eligible players",
+    "cancel": "Cancel"
+  },
+  "preferences": {
+    "title": "Game Preferences",
+    "close": "Close"
+  },
+  "featureVote": {
+    "title": "Vote for New Features",
+    "description": "Help us prioritize what to build next!",
+    "close": "Close"
+  },
+  "confirmations": {
+    "areYouSure": "Are you sure?",
+    "cannotUndo": "This action cannot be undone.",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  }
+}

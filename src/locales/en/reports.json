@@ -1,0 +1,42 @@
+{
+  "header": {
+    "title": "Match Report",
+    "noStartTime": "No start time recorded",
+    "durationUnknown": "Duration unknown"
+  },
+  "navigation": {
+    "summary": "Summary",
+    "timeline": "Timeline",
+    "playerStats": "Player Stats"
+  },
+  "timeline": {
+    "title": "Game Events",
+    "noEvents": "No events recorded",
+    "eventTypes": {
+      "goal": "Goal",
+      "substitution": "Substitution",
+      "periodStart": "Period Start",
+      "periodEnd": "Period End"
+    }
+  },
+  "playerStats": {
+    "title": "Player Statistics",
+    "name": "Player",
+    "playingTime": "Playing Time",
+    "goals": "Goals",
+    "position": "Position",
+    "timeAsGoalie": "Time as Goalie",
+    "timeAsDefender": "Time as Defender",
+    "timeAsMidfielder": "Time as Midfielder",
+    "timeAsAttacker": "Time as Attacker",
+    "noStats": "No player statistics available"
+  },
+  "summary": {
+    "finalScore": "Final Score",
+    "duration": "Duration",
+    "periods": "Periods",
+    "totalGoals": "Total Goals",
+    "ourGoals": "Our Goals",
+    "opponentGoals": "Opponent Goals"
+  }
+}

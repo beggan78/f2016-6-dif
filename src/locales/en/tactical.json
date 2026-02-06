@@ -1,0 +1,18 @@
+{
+  "screen": {
+    "title": "Tactical Board",
+    "instructions": "Drag and drop players and chips to plan your tactics"
+  },
+  "palette": {
+    "title": "Chips",
+    "players": "Players",
+    "ball": "Ball",
+    "cones": "Cones",
+    "clear": "Clear Board"
+  },
+  "chip": {
+    "player": "Player",
+    "ball": "Ball",
+    "cone": "Cone"
+  }
+}

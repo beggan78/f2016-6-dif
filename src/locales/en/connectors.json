@@ -1,0 +1,45 @@
+{
+  "section": {
+    "title": "External Connectors",
+    "description": "Connect to external platforms to sync your roster"
+  },
+  "card": {
+    "connected": "Connected",
+    "disconnected": "Not Connected",
+    "verifying": "Verifying...",
+    "error": "Connection Error",
+    "retrying": "Retrying...",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "configure": "Configure"
+  },
+  "sportAdmin": {
+    "title": "SportAdmin",
+    "description": "Sync your team roster from SportAdmin",
+    "modal": {
+      "title": "Connect to SportAdmin",
+      "email": "SportAdmin Email",
+      "emailPlaceholder": "Enter your SportAdmin email",
+      "password": "SportAdmin Password",
+      "passwordPlaceholder": "Enter your SportAdmin password",
+      "teamId": "Team ID",
+      "teamIdPlaceholder": "Enter your SportAdmin team ID",
+      "connect": "Connect",
+      "cancel": "Cancel",
+      "connecting": "Connecting..."
+    }
+  },
+  "disconnect": {
+    "title": "Disconnect Connector",
+    "message": "Are you sure you want to disconnect from {{provider}}? This will stop automatic roster syncing.",
+    "disconnect": "Disconnect",
+    "cancel": "Cancel"
+  },
+  "status": {
+    "syncing": "Syncing roster...",
+    "lastSync": "Last synced: {{time}}",
+    "neverSynced": "Never synced",
+    "syncSuccess": "Roster synced successfully",
+    "syncError": "Failed to sync roster"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "screen": {
+    "title": "Taktisk Tavla",
+    "instructions": "Dra och släpp spelare och markörer för att planera din taktik"
+  },
+  "palette": {
+    "title": "Markörer",
+    "players": "Spelare",
+    "ball": "Boll",
+    "cones": "Koner",
+    "clear": "Rensa Tavla"
+  },
+  "chip": {
+    "player": "Spelare",
+    "ball": "Boll",
+    "cone": "Kon"
+  }
+}

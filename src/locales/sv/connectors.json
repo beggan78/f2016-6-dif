@@ -1,0 +1,45 @@
+{
+  "section": {
+    "title": "Externa Kopplingar",
+    "description": "Anslut till externa plattformar för att synkronisera din trupp"
+  },
+  "card": {
+    "connected": "Ansluten",
+    "disconnected": "Inte Ansluten",
+    "verifying": "Verifierar...",
+    "error": "Anslutningsfel",
+    "retrying": "Försöker Igen...",
+    "connect": "Anslut",
+    "disconnect": "Koppla Bort",
+    "configure": "Konfigurera"
+  },
+  "sportAdmin": {
+    "title": "SportAdmin",
+    "description": "Synkronisera din laglista från SportAdmin",
+    "modal": {
+      "title": "Anslut till SportAdmin",
+      "email": "SportAdmin E-post",
+      "emailPlaceholder": "Ange din SportAdmin e-post",
+      "password": "SportAdmin Lösenord",
+      "passwordPlaceholder": "Ange ditt SportAdmin lösenord",
+      "teamId": "Lag-ID",
+      "teamIdPlaceholder": "Ange ditt SportAdmin lag-ID",
+      "connect": "Anslut",
+      "cancel": "Avbryt",
+      "connecting": "Ansluter..."
+    }
+  },
+  "disconnect": {
+    "title": "Koppla Bort Anslutning",
+    "message": "Är du säker på att du vill koppla bort från {{provider}}? Detta kommer att stoppa automatisk truppsynkronisering.",
+    "disconnect": "Koppla Bort",
+    "cancel": "Avbryt"
+  },
+  "status": {
+    "syncing": "Synkroniserar trupp...",
+    "lastSync": "Senast synkroniserad: {{time}}",
+    "neverSynced": "Aldrig synkroniserad",
+    "syncSuccess": "Trupp synkroniserad",
+    "syncError": "Misslyckades med att synkronisera trupp"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "header": {
+    "title": "Matchrapport",
+    "noStartTime": "Ingen starttid registrerad",
+    "durationUnknown": "Längd okänd"
+  },
+  "navigation": {
+    "summary": "Sammanfattning",
+    "timeline": "Tidslinje",
+    "playerStats": "Spelarstatistik"
+  },
+  "timeline": {
+    "title": "Matchhändelser",
+    "noEvents": "Inga händelser registrerade",
+    "eventTypes": {
+      "goal": "Mål",
+      "substitution": "Byte",
+      "periodStart": "Period Start",
+      "periodEnd": "Period Slut"
+    }
+  },
+  "playerStats": {
+    "title": "Spelarstatistik",
+    "name": "Spelare",
+    "playingTime": "Speltid",
+    "goals": "Mål",
+    "position": "Position",
+    "timeAsGoalie": "Tid som Målvakt",
+    "timeAsDefender": "Tid som Back",
+    "timeAsMidfielder": "Tid som Mittfält",
+    "timeAsAttacker": "Tid som Forward",
+    "noStats": "Ingen spelarstatistik tillgänglig"
+  },
+  "summary": {
+    "finalScore": "Slutresultat",
+    "duration": "Längd",
+    "periods": "Perioder",
+    "totalGoals": "Totalt Antal Mål",
+    "ourGoals": "Våra Mål",
+    "opponentGoals": "Motståndarens Mål"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "screen": {
+    "title": "Livematch",
+    "spectatorView": "Åskådarvy",
+    "loading": "Laddar match...",
+    "notFound": "Match hittades inte",
+    "ended": "Denna match har avslutats"
+  },
+  "status": {
+    "waitingToStart": "Väntar på att matchen ska starta",
+    "inProgress": "Match pågår",
+    "paused": "Pausad",
+    "ended": "Avslutad"
+  },
+  "info": {
+    "period": "Period {{number}}",
+    "score": "Ställning",
+    "time": "Tid"
+  }
+}

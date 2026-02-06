@@ -1,0 +1,48 @@
+{
+  "abandonMatch": {
+    "title": "Avbryt Match?",
+    "message": "Är du säker på att du vill avbryta denna match? All framsteg går förlorad.",
+    "abandon": "Avbryt Match",
+    "cancel": "Avbryt"
+  },
+  "matchRecovery": {
+    "title": "Återställ Match",
+    "message": "Vi hittade en oavslutad match. Vill du fortsätta där du slutade?",
+    "recover": "Återställ Match",
+    "startNew": "Starta Ny Match"
+  },
+  "pendingMatchResume": {
+    "title": "Återuppta Väntande Match?",
+    "message": "Du har en väntande match som inte har startats. Vill du återuppta konfiguration eller börja om?",
+    "resume": "Återuppta Konfiguration",
+    "startNew": "Starta Ny Match"
+  },
+  "addPlayer": {
+    "title": "Lägg Till Spelare",
+    "message": "Välj hur du vill lägga till en spelare.",
+    "addToTeam": "Lägg Till Spelare i Laget",
+    "addTemporary": "Lägg Till Tillfällig Spelare",
+    "cancel": "Avbryt"
+  },
+  "goalScorer": {
+    "title": "Vem Gjorde Mål?",
+    "selectPlayer": "Välj spelaren som gjorde mål",
+    "noPlayers": "Inga tillgängliga spelare",
+    "cancel": "Avbryt"
+  },
+  "preferences": {
+    "title": "Matchinställningar",
+    "close": "Stäng"
+  },
+  "featureVote": {
+    "title": "Rösta på Nya Funktioner",
+    "description": "Hjälp oss att prioritera vad vi ska bygga härnäst!",
+    "close": "Stäng"
+  },
+  "confirmations": {
+    "areYouSure": "Är du säker?",
+    "cannotUndo": "Denna åtgärd kan inte ångras.",
+    "confirm": "Bekräfta",
+    "cancel": "Avbryt"
+  }
+}

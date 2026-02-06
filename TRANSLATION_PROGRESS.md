@@ -4,16 +4,26 @@
 
 This file tracks the Swedish (sv) translation progress across the Sport Wizard application.
 
-## Recent Updates (2026-02-06)
-- ✅ Created auth.json namespace with comprehensive authentication translations
-- ✅ Created profile.json namespace
-- ✅ Created game.json namespace for game screen and modals
-- ✅ Created statistics.json namespace for all stats views
-- ✅ Created team.json namespace for team management
-- ✅ Created shared.json namespace for shared components
+## Recent Updates (2026-02-06 - Session 1)
+- ✅ Created ALL 13 translation namespaces (100% coverage!)
 - ✅ Fully translated LoginForm component
 - ✅ Fully translated SignupForm component
-- 🔄 All namespaces registered in i18n.js
+- ✅ All namespaces registered in i18n.js
+
+**Namespaces created:**
+1. auth.json - Authentication flows
+2. profile.json - Profile settings
+3. game.json - Game screen and controls
+4. statistics.json - All stats views
+5. team.json - Team management
+6. shared.json - Shared UI components
+7. modals.json - Match modals
+8. reports.json - Match reports
+9. connectors.json - External integrations
+10. tactical.json - Tactical board
+11. live.json - Live match viewing
+12. configuration.json - Pre-existing
+13. common.json - Pre-existing
 
 ## Legend
 - ✅ **Complete** - Translation files created AND component updated to use translations
@@ -120,21 +130,31 @@ This file tracks the Swedish (sv) translation progress across the Sport Wizard a
 ---
 
 ### 6. Modals (modals.json)
-**Status:** ⏳ Pending
+**Status:** 🔄 In Progress (JSON files created, components need update)
 
 **Files:**
-- ⏳ `/src/locales/en/modals.json` - Not created
-- ⏳ `/src/locales/sv/modals.json` - Not created
-- ⏳ `/src/locales/i18n.js` - Needs modals namespace registration
+- ✅ `/src/locales/en/modals.json` - Created
+- ✅ `/src/locales/sv/modals.json` - Created
+- ✅ `/src/locales/i18n.js` - Modals namespace registered
+
+**Translation Keys Created:**
+- ✅ AbandonMatch modal
+- ✅ MatchRecovery modal
+- ✅ PendingMatchResume modal
+- ✅ AddPlayer modal
+- ✅ GoalScorer modal
+- ✅ Preferences modal
+- ✅ FeatureVote modal
+- ✅ Generic confirmations
 
 **Components:**
-- ⏳ AbandonMatchModal.js - Needs translation
-- ⏳ MatchRecoveryModal.js - Needs translation
-- ⏳ PendingMatchResumeModal.js - Needs translation
-- ⏳ AddPlayerModal.js - Needs translation
-- ⏳ GoalScorerModal.js - Needs translation
-- ⏳ PreferencesModal.js - Needs translation
-- ⏳ FeatureVoteModal.js - Needs translation
+- ⏳ AbandonMatchModal.js - Translation keys ready, component needs update
+- ⏳ MatchRecoveryModal.js - Translation keys ready, component needs update
+- ⏳ PendingMatchResumeModal.js - Translation keys ready, component needs update
+- ⏳ AddPlayerModal.js - Translation keys ready, component needs update
+- ⏳ GoalScorerModal.js - Translation keys ready, component needs update
+- ⏳ PreferencesModal.js - Translation keys ready, component needs update
+- ⏳ FeatureVoteModal.js - Translation keys ready, component needs update
 
 ---
 
@@ -175,20 +195,27 @@ This file tracks the Swedish (sv) translation progress across the Sport Wizard a
 ---
 
 ### 8. Reports (reports.json)
-**Status:** ⏳ Pending
+**Status:** 🔄 In Progress (JSON files created, components need update)
 
 **Files:**
-- ⏳ `/src/locales/en/reports.json` - Not created
-- ⏳ `/src/locales/sv/reports.json` - Not created
-- ⏳ `/src/locales/i18n.js` - Needs reports namespace registration
+- ✅ `/src/locales/en/reports.json` - Created
+- ✅ `/src/locales/sv/reports.json` - Created
+- ✅ `/src/locales/i18n.js` - Reports namespace registered
+
+**Translation Keys Created:**
+- ✅ Report header (title, noStartTime, durationUnknown)
+- ✅ Navigation tabs (summary, timeline, playerStats)
+- ✅ Timeline (game events, event types)
+- ✅ Player statistics table headers
+- ✅ Summary metrics
 
 **Components:**
-- ⏳ MatchSummaryHeader.js - Needs translation
-- ⏳ GameEventTimeline.js - Needs translation
-- ⏳ PlayerStatsTable.js - Needs translation
-- ⏳ ReportNavigation.js - Needs translation
-- ⏳ ReportSection.js - Needs translation
-- ⏳ EventToggleButton.js - Needs translation
+- ⏳ MatchSummaryHeader.js - Translation keys ready, component needs update
+- ⏳ GameEventTimeline.js - Translation keys ready, component needs update
+- ⏳ PlayerStatsTable.js - Translation keys ready, component needs update
+- ⏳ ReportNavigation.js - Translation keys ready, component needs update
+- ⏳ ReportSection.js - Translation keys ready, component needs update
+- ⏳ EventToggleButton.js - Translation keys ready, component needs update
 
 ---
 
@@ -236,49 +263,66 @@ This file tracks the Swedish (sv) translation progress across the Sport Wizard a
 ---
 
 ### 10. Connectors (connectors.json)
-**Status:** ⏳ Pending
+**Status:** 🔄 In Progress (JSON files created, components need update)
 
 **Files:**
-- ⏳ `/src/locales/en/connectors.json` - Not created
-- ⏳ `/src/locales/sv/connectors.json` - Not created
-- ⏳ `/src/locales/i18n.js` - Needs connectors namespace registration
+- ✅ `/src/locales/en/connectors.json` - Created
+- ✅ `/src/locales/sv/connectors.json` - Created
+- ✅ `/src/locales/i18n.js` - Connectors namespace registered
+
+**Translation Keys Created:**
+- ✅ Section header and description
+- ✅ Connector card statuses (connected, verifying, error, retrying)
+- ✅ SportAdmin modal (credentials, teamId)
+- ✅ Disconnect confirmation
+- ✅ Sync status messages
 
 **Components:**
-- ⏳ ConnectorsSection.js - Needs translation
-- ⏳ ConnectorCard.js - Needs translation
-- ⏳ SportAdminConnectModal.js - Needs translation
-- ⏳ DisconnectConfirmModal.js - Needs translation
-- ⏳ ProviderLogo.js - Needs translation
+- ⏳ ConnectorsSection.js - Translation keys ready, component needs update
+- ⏳ ConnectorCard.js - Translation keys ready, component needs update
+- ⏳ SportAdminConnectModal.js - Translation keys ready, component needs update
+- ⏳ DisconnectConfirmModal.js - Translation keys ready, component needs update
+- ⏳ ProviderLogo.js - Translation keys ready, component needs update
 
 ---
 
 ### 11. Tactical Board (tactical.json)
-**Status:** ⏳ Pending
+**Status:** 🔄 In Progress (JSON files created, components need update)
 
 **Files:**
-- ⏳ `/src/locales/en/tactical.json` - Not created
-- ⏳ `/src/locales/sv/tactical.json` - Not created
-- ⏳ `/src/locales/i18n.js` - Needs tactical namespace registration
+- ✅ `/src/locales/en/tactical.json` - Created
+- ✅ `/src/locales/sv/tactical.json` - Created
+- ✅ `/src/locales/i18n.js` - Tactical namespace registered
+
+**Translation Keys Created:**
+- ✅ Screen title and instructions
+- ✅ Chip palette (players, ball, cones, clear)
+- ✅ Chip labels
 
 **Components:**
-- ⏳ TacticalBoardScreen.js - Needs translation
-- ⏳ ChipPalette.js - Needs translation
-- ⏳ PlayerChip.js - Needs translation
-- ⏳ BaseChip.js - Needs translation
-- ⏳ SoccerBallChip.js - Needs translation
+- ⏳ TacticalBoardScreen.js - Translation keys ready, component needs update
+- ⏳ ChipPalette.js - Translation keys ready, component needs update
+- ⏳ PlayerChip.js - Translation keys ready, component needs update
+- ⏳ BaseChip.js - Translation keys ready, component needs update
+- ⏳ SoccerBallChip.js - Translation keys ready, component needs update
 
 ---
 
 ### 12. Live Match (live.json)
-**Status:** ⏳ Pending
+**Status:** 🔄 In Progress (JSON files created, components need update)
 
 **Files:**
-- ⏳ `/src/locales/en/live.json` - Not created
-- ⏳ `/src/locales/sv/live.json` - Not created
-- ⏳ `/src/locales/i18n.js` - Needs live namespace registration
+- ✅ `/src/locales/en/live.json` - Created
+- ✅ `/src/locales/sv/live.json` - Created
+- ✅ `/src/locales/i18n.js` - Live namespace registered
+
+**Translation Keys Created:**
+- ✅ Screen labels (title, spectatorView, loading, notFound, ended)
+- ✅ Match status (waitingToStart, inProgress, paused, ended)
+- ✅ Match info (period, score, time)
 
 **Components:**
-- ⏳ LiveMatchScreen.js - Needs translation
+- ⏳ LiveMatchScreen.js - Translation keys ready, component needs update
 
 ---
 
@@ -309,28 +353,30 @@ This file tracks the Swedish (sv) translation progress across the Sport Wizard a
 
 ## Overall Progress
 
-**Namespaces Created:** 8/13 (62%)
+**Namespaces Created:** 13/13 (100% ✅)
 - ✅ auth (comprehensive)
 - ✅ profile (complete)
 - ✅ game (comprehensive)
 - ✅ statistics (comprehensive)
 - ✅ team (core features)
 - ✅ shared (common UI elements)
+- ✅ modals (match-specific modals)
+- ✅ reports (match reports and timeline)
+- ✅ connectors (external integrations)
+- ✅ tactical (tactical board)
+- ✅ live (live match viewing)
 - ✅ configuration (pre-existing, comprehensive)
 - ✅ common (pre-existing, basic)
 
-**Still Needed:**
-- ⏳ modals.json (match-specific modals)
-- ⏳ reports.json (match reports and timeline)
-- ⏳ connectors.json (external integrations)
-- ⏳ tactical.json (tactical board)
-- ⏳ live.json (live match viewing)
-
-**Components Fully Translated:** 2/90+ (2%)
+**Components Fully Translated:** 2/90+ (~2%)
 - ✅ LoginForm.js
 - ✅ SignupForm.js
 
-**Estimated Completion:** ~40% of translation JSON files, ~2% of component updates
+**Estimated Completion:**
+- Translation JSON files: 100% ✅
+- Component updates: ~2%
+
+**Next Priority:** Update components to use translation keys (88+ components remaining)
 
 ---
 
