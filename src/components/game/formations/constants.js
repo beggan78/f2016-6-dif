@@ -1,4 +1,5 @@
 // Shared styling constants for formation components
+import i18next from 'i18next';
 
 // Base styling classes
 export const FORMATION_STYLES = {
@@ -57,38 +58,25 @@ export const ICON_STYLES = {
   }
 };
 
-// Position display name mappings
-export const POSITION_DISPLAY_NAMES = {
-  // Common positions
-  goalie: 'Goalie',
-  
-  // 2-2 Formation positions
-  leftDefender: 'Left Defender',
-  rightDefender: 'Right Defender', 
-  leftAttacker: 'Left Attacker',
-  rightAttacker: 'Right Attacker',
-  
-  // 1-2-1 Formation positions
-  defender: 'Defender',
-  left: 'Left Mid',
-  right: 'Right Mid',
-  attacker: 'Attacker',
-
-  // 7v7 Midfielder variants
-  leftMidfielder: 'Left Midfielder',
-  rightMidfielder: 'Right Midfielder',
-  centerMidfielder: 'Center Midfielder',
-
-  // Substitute positions
-  substitute_1: 'Substitute',
-  substitute_2: 'Substitute',
-  substitute_3: 'Substitute',
-  substitute_4: 'Substitute',
-  substitute_5: 'Substitute'
+// Position display name mappings (dynamically resolved for i18n)
+export const getPositionDisplayName = (positionKey) => {
+  const baseKey = positionKey.startsWith('substitute_') ? 'substitute' : positionKey;
+  return i18next.t(`game:formation.positions.${baseKey}`, { defaultValue: positionKey });
 };
+
+// Static fallback for code that iterates over all keys
+export const POSITION_DISPLAY_NAMES = new Proxy({}, {
+  get(_, prop) {
+    if (typeof prop !== 'string') return undefined;
+    const baseKey = prop.startsWith('substitute_') ? 'substitute' : prop;
+    return i18next.t(`game:formation.positions.${baseKey}`, { defaultValue: prop });
+  }
+});
 
 // Help text messages
 export const HELP_MESSAGES = {
-  fieldPlayerOptions: 'Hold for options',
-  substituteToggle: (isInactive) => `Hold to ${isInactive ? 'activate' : 'inactivate'}`
+  fieldPlayerOptions: () => i18next.t('game:helpMessages.fieldPlayerOptions'),
+  substituteToggle: (isInactive) => isInactive
+    ? i18next.t('game:helpMessages.substituteToggleActivate')
+    : i18next.t('game:helpMessages.substituteToggleInactivate')
 };

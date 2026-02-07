@@ -1022,5 +1022,13 @@
     "genericError": "An unexpected error occurred",
     "loginRequiredCreateTeam": "User must be authenticated to create a team",
     "loginRequiredCreateClub": "Must be logged in to create club"
+  },
+  "context": {
+    "invitationSentTo": "Invitation sent successfully to {{email}}",
+    "welcomeToTeam": "Welcome to the team! You have been successfully added.",
+    "invitationDeclined": "Invitation declined successfully",
+    "invitationDeleted": "Invitation deleted successfully",
+    "teamFallbackName": "Team",
+    "teamAdminFallback": "Team Admin"
   }
 }

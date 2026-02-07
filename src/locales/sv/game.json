@@ -108,6 +108,28 @@
     "noActiveMatch": "Ingen aktiv match att spara.",
     "teamContextRequired": "Lagkontext krävs för att spara konfiguration."
   },
+  "helpMessages": {
+    "fieldPlayerOptions": "Håll inne för alternativ",
+    "substituteToggleActivate": "Håll inne för att aktivera",
+    "substituteToggleInactivate": "Håll inne för att inaktivera"
+  },
+  "persistence": {
+    "retrying": "Försöker spara igen (försök {{attempt}}/{{maxAttempts}})...",
+    "failedAfterRetries": "Misslyckades med att spara matchen efter {{maxAttempts}} försök",
+    "failedToSaveMatch": "Misslyckades med att spara matchen",
+    "cannotRetry": "Kan inte försöka igen: Ingen väntande matchdata hittades.",
+    "cannotSaveNoMatchId": "Kan inte spara match: Inget match-ID.",
+    "cannotSaveNoPlayerData": "Kan inte spara match: Ingen spelardata tillgänglig.",
+    "cannotSaveMissingStartTime": "Kan inte spara match: Starttid saknas.",
+    "cannotSaveIncompleteData": "Kan inte spara match: Ofullständig matchdata ({{fields}})",
+    "cannotSaveNoParticipants": "Kan inte spara match: Inga deltagande spelare hittades.",
+    "playerStatsFailed": "Spelarstatistik misslyckades för: {{names}}",
+    "playerStatsFailedCount": "Spelarstatistik misslyckades för {{count}} spelare",
+    "configSaved": "Konfiguration sparad",
+    "configSavedWithWarnings": "Konfiguration sparad (med varningar)",
+    "failedToSaveConfig": "Misslyckades med att spara konfiguration",
+    "failedToSaveConfigError": "Misslyckades med att spara konfiguration: {{error}}"
+  },
   "stats": {
     "title": "Match Avslutad - Statistik",
     "opponent": "Motståndare",

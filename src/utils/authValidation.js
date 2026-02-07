@@ -343,45 +343,42 @@ export const validateOtpCode = (code, options = {}) => {
 
 /**
  * Gets user-friendly password requirements text
+ * @param {Function} t - Optional i18n translation function (from useTranslation('auth'))
  * @returns {string} Password requirements description
  */
-export const getPasswordRequirementsText = () => {
+export const getPasswordRequirementsText = (t) => {
+  const tr = t || ((key, opts) => opts?.defaultValue || key);
   const requirements = [];
-  
+
   if (PASSWORD_REQUIREMENTS.minLength > 0) {
-    requirements.push(`at least ${PASSWORD_REQUIREMENTS.minLength} characters`);
+    requirements.push(tr('passwordRequirements.atLeastChars', { count: PASSWORD_REQUIREMENTS.minLength, defaultValue: `at least ${PASSWORD_REQUIREMENTS.minLength} characters` }));
   }
-  
+
   if (PASSWORD_REQUIREMENTS.requireUppercase && PASSWORD_REQUIREMENTS.requireLowercase) {
-    requirements.push('uppercase and lowercase letters');
+    requirements.push(tr('passwordRequirements.uppercaseAndLowercase', { defaultValue: 'uppercase and lowercase letters' }));
   } else if (PASSWORD_REQUIREMENTS.requireUppercase || PASSWORD_REQUIREMENTS.requireLowercase) {
-    // If only one case is required
-    requirements.push(PASSWORD_REQUIREMENTS.requireUppercase ? 'uppercase letters' : 'lowercase letters');
+    requirements.push(PASSWORD_REQUIREMENTS.requireUppercase
+      ? tr('passwordRequirements.uppercase', { defaultValue: 'uppercase letters' })
+      : tr('passwordRequirements.lowercase', { defaultValue: 'lowercase letters' }));
   } else {
-    // No case requirements - just mention letters
-    requirements.push('letters');
+    requirements.push(tr('passwordRequirements.letters', { defaultValue: 'letters' }));
   }
-  
+
   if (PASSWORD_REQUIREMENTS.requireNumber) {
-    requirements.push('at least one number');
+    requirements.push(tr('passwordRequirements.atLeastOneNumber', { defaultValue: 'at least one number' }));
   }
-  
+
   if (PASSWORD_REQUIREMENTS.requireSpecialChar) {
-    requirements.push('at least one special character');
+    requirements.push(tr('passwordRequirements.atLeastOneSpecialChar', { defaultValue: 'at least one special character' }));
   }
-  
+
   if (requirements.length === 0) {
     return '';
   }
-  
-  if (requirements.length === 1) {
-    return `Must be ${requirements[0]}`;
-  }
-  
-  if (requirements.length === 2) {
-    return `Must be ${requirements[0]} with ${requirements[1]}`;
-  }
-  
-  const last = requirements.pop();
-  return `Must be ${requirements.join(', ')} and ${last}`;
+
+  const joined = requirements.length <= 2
+    ? requirements.join(requirements.length === 2 ? ' with ' : '')
+    : `${requirements.slice(0, -1).join(', ')} and ${requirements[requirements.length - 1]}`;
+
+  return tr('passwordRequirements.mustBe', { requirements: joined, defaultValue: `Must be ${joined}` });
 };

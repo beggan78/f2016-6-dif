@@ -108,6 +108,28 @@
     "noActiveMatch": "No active match to save.",
     "teamContextRequired": "Team context required for saving configuration."
   },
+  "helpMessages": {
+    "fieldPlayerOptions": "Hold for options",
+    "substituteToggleActivate": "Hold to activate",
+    "substituteToggleInactivate": "Hold to inactivate"
+  },
+  "persistence": {
+    "retrying": "Retrying save (attempt {{attempt}}/{{maxAttempts}})...",
+    "failedAfterRetries": "Failed to save match after {{maxAttempts}} attempts",
+    "failedToSaveMatch": "Failed to save match",
+    "cannotRetry": "Cannot retry: No pending match data found.",
+    "cannotSaveNoMatchId": "Cannot save match: No match ID.",
+    "cannotSaveNoPlayerData": "Cannot save match: No player data available.",
+    "cannotSaveMissingStartTime": "Cannot save match: Missing start time.",
+    "cannotSaveIncompleteData": "Cannot save match: Incomplete match data ({{fields}})",
+    "cannotSaveNoParticipants": "Cannot save match: No participating players found.",
+    "playerStatsFailed": "Player stats failed for: {{names}}",
+    "playerStatsFailedCount": "Player stats failed for {{count}} player(s)",
+    "configSaved": "Configuration saved",
+    "configSavedWithWarnings": "Configuration saved (with warnings)",
+    "failedToSaveConfig": "Failed to save configuration",
+    "failedToSaveConfigError": "Failed to save configuration: {{error}}"
+  },
   "stats": {
     "title": "Game Finished - Statistics",
     "opponent": "Opponent",

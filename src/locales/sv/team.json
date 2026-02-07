@@ -1022,5 +1022,13 @@
     "genericError": "Ett oväntat fel uppstod",
     "loginRequiredCreateTeam": "Du måste vara inloggad för att skapa ett lag",
     "loginRequiredCreateClub": "Du måste vara inloggad för att skapa klubb"
+  },
+  "context": {
+    "invitationSentTo": "Inbjudan skickad till {{email}}",
+    "welcomeToTeam": "Välkommen till laget! Du har lagts till.",
+    "invitationDeclined": "Inbjudan avböjd",
+    "invitationDeleted": "Inbjudan borttagen",
+    "teamFallbackName": "Lag",
+    "teamAdminFallback": "Lagadministratör"
   }
 }

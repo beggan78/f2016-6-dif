@@ -1219,7 +1219,7 @@ export const TeamProvider = ({ children }) => {
       return {
         success: true,
         data: data.data || data,
-        message: data.message || `Invitation sent successfully to ${email}`,
+        message: data.message || t('context.invitationSentTo', { email }),
         warning: data.warning
       };
 
@@ -1318,7 +1318,7 @@ export const TeamProvider = ({ children }) => {
       return {
         success: true,
         data,
-        message: 'Welcome to the team! You have been successfully added.'
+        message: t('context.welcomeToTeam')
       };
 
     } catch (err) {
@@ -1387,12 +1387,12 @@ export const TeamProvider = ({ children }) => {
           club: invitation.team.club
         } : {
           id: invitation.team_id,
-          name: 'Team',
+          name: t('context.teamFallbackName'),
           club: null
         },
         invitedBy: {
           id: null,
-          name: 'Team Admin'
+          name: t('context.teamAdminFallback')
         }
       })) || [];
 
@@ -1433,7 +1433,7 @@ export const TeamProvider = ({ children }) => {
       return {
         success: true,
         data,
-        message: data?.message || 'Invitation declined successfully'
+        message: data?.message || t('context.invitationDeclined')
       };
     } catch (err) {
       console.error('Exception in declineTeamInvitation:', err);
@@ -1505,7 +1505,7 @@ export const TeamProvider = ({ children }) => {
 
       return {
         success: data.success || true,
-        message: data.message || 'Invitation deleted successfully'
+        message: data.message || t('context.invitationDeleted')
       };
 
     } catch (err) {
