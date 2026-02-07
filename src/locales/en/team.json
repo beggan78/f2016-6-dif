@@ -398,6 +398,10 @@
       "message": "Remove {{count}} player(s) from the loan match {{teamName}} on {{date}}?",
       "confirmButton": "Delete Match",
       "cancelButton": "Cancel"
+    },
+    "fallback": {
+      "unknownTeam": "Unknown Team",
+      "unknownPlayerDeleted": "Unknown Player (deleted)"
     }
   },
   "teamManagement": {
@@ -673,7 +677,8 @@
       "deletePlayer": "Delete Player",
       "deactivatePlayer": "Deactivate Player",
       "cancel": "Cancel"
-    }
+    },
+    "unknownPlayer": "Unknown Player"
   },
   "invitationNotification": {
     "title": "Team Invitations",
@@ -693,6 +698,7 @@
     }
   },
   "clubAutocomplete": {
+    "placeholder": "Search for your club...",
     "createNewClub": "Create new club",
     "noClubsFound": "No clubs found for \"{{query}}\""
   },
@@ -871,7 +877,8 @@
       "pendingCreated": "Pending match created.",
       "planningFailed": "Planning failed",
       "planningFailedMessage": "Failed to plan match."
-    }
+    },
+    "unknownPlayer": "Unknown Player"
   },
   "accessRequestModal": {
     "header": {

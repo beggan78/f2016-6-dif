@@ -11,7 +11,7 @@ export function ClubAutocomplete({
   onChange,
   onSelect,
   onCreateNew,
-  placeholder = "Search for your club...",
+  placeholder,
   disabled = false
 }) {
   const { t } = useTranslation('team');
@@ -101,7 +101,7 @@ export function ClubAutocomplete({
           onFocus={handleInputFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder || t('clubAutocomplete.placeholder')}
           disabled={disabled}
           className="pr-10"
         />

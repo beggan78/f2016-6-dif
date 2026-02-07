@@ -620,9 +620,10 @@ export function ScoreEditModal({
   ownScore,
   opponentScore,
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
-  opponentTeam = "Opponent"
+  opponentTeam
 }) {
-  const { t } = useTranslation('modals');
+  const { t } = useTranslation(['modals', 'shared']);
+  const resolvedOpponentTeam = opponentTeam || t('shared:opponent');
   const [editOwnScore, setEditOwnScore] = React.useState(ownScore);
   const [editOpponentScore, setEditOpponentScore] = React.useState(opponentScore);
 
@@ -683,9 +684,9 @@ export function ScoreEditModal({
             <div className="text-2xl font-mono font-bold text-slate-400">-</div>
             
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{opponentTeam}</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{resolvedOpponentTeam}</label>
               <div className="flex items-center space-x-2">
-                <Button 
+                <Button
                   onClick={() => setEditOpponentScore(Math.max(0, editOpponentScore - 1))}
                   variant="secondary"
                   size="sm"
@@ -730,7 +731,7 @@ export function ScoreManagerModal({
   ownScore,
   opponentScore,
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
-  opponentTeam = "Opponent",
+  opponentTeam,
   matchEvents = [],
   goalScorers = {},
   allPlayers = [],
@@ -743,7 +744,8 @@ export function ScoreManagerModal({
   getPlayerName,
   allowScorerSelection = true
 }) {
-  const { t } = useTranslation('modals');
+  const { t } = useTranslation(['modals', 'shared']);
+  const resolvedOpponentTeam = opponentTeam || t('shared:opponent');
 
   // Filter and process goal events (using same pattern as reporting screens)
   const goalEvents = React.useMemo(() => {
@@ -818,7 +820,7 @@ export function ScoreManagerModal({
             </div>
             <div className="text-2xl font-mono font-bold text-slate-400">-</div>
             <div className="text-center">
-              <div className="text-sm text-slate-300">{opponentTeam}</div>
+              <div className="text-sm text-slate-300">{resolvedOpponentTeam}</div>
               <div className="text-2xl font-bold text-sky-400">{opponentScore}</div>
             </div>
           </div>
@@ -911,7 +913,7 @@ export function ScoreManagerModal({
                 variant="secondary"
                 className="flex-1"
               >
-                + {opponentTeam}
+                + {resolvedOpponentTeam}
               </Button>
             </div>
           </div>

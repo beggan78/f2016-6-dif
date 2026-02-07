@@ -105,7 +105,9 @@
     "description": "You have unmapped players from {{providerName}} waiting to be matched to your roster."
   },
   "providerLogo": {
-    "fallbackLabel": "Connector"
+    "fallbackLabel": "Connector",
+    "logoAlt": "{{providerName}} logo",
+    "logoPlaceholder": "{{label}} logo placeholder"
   },
   "connectorCard": {
     "lastVerified": "Last verified:",

@@ -398,6 +398,10 @@
       "message": "Ta bort {{count}} spelare från lånmatchen {{teamName}} den {{date}}?",
       "confirmButton": "Ta Bort Match",
       "cancelButton": "Avbryt"
+    },
+    "fallback": {
+      "unknownTeam": "Okänt Lag",
+      "unknownPlayerDeleted": "Okänd Spelare (borttagen)"
     }
   },
   "teamManagement": {
@@ -673,7 +677,8 @@
       "deletePlayer": "Ta Bort Spelare",
       "deactivatePlayer": "Inaktivera Spelare",
       "cancel": "Avbryt"
-    }
+    },
+    "unknownPlayer": "Okänd Spelare"
   },
   "invitationNotification": {
     "title": "Laginbjudningar",
@@ -693,6 +698,7 @@
     }
   },
   "clubAutocomplete": {
+    "placeholder": "Sök efter din klubb...",
     "createNewClub": "Skapa ny klubb",
     "noClubsFound": "Inga klubbar hittades för \"{{query}}\""
   },
@@ -871,7 +877,8 @@
       "pendingCreated": "Väntande match skapad.",
       "planningFailed": "Planering misslyckades",
       "planningFailedMessage": "Misslyckades planera match."
-    }
+    },
+    "unknownPlayer": "Okänd Spelare"
   },
   "accessRequestModal": {
     "header": {

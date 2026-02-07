@@ -9,7 +9,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
   if (!player) return null;
 
   const willBeDeleted = !hasGameHistory;
-  const displayName = player.display_name || player.displayName || player.first_name || 'Unknown Player';
+  const displayName = player.display_name || player.displayName || player.first_name || t('deletePlayerModal.unknownPlayer');
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (

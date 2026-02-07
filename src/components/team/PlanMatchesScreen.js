@@ -107,12 +107,12 @@ export function PlanMatchesScreen({
       .filter(player => player.on_roster !== false)
       .map(player => ({
         id: player.id,
-        displayName: player.display_name || player.first_name || 'Unknown Player',
+        displayName: player.display_name || player.first_name || t('planMatches.unknownPlayer'),
         firstName: player.first_name || null,
         lastName: player.last_name || null,
         jerseyNumber: player.jersey_number
       }));
-  }, [teamPlayers]);
+  }, [teamPlayers, t]);
 
   useEffect(() => {
     if (!defaults || matches.length === 0) return;

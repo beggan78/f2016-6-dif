@@ -17,5 +17,7 @@
   "close": "Stäng",
   "ok": "OK",
   "back": "Tillbaka",
-  "inactive": "Inaktiv"
+  "inactive": "Inaktiv",
+  "opponent": "Motståndare",
+  "user": "Användare"
 }

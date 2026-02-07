@@ -17,5 +17,7 @@
   "close": "Close",
   "ok": "OK",
   "back": "Back",
-  "inactive": "Inactive"
+  "inactive": "Inactive",
+  "opponent": "Opponent",
+  "user": "User"
 }

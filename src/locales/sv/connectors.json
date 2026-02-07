@@ -105,7 +105,9 @@
     "description": "Du har omatchade spelare från {{providerName}} som väntar på att matchas till din trupp."
   },
   "providerLogo": {
-    "fallbackLabel": "Koppling"
+    "fallbackLabel": "Koppling",
+    "logoAlt": "{{providerName}}-logotyp",
+    "logoPlaceholder": "{{label}} logotypplatshållare"
   },
   "connectorCard": {
     "lastVerified": "Senast verifierad:",

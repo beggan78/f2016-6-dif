@@ -59,11 +59,11 @@ const getInitialTimeRange = (timeRangePersistence) => {
   };
 };
 
-const groupLoansByMatch = (loans, rosterLookup) => {
+const groupLoansByMatch = (loans, rosterLookup, t) => {
   const matchMap = new Map();
 
   loans.forEach((loan) => {
-    const receivingTeamName = loan.receiving_team_name || 'Unknown Team';
+    const receivingTeamName = loan.receiving_team_name || t('loansView.fallback.unknownTeam');
     const loanDate = loan.loan_date;
     const matchKey = `${receivingTeamName}|${loanDate}`;
 
@@ -80,7 +80,7 @@ const groupLoansByMatch = (loans, rosterLookup) => {
 
     const match = matchMap.get(matchKey);
     const playerSource = loan.player || rosterLookup.get(loan.player_id);
-    const displayName = playerSource ? formatPlayerDisplayName(playerSource) : 'Unknown Player (deleted)';
+    const displayName = playerSource ? formatPlayerDisplayName(playerSource) : t('loansView.fallback.unknownPlayerDeleted');
     const jerseyNumber = playerSource?.jersey_number ?? null;
     const isDeleted = !playerSource;
 
@@ -340,8 +340,8 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   }, [loans, statusFilter, playerFilter, receivingTeamFilter]);
 
   const groupedMatches = useMemo(() => {
-    return groupLoansByMatch(filteredLoans, rosterLookup);
-  }, [filteredLoans, rosterLookup]);
+    return groupLoansByMatch(filteredLoans, rosterLookup, t);
+  }, [filteredLoans, rosterLookup, t]);
 
   const modalPlayers = useMemo(() => {
     if (!editingMatch) {

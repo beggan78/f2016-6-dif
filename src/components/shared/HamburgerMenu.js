@@ -8,7 +8,7 @@ import { NotificationModal } from './UI';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, onNavigateTo, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
-  const { t } = useTranslation('navigation');
+  const { t } = useTranslation(['navigation', 'shared']);
   const [isOpen, setIsOpen] = useState(false);
   const [notification, setNotification] = useState({ isOpen: false, title: '', message: '' });
   const { isAuthenticated, user, userProfile } = useAuth();
@@ -139,7 +139,7 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     if (user?.email) {
       return user.email.split('@')[0]; // Use part before @ as fallback
     }
-    return 'User';
+    return t('shared:user');
   };
 
   return (

@@ -18,7 +18,7 @@ export function InvitationNotificationModal({
   onClose,
   onInvitationProcessed
 }) {
-  const { t } = useTranslation('team');
+  const { t, i18n } = useTranslation('team');
   const {
     acceptTeamInvitation,
     declineTeamInvitation,
@@ -120,7 +120,7 @@ export function InvitationNotificationModal({
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
