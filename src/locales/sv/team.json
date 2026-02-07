@@ -861,7 +861,8 @@
     "playerSelector": {
       "noPlayers": "Inga truppspelare.",
       "markAvailable": "Markera tillgänglig",
-      "markUnavailable": "Markera ej tillgänglig"
+      "markUnavailable": "Markera ej tillgänglig",
+      "practicesTooltip": "Träningar per match"
     },
     "notifications": {
       "noPlayersTitle": "Inga spelare valda",

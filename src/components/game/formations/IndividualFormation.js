@@ -83,7 +83,8 @@ export function IndividualFormation({
           targetFieldPosition,
           null,
           formationAwareTeamConfig,
-          substitutePositions
+          substitutePositions,
+          t
         );
 
         // Find the player at the target field position
@@ -97,7 +98,7 @@ export function IndividualFormation({
       });
       return labels;
     },
-    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions, formation, getPlayerNameById]
+    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions, formation, getPlayerNameById, t]
   );
 
   // Handle null/undefined formation after hook definitions to satisfy rules of hooks
@@ -168,7 +169,7 @@ export function IndividualFormation({
 
     // Get utilities
     const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
-    const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
+    const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions, t);
     const icon = getPositionIcon(position, substitutePositions);
     const incomingPositionLabel = incomingPositionLabels[position] || null;
     const shouldShowIncomingPosition = isSubstitutePosition && incomingPositionLabel && (!modeSupportsInactive || !isInactive);

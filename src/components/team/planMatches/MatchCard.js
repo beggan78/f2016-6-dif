@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { Button } from '../../shared/UI';
 import { Portal } from '../../shared';
 import { PlayerSelector } from './PlayerSelector';
-import { PRACTICES_TOOLTIP } from '../../../constants/planMatchesConstants';
+
 import { useListDragAndDrop } from '../../../hooks/useListDragAndDrop';
 import { DraggablePlayerCard } from './DraggablePlayerCard';
 import { useTranslation } from 'react-i18next';
@@ -110,7 +110,7 @@ export function MatchCard({
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}
             isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere}
-            practicesTooltip={PRACTICES_TOOLTIP}
+
           />
         </div>
 

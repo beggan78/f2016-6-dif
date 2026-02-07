@@ -53,7 +53,8 @@
       "draws": "oavgjorda",
       "loss": "förlust",
       "losses": "förluster"
-    }
+    },
+    "summaryRecord": "{{wins}}V {{draws}}O {{losses}}F"
   },
   "playerStats": {
     "title": "Spelarstatistik",

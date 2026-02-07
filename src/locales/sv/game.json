@@ -65,7 +65,23 @@
   "formation": {
     "noConfig": "Ingen lagkonfiguration tillgänglig",
     "invalidConfig": "Ogiltig lagkonfiguration",
-    "inactive": "(Inaktiv)"
+    "inactive": "(Inaktiv)",
+    "positions": {
+      "goalie": "Målvakt",
+      "leftDefender": "Vänster Back",
+      "rightDefender": "Höger Back",
+      "leftAttacker": "Vänster Forward",
+      "rightAttacker": "Höger Forward",
+      "defender": "Back",
+      "left": "Vänster Mittfält",
+      "right": "Höger Mittfält",
+      "attacker": "Forward",
+      "leftMidfielder": "Vänster Mittfältare",
+      "rightMidfielder": "Höger Mittfältare",
+      "centerMidfielder": "Centralt Mittfält",
+      "substitute": "Avbytare"
+    },
+    "inactiveStatus": "Inaktiv"
   },
   "finished": {
     "title": "Match Avslutad!",

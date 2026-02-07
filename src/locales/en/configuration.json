@@ -281,6 +281,21 @@
       "substituteTitle": "Substitute",
       "unknownPlayer": "Unknown",
       "selectPosition": "Select {{title}}"
+    },
+    "positions": {
+      "goalie": "Goalie",
+      "leftDefender": "Left Defender",
+      "rightDefender": "Right Defender",
+      "leftAttacker": "Left Attacker",
+      "rightAttacker": "Right Attacker",
+      "defender": "Defender",
+      "left": "Left Mid",
+      "right": "Right Mid",
+      "attacker": "Attacker",
+      "leftMidfielder": "Left Midfielder",
+      "rightMidfielder": "Right Midfielder",
+      "centerMidfielder": "Center Midfielder",
+      "substitute": "Substitute"
     }
   }
 }

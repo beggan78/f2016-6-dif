@@ -11,7 +11,6 @@ export function PlayerSelector({
   onToggleUnavailable,
   isSelectedInOtherMatch,
   isSelectedAndOnlyAvailableHere,
-  practicesTooltip,
   emptyMessage
 }) {
   const { t } = useTranslation('team');
@@ -63,7 +62,7 @@ export function PlayerSelector({
             </div>
 
             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-300">
-              <Tooltip content={practicesTooltip} position="top" trigger="hover" className="inline-flex">
+              <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
                 <span>{player.practicesPerMatch.toFixed(2)}</span>
               </Tooltip>
               <span>{player.attendanceRate.toFixed(1)}%</span>

@@ -287,7 +287,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
           icon={Calendar}
           title={t('teamStats.totalMatches')}
           value={totalMatches}
-          subtitle={`${wins}W ${draws}D ${losses}L`}
+          subtitle={t('teamStats.summaryRecord', { wins, draws, losses })}
         />
 
         <StatCard

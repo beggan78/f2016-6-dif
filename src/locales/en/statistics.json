@@ -53,7 +53,8 @@
       "draws": "draws",
       "loss": "loss",
       "losses": "losses"
-    }
+    },
+    "summaryRecord": "{{wins}}W {{draws}}D {{losses}}L"
   },
   "playerStats": {
     "title": "Player Statistics",

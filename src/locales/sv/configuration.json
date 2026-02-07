@@ -281,6 +281,21 @@
       "substituteTitle": "Avbytare",
       "unknownPlayer": "Okänd",
       "selectPosition": "Välj {{title}}"
+    },
+    "positions": {
+      "goalie": "Målvakt",
+      "leftDefender": "Vänster Back",
+      "rightDefender": "Höger Back",
+      "leftAttacker": "Vänster Forward",
+      "rightAttacker": "Höger Forward",
+      "defender": "Back",
+      "left": "Vänster Mittfält",
+      "right": "Höger Mittfält",
+      "attacker": "Forward",
+      "leftMidfielder": "Vänster Mittfältare",
+      "rightMidfielder": "Höger Mittfältare",
+      "centerMidfielder": "Centralt Mittfält",
+      "substitute": "Avbytare"
     }
   }
 }

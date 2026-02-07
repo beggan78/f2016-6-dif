@@ -861,7 +861,8 @@
     "playerSelector": {
       "noPlayers": "No roster players.",
       "markAvailable": "Mark available",
-      "markUnavailable": "Mark unavailable"
+      "markUnavailable": "Mark unavailable",
+      "practicesTooltip": "Practices per match"
     },
     "notifications": {
       "noPlayersTitle": "No players selected",

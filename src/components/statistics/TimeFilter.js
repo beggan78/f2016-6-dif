@@ -1,17 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, ChevronDown, Check } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
 import { TIME_PRESETS } from '../../constants/timePresets';
-
-const formatDateForDisplay = (date) => {
-  if (!date) return '';
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-};
 
 const formatDateForInput = (date) => {
   if (!date) return '';
@@ -25,7 +16,17 @@ export function TimeFilter({
   onTimeRangeChange,
   className = ''
 }) {
-  const { t } = useTranslation('statistics');
+  const { t, i18n } = useTranslation('statistics');
+
+  const formatDateForDisplay = useCallback((date) => {
+    if (!date) return '';
+    const locale = i18n.language === 'sv' ? 'sv-SE' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }, [i18n.language]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(selectedPresetId);
   const [customStartDate, setCustomStartDate] = useState('');
@@ -94,7 +95,7 @@ export function TimeFilter({
     }
 
     return t('timeFilter.allTime');
-  }, [startDate, endDate, currentPresetLabel, selectedPreset, t]);
+  }, [startDate, endDate, currentPresetLabel, selectedPreset, t, formatDateForDisplay]);
 
   const hasActiveRange = useMemo(() => Boolean(startDate || endDate), [startDate, endDate]);
 

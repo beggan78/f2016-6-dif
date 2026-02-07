@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip } from '../../shared';
-import { PRACTICES_TOOLTIP } from '../../../constants/planMatchesConstants';
+import { useTranslation } from 'react-i18next';
 
 const DraggablePlayerCardComponent = ({
   player,
@@ -12,6 +12,8 @@ const DraggablePlayerCardComponent = ({
   isSelectedAndOnlyAvailableHere,
   isDragActivating
 }) => {
+  const { t } = useTranslation('team');
+
   if (!player) {
     return null;
   }
@@ -50,7 +52,7 @@ const DraggablePlayerCardComponent = ({
         )}
       </div>
       <div className="flex items-center gap-2 text-[10px] font-mono text-sky-100/80">
-        <Tooltip content={PRACTICES_TOOLTIP} position="top" trigger="hover" className="inline-flex">
+        <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
           <span>{player.practicesPerMatch.toFixed(2)}</span>
         </Tooltip>
         <span>{player.attendanceRate.toFixed(1)}%</span>

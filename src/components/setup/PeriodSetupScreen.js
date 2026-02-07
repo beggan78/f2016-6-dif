@@ -36,6 +36,18 @@ const getPositionConfig = (positionKey) => {
   return { title: humanizePositionKey(positionKey), position: positionKey };
 };
 
+/**
+ * Translate a position key to a localized display name
+ * Falls back to the config title if no translation key exists
+ */
+function getTranslatedPositionTitle(position, config, t) {
+  // Use a normalized key: strip numeric suffixes from substitute positions
+  const normalizedKey = position.startsWith('substitute_') ? 'substitute' : position;
+  const translationKey = `periodSetup.positions.${normalizedKey}`;
+  const translated = t(translationKey, { defaultValue: '' });
+  return translated || config.title;
+}
+
 // Dynamic component for rendering individual position cards
 function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
   const modeDefinition = getModeDefinition(teamConfig);
@@ -50,7 +62,7 @@ function IndividualPositionCards({ positions = null, teamConfig, formation, onPl
     <>
       {allPositions.map(position => {
         const config = getPositionConfig(position);
-        const displayTitle = config.title === 'Substitute' ? t('periodSetup.fallbacks.substituteTitle') : config.title;
+        const displayTitle = getTranslatedPositionTitle(position, config, t);
 
         return (
           <IndividualPositionCard

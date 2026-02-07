@@ -2,8 +2,10 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enConfiguration from '../locales/en/configuration.json';
 import enCommon from '../locales/en/common.json';
+import enGame from '../locales/en/game.json';
 import svConfiguration from '../locales/sv/configuration.json';
 import svCommon from '../locales/sv/common.json';
+import svGame from '../locales/sv/game.json';
 
 /**
  * Creates a test instance of i18next for use in unit tests
@@ -38,11 +40,13 @@ export function createTestI18n() {
       resources: {
         en: {
           configuration: enConfiguration,
-          common: enCommon
+          common: enCommon,
+          game: enGame
         },
         sv: {
           configuration: svConfiguration,
-          common: svCommon
+          common: svCommon,
+          game: svGame
         }
       },
       interpolation: { escapeValue: false },
