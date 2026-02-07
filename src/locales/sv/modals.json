@@ -33,7 +33,7 @@
     "title": "Återuppta Matchkonfiguration",
     "noMatchesFound": "Inga sparade matcher hittades",
     "matchesFound": "{{count}} sparad match hittad",
-    "matchesFound_plural": "{{count}} sparade matcher hittade",
+    "matchesFound_other": "{{count}} sparade matcher hittade",
     "noPendingMatches": "Inga Väntande Matcher",
     "noPendingDescription": "Du har inga sparade matchkonfigurationer.",
     "continueToConfigureNew": "Fortsätt till Konfigurera Ny Match",

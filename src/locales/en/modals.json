@@ -33,7 +33,7 @@
     "title": "Resume Match Setup",
     "noMatchesFound": "No saved matches found",
     "matchesFound": "{{count}} saved match found",
-    "matchesFound_plural": "{{count}} saved matches found",
+    "matchesFound_other": "{{count}} saved matches found",
     "noPendingMatches": "No Pending Matches",
     "noPendingDescription": "You don't have any saved match configurations.",
     "continueToConfigureNew": "Continue to Configure New Match",

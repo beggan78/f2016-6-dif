@@ -93,7 +93,7 @@
     "fairPlayDescription": "Most balanced playing time",
     "topScorer": "Top Scorer",
     "topScorerGoals": "{{count}} goal",
-    "topScorerGoals_plural": "{{count}} goals",
+    "topScorerGoals_other": "{{count}} goals",
     "noGoals": "No goals scored",
     "viewReport": "View Full Report",
     "newMatch": "New Match"

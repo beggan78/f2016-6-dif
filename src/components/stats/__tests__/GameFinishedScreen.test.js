@@ -320,7 +320,7 @@ describe('GameFinishedScreen', () => {
       render(<GameFinishedScreen {...defaultProps} />);
       await waitForFairPlaySection();
       
-      expect(screen.getByText('🏆 Fair Play Award')).toBeInTheDocument();
+      expect(screen.getByText('Fair Play Award')).toBeInTheDocument();
       
       const dropdown = await screen.findByTestId('fair-play-award-dropdown');
       expect(dropdown.value).toBe('');

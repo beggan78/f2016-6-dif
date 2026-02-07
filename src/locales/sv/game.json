@@ -93,7 +93,7 @@
     "fairPlayDescription": "Mest balanserad speltid",
     "topScorer": "Skyttekung",
     "topScorerGoals": "{{count}} mål",
-    "topScorerGoals_plural": "{{count}} mål",
+    "topScorerGoals_other": "{{count}} mål",
     "noGoals": "Inga mål gjorda",
     "viewReport": "Visa Fullständig Rapport",
     "newMatch": "Ny Match"
