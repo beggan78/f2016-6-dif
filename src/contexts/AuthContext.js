@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { getCachedUserProfile, cacheUserProfile, clearAllCache, cacheAuthUser, getCachedAuthUser } from '../utils/cacheUtils';
 import { cleanupAbandonedMatches } from '../services/matchCleanupService';
@@ -48,6 +49,7 @@ const AuthContext = createContext({
 
 
 export function AuthProvider({ children }) {
+  const { t } = useTranslation('auth');
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -363,14 +365,14 @@ export function AuthProvider({ children }) {
         return {
           user: null,
           error: null,
-          message: "Please check your email for confirmation link"
+          message: t('signUp.checkEmailMessage')
         };
       }
 
       // User was created and signed in immediately
       return { user: data.user, error: null };
     } catch (error) {
-      const errorMessage = error.message || 'Failed to sign up';
+      const errorMessage = error.message || t('signUp.failedToSignUp');
       setAuthError(errorMessage);
       console.error('Sign up error:', error.message);
       return { user: null, error: { message: errorMessage } };

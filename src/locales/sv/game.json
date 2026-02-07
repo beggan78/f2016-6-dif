@@ -98,6 +98,16 @@
     "viewReport": "Visa Fullständig Rapport",
     "newMatch": "Ny Match"
   },
+  "validation": {
+    "selectPlayersCount": "Välj mellan {{min}} och {{max}} spelare till truppen.",
+    "assignGoaliePerPeriod": "Tilldela en målvakt för varje period.",
+    "invalidFormation": "Ogiltig formation upptäckt. Se till att alla positioner är korrekt tilldelade.",
+    "completeFormation": "Fyll i formationen med 1 målvakt och {{count}} unika utespelare.",
+    "completeFormationAssignment": "Fyll i formationstilldelningen.",
+    "assignAllPositions": "Tilldela alla positioner inklusive målvakt.",
+    "noActiveMatch": "Ingen aktiv match att spara.",
+    "teamContextRequired": "Lagkontext krävs för att spara konfiguration."
+  },
   "stats": {
     "title": "Match Avslutad - Statistik",
     "opponent": "Motståndare",

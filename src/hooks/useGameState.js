@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
@@ -147,6 +148,7 @@ const normalizeView = (value) => {
 };
 
 export function useGameState(navigateToView = null) {
+  const { t } = useTranslation('game');
   // Get current team from context for database operations
   const { currentTeam, updateMatchActivityStatus, loadTeamPreferences } = useTeam();
   // Get preferences for various integrations
@@ -425,12 +427,12 @@ export function useGameState(navigateToView = null) {
 
   const handleStartPeriodSetup = useCallback(async () => {
     if (selectedSquadIds.length < minimumPlayersForFormat || selectedSquadIds.length > maximumPlayersForMatch) {
-      alert(`Please select between ${minimumPlayersForFormat} and ${maximumPlayersForMatch} players for the squad.`); // Replace with modal
+      alert(t('validation.selectPlayersCount', { min: minimumPlayersForFormat, max: maximumPlayersForMatch }));
       return;
     }
     const goaliesAssigned = Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean);
     if (!goaliesAssigned) {
-      alert("Please assign a goalie for each period."); // Replace with modal
+      alert(t('validation.assignGoaliePerPeriod'));
       return;
     }
 
@@ -524,7 +526,7 @@ export function useGameState(navigateToView = null) {
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, venueType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
       setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
-      getFormationAwareTeamConfig, minimumPlayersForFormat, maximumPlayersForMatch]);
+      getFormationAwareTeamConfig, minimumPlayersForFormat, maximumPlayersForMatch, t]);
 
   const handleStartGame = () => {
     // Validate formation
@@ -532,7 +534,7 @@ export function useGameState(navigateToView = null) {
     const modeDefinition = getModeDefinition(formationAwareConfig);
 
     if (!modeDefinition) {
-      alert('Invalid formation detected. Please ensure all positions are properly assigned.');
+      alert(t('validation.invalidFormation'));
       return;
     }
 
@@ -545,7 +547,7 @@ export function useGameState(navigateToView = null) {
     const uniqueAssignedCount = new Set(assignedOutfielders).size;
 
     if (uniqueAssignedCount !== expectedOutfieldCount || assignedOutfielders.length !== expectedOutfieldCount || !formation.goalie) {
-      alert(`Please complete the team formation with 1 goalie and ${expectedOutfieldCount} unique outfield players.`);
+      alert(t('validation.completeFormation', { count: expectedOutfieldCount }));
       return;
     }
 
@@ -1290,11 +1292,11 @@ export function useGameState(navigateToView = null) {
   const handleSaveConfiguration = useCallback(async () => {
     // Validation
     if (selectedSquadIds.length < minimumPlayersForFormat || selectedSquadIds.length > maximumPlayersForMatch) {
-      return { success: false, error: `Please select between ${minimumPlayersForFormat} and ${maximumPlayersForMatch} players for the squad.` };
+      return { success: false, error: t('validation.selectPlayersCount', { min: minimumPlayersForFormat, max: maximumPlayersForMatch }) };
     }
     // Skip save if no team context
     if (!currentTeam?.id) {
-      return { success: false, error: "Team context required for saving configuration." };
+      return { success: false, error: t('validation.teamContextRequired') };
     }
 
     try {
@@ -1350,9 +1352,9 @@ export function useGameState(navigateToView = null) {
       console.error('❌ Error saving configuration:', error);
       return { success: false, error: 'Failed to save configuration: ' + error.message };
     }
-  }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation,
       periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
-      formation, allPlayers, minimumPlayersForFormat, maximumPlayersForMatch]);
+      formation, allPlayers, minimumPlayersForFormat, maximumPlayersForMatch, t]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
   // Shared function for saving match configuration (used by both handleStartGame and handleSavePeriodConfiguration)
@@ -1363,12 +1365,12 @@ export function useGameState(navigateToView = null) {
     const formationAwareConfig = getFormationAwareTeamConfig();
 
     if (!formationAwareConfig) {
-      return { success: false, error: "Please complete the formation assignment." };
+      return { success: false, error: t('validation.completeFormationAssignment') };
     }
 
     const modeDefinition = getModeDefinition(formationAwareConfig);
     if (!modeDefinition) {
-      return { success: false, error: "Please complete the formation assignment." };
+      return { success: false, error: t('validation.completeFormationAssignment') };
     }
 
     const outfieldPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
@@ -1384,7 +1386,7 @@ export function useGameState(navigateToView = null) {
       uniqueAssignedCount !== expectedOutfieldCount ||
       !formation.goalie
     ) {
-      const errorMessage = "Please assign all positions including goalie.";
+      const errorMessage = t('validation.assignAllPositions');
       if (shouldNavigate) {
         alert(errorMessage);
         return { success: false, error: errorMessage };
@@ -1394,7 +1396,7 @@ export function useGameState(navigateToView = null) {
 
     // Skip save if no current match
     if (!currentMatchId) {
-      return { success: false, error: "No active match to save." };
+      return { success: false, error: t('validation.noActiveMatch') };
     }
 
     try {
@@ -1594,7 +1596,7 @@ export function useGameState(navigateToView = null) {
     }
   }, [formation, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
       numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentTeam?.id, periodGoalieIds,
-      currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
+      currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig, t]);
 
   const handleSavePeriodConfiguration = useCallback(async () => {
     return await saveMatchConfiguration({ shouldNavigate: false });

@@ -98,6 +98,16 @@
     "viewReport": "View Full Report",
     "newMatch": "New Match"
   },
+  "validation": {
+    "selectPlayersCount": "Please select between {{min}} and {{max}} players for the squad.",
+    "assignGoaliePerPeriod": "Please assign a goalie for each period.",
+    "invalidFormation": "Invalid formation detected. Please ensure all positions are properly assigned.",
+    "completeFormation": "Please complete the team formation with 1 goalie and {{count}} unique outfield players.",
+    "completeFormationAssignment": "Please complete the formation assignment.",
+    "assignAllPositions": "Please assign all positions including goalie.",
+    "noActiveMatch": "No active match to save.",
+    "teamContextRequired": "Team context required for saving configuration."
+  },
   "stats": {
     "title": "Game Finished - Statistics",
     "opponent": "Opponent",
