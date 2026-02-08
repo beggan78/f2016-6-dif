@@ -152,9 +152,11 @@ export function MatchCard({
     }
 
     flipCleanupRef.current = setTimeout(() => {
-      card.style.transition = '';
-      card.style.transform = '';
-      card.style.zIndex = '';
+      if (card && card.isConnected) {
+        card.style.transition = '';
+        card.style.transform = '';
+        card.style.zIndex = '';
+      }
       flipCleanupRef.current = null;
     }, 320);
 
