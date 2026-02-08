@@ -30,7 +30,7 @@ const DraggablePlayerCardComponent = ({
       }}
       className={`player-card-draggable flex items-center justify-between gap-2 rounded px-2 py-1 text-xs ${
         isSelectedAndOnlyAvailableHere
-          ? 'border-2 border-orange-400 bg-orange-900/20 text-orange-100'
+          ? 'border border-orange-300/50 bg-orange-900/20 text-orange-200/80'
           : isInMultipleMatches
             ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
             : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'

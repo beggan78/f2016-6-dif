@@ -375,7 +375,7 @@ describe('MatchCard', () => {
       const { container } = render(<MatchCard {...props} />);
 
       const player1Card = container.querySelector('[data-drag-item-id="1"]');
-      expect(player1Card).toHaveClass('border-orange-400');
+      expect(player1Card).toHaveClass('border-orange-200/50');
     });
   });
 

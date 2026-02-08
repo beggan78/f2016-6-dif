@@ -119,10 +119,10 @@ describe('DraggablePlayerCard', () => {
       const { container } = render(<DraggablePlayerCard {...props} />);
 
       const card = container.querySelector('[data-drag-item-id]');
-      expect(card).toHaveClass('border-2');
-      expect(card).toHaveClass('border-orange-400');
+      expect(card).toHaveClass('border');
+      expect(card).toHaveClass('border-orange-300/50');
       expect(card).toHaveClass('bg-orange-900/20');
-      expect(card).toHaveClass('text-orange-100');
+      expect(card).toHaveClass('text-orange-200/80');
     });
 
     it('should apply special styling when in multiple matches', () => {
