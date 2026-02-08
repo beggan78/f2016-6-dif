@@ -34,7 +34,8 @@
     "header": "Match Format & Formation",
     "formatLabel": "Match Format",
     "formationLabel": "Tactical Formation",
-    "formatExceeded": "You have selected {{count}} players, which exceeds the {{format}} limit of {{max}}. Update the match format or adjust the squad before configuring formations."
+    "formatExceeded": "You have selected {{count}} players, which exceeds the {{format}} limit of {{max}}. Update the match format or adjust the squad before configuring formations.",
+    "comingSoonSuffix": "(Coming soon - Select to up-vote)"
   },
   "goalies": {
     "header": "Assign Goalies",

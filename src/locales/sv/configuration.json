@@ -28,13 +28,14 @@
   "gameSettings": {
     "periodsLabel": "Antal Perioder",
     "durationLabel": "Periodlängd (minuter)",
-    "alertLabel": "Bytesvarning"
+    "alertLabel": "Bytesnotis"
   },
   "formation": {
     "header": "Matchformat & Formation",
     "formatLabel": "Matchformat",
     "formationLabel": "Spelsystem",
-    "formatExceeded": "Du har valt {{count}} spelare, vilket överstiger {{format}}-gränsen på {{max}}. Uppdatera matchformatet eller justera truppen innan du konfigurerar formationer."
+    "formatExceeded": "Du har valt {{count}} spelare, vilket överstiger {{format}}-gränsen på {{max}}. Uppdatera matchformatet eller justera truppen innan du konfigurerar formationer.",
+    "comingSoonSuffix": "(Kommer snart - Välj för att rösta fram)"
   },
   "goalies": {
     "header": "Målvakter",
@@ -44,7 +45,7 @@
   "captain": {
     "header": "Kapten",
     "label": "Lagkapten",
-    "hint": "Valfritt - välj en lagkapten för denna match",
+    "hint": "Välj en lagkapten för denna match",
     "noCaptain": "Ingen Kapten"
   },
   "buttons": {
@@ -127,8 +128,8 @@
   },
   "cloudSync": {
     "available": "Molnsynkronisering Tillgänglig",
-    "description": "Håll dina data säkra på alla enheter",
-    "featureDescription": "Spara ditt lag, konfigurationer och matchdata. Kom åt dina data från vilken enhet som helst och lås upp säsongsstatistik."
+    "description": "Håll din data säker på alla enheter",
+    "featureDescription": "Spara ditt lag, konfigurationer och matchdata. Kom åt din data från vilken enhet som helst och lås upp säsongsstatistik."
   },
   "dataMigration": {
     "title": "Migrera Lokal Data",

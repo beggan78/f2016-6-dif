@@ -2112,10 +2112,11 @@ export function ConfigurationScreen({
                 id="formation"
                 value={selectedFormation}
                 onChange={value => handleFormationChange(value)}
-                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
-                  value: formation,
-                  label: FORMATION_DEFINITIONS[formation].label
-                }))}
+                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => {
+                  const def = FORMATION_DEFINITIONS[formation];
+                  const suffix = def.status === 'coming-soon' ? ` ${t('configuration:formation.comingSoonSuffix')}` : '';
+                  return { value: formation, label: `${def.label}${suffix}` };
+                })}
               />
             </div>
 
