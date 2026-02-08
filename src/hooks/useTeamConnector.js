@@ -6,9 +6,11 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import * as connectorService from '../services/connectorService';
 
 export function useTeamConnector(teamId) {
+  const { t } = useTranslation('common');
   const [connectors, setConnectors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -28,11 +30,11 @@ export function useTeamConnector(teamId) {
       setConnectors(data);
     } catch (err) {
       console.error('Error loading connectors:', err);
-      setError(err.message || 'Failed to load connectors');
+      setError(err.message || t('errors.failedToLoadConnectors'));
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, t]);
 
   // Load connectors when teamId changes
   useEffect(() => {
@@ -53,12 +55,12 @@ export function useTeamConnector(teamId) {
       await loadConnectors();
     } catch (err) {
       console.error('Error connecting provider:', err);
-      setError(err.message || 'Failed to connect provider');
+      setError(err.message || t('errors.failedToConnectProvider'));
       throw err; // Re-throw so modal can handle it
     } finally {
       setLoading(false);
     }
-  }, [teamId, loadConnectors]);
+  }, [teamId, loadConnectors, t]);
 
   // Disconnect a provider
   const disconnectProvider = useCallback(async (connectorId) => {
@@ -70,12 +72,12 @@ export function useTeamConnector(teamId) {
       await loadConnectors();
     } catch (err) {
       console.error('Error disconnecting provider:', err);
-      setError(err.message || 'Failed to disconnect provider');
+      setError(err.message || t('errors.failedToDisconnectProvider'));
       throw err; // Re-throw so modal can handle it
     } finally {
       setLoading(false);
     }
-  }, [loadConnectors]);
+  }, [loadConnectors, t]);
 
   // Trigger a manual sync
   const manualSync = useCallback(async (connectorId) => {
@@ -87,12 +89,12 @@ export function useTeamConnector(teamId) {
       await loadConnectors();
     } catch (err) {
       console.error('Error triggering manual sync:', err);
-      setError(err.message || 'Failed to trigger sync');
+      setError(err.message || t('errors.failedToTriggerSync'));
       throw err;
     } finally {
       setSyncingConnectorId(null);
     }
-  }, [loadConnectors]);
+  }, [loadConnectors, t]);
 
   // Retry a failed connector
   const retryConnector = useCallback(async (connectorId) => {
@@ -104,12 +106,12 @@ export function useTeamConnector(teamId) {
       await loadConnectors();
     } catch (err) {
       console.error('Error retrying connector:', err);
-      setError(err.message || 'Failed to retry connector');
+      setError(err.message || t('errors.failedToRetryConnector'));
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [loadConnectors]);
+  }, [loadConnectors, t]);
 
   // Get attendance data for a connector
   const getAttendanceData = useCallback(async (connectorId, year = null) => {

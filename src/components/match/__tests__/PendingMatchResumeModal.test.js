@@ -194,7 +194,7 @@ describe('PendingMatchResumeModal', () => {
       render(<PendingMatchResumeModal {...defaultProps} pendingMatches={[singleMatch]} />);
 
       expect(screen.getByText('Type:')).toBeInTheDocument();
-      expect(screen.getByText('friendly')).toBeInTheDocument(); // Component shows raw value, CSS capitalizes
+      expect(screen.getByText('Friendly')).toBeInTheDocument(); // Component translates match type via i18n
       expect(screen.getByText('Format:')).toBeInTheDocument();
       expect(screen.getByText('3 × 15 min periods')).toBeInTheDocument();
       expect(screen.getByText('Squad:')).toBeInTheDocument();
@@ -700,7 +700,7 @@ describe('PendingMatchResumeModal', () => {
 
       render(<PendingMatchResumeModal {...defaultProps} pendingMatches={[testMatch]} />);
 
-      expect(screen.getByText('tournament')).toBeInTheDocument(); // Component shows raw value, CSS capitalizes
+      expect(screen.getByText('Tournament')).toBeInTheDocument(); // Component translates match type via i18n
     });
 
     it('should show helpful tip for users', () => {

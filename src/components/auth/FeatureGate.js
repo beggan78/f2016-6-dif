@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
@@ -23,24 +24,30 @@ import { AnonymousAlert } from './AnonymousAlert';
  */
 export function FeatureGate({
   children,
-  feature = "this feature",
-  description = "Sign in to unlock this feature",
+  feature,
+  description,
   onAuthRequired,
   showPreview = false,
   preview,
-  actionText = "Sign In for a better experience",
+  actionText,
   inline = false,
   compact = false,
   authModal: authModalProp
 }) {
+  const { t } = useTranslation('auth');
   const { isAuthenticated, loading } = useAuth();
   const authModal = useAuthModalIntegration(authModalProp);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
+  // Set defaults using translations
+  const effectiveFeature = feature || t('featureGate.defaultFeature');
+  const effectiveDescription = description || t('featureGate.defaultDescription');
+  const effectiveActionText = actionText || t('featureGate.defaultActionText');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-2">
-        <div className="text-slate-400 text-sm">Loading...</div>
+        <div className="text-slate-400 text-sm">{t('featureGate.loading')}</div>
       </div>
     );
   }
@@ -71,8 +78,8 @@ export function FeatureGate({
           </div>
         )}
         <AnonymousAlert
-          feature={feature}
-          description={description}
+          feature={effectiveFeature}
+          description={effectiveDescription}
           variant={inline ? 'inline' : 'card'}
           authModal={authModal}
         />
@@ -91,14 +98,14 @@ export function FeatureGate({
             </svg>
           </div>
           <div>
-            <p className="text-slate-300 text-sm font-medium">Sign in required</p>
-            <p className="text-slate-400 text-xs">{description}</p>
+            <p className="text-slate-300 text-sm font-medium">{t('featureGate.signInRequired')}</p>
+            <p className="text-slate-400 text-xs">{effectiveDescription}</p>
           </div>
         </div>
         <AuthButtonPair
           authModal={authModal}
           variant="compact"
-          signUpText="Sign Up"
+          signUpText={t('featureGate.signUp')}
         />
       </div>
     );
@@ -122,13 +129,13 @@ export function FeatureGate({
                 </svg>
               </div>
               <h3 className="font-semibold text-sky-300 text-sm mb-2">
-                Unlock {feature}
+                {t('featureGate.unlock', { feature: effectiveFeature })}
               </h3>
-              <p className="text-slate-400 text-xs mb-4">{description}</p>
+              <p className="text-slate-400 text-xs mb-4">{effectiveDescription}</p>
               <AuthButtonPair
                 authModal={authModal}
                 variant="compact"
-                signUpText="Sign Up"
+                signUpText={t('featureGate.signUp')}
                 className="grid grid-cols-2 gap-2"
               />
             </div>
@@ -145,9 +152,9 @@ export function FeatureGate({
             </svg>
           </div>
           <h3 className="font-semibold text-sky-300 mb-2">
-            {actionText}
+            {effectiveActionText}
           </h3>
-          <p className="text-slate-400 text-sm mb-4">{description}</p>
+          <p className="text-slate-400 text-sm mb-4">{effectiveDescription}</p>
           <AuthButtonPair
             authModal={authModal}
             variant="inline"
@@ -156,7 +163,7 @@ export function FeatureGate({
             onClick={handleShowMore}
             className="text-sky-400 hover:text-sky-300 text-xs mt-3 transition-colors"
           >
-            Learn more about the benefits
+            {t('featureGate.learnMore')}
           </button>
         </div>
       )}
@@ -177,12 +184,17 @@ export function FeatureGate({
 export function ButtonGate({
   onClick,
   children,
-  feature = "this feature",
-  description = "Sign in to use this feature",
+  feature,
+  description,
   ...buttonProps
 }) {
+  const { t } = useTranslation('auth');
   const { isAuthenticated } = useAuth();
   const [showPrompt, setShowPrompt] = useState(false);
+
+  // Set defaults using translations
+  const effectiveFeature = feature || t('featureGate.buttonGate.defaultFeature');
+  const effectiveDescription = description || t('featureGate.buttonGate.defaultDescription');
 
   const handleClick = () => {
     if (isAuthenticated) {
@@ -196,8 +208,8 @@ export function ButtonGate({
     return (
       <div className="space-y-4">
         <AnonymousAlert
-          feature={feature}
-          description={description}
+          feature={effectiveFeature}
+          description={effectiveDescription}
           variant="inline"
         />
         <Button
@@ -205,7 +217,7 @@ export function ButtonGate({
           variant="secondary"
           size="sm"
         >
-          Cancel
+          {t('featureGate.cancel')}
         </Button>
       </div>
     );
@@ -227,13 +239,18 @@ export function ButtonGate({
 export function LinkGate({
   onClick,
   children,
-  feature = "this feature",
-  description = "Sign in to access this feature",
+  feature,
+  description,
   className = "",
   ...props
 }) {
+  const { t } = useTranslation('auth');
   const { isAuthenticated } = useAuth();
   const [showPrompt, setShowPrompt] = useState(false);
+
+  // Set defaults using translations
+  const effectiveFeature = feature || t('featureGate.linkGate.defaultFeature');
+  const effectiveDescription = description || t('featureGate.linkGate.defaultDescription');
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -248,15 +265,15 @@ export function LinkGate({
     return (
       <div className="space-y-4">
         <AnonymousAlert
-          feature={feature}
-          description={description}
+          feature={effectiveFeature}
+          description={effectiveDescription}
           variant="inline"
         />
         <button
           onClick={() => setShowPrompt(false)}
           className="text-slate-400 hover:text-slate-300 text-sm transition-colors"
         >
-          Cancel
+          {t('featureGate.cancel')}
         </button>
       </div>
     );

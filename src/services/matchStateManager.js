@@ -328,7 +328,7 @@ export async function createManualMatch(matchData, playerStats = []) {
     if (!createdMatchId) {
       return {
         success: false,
-        error: 'Failed to create match: Missing match identifier from database response.'
+        error: 'errors.matchCreationFailed'
       };
     }
 
@@ -466,7 +466,7 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
           success: false,
           matchUpdated: false,
           playerStats: playerStatsResult,
-          error: playerStatsResult.error || 'Failed to update player match stats'
+          error: playerStatsResult.error || 'errors.playerStatsUpdateFailed'
         };
       }
     }
@@ -494,7 +494,7 @@ export async function updateMatchToFinished(matchId, finalStats, allPlayers = []
         success: false,
         matchUpdated: false,
         playerStats: playerStatsResult,
-        error: 'Match update failed: Match not in running state or not found'
+        error: 'errors.matchUpdateFailed'
       };
     }
 
@@ -557,11 +557,10 @@ export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId, fa
     }
 
     if (!updatedMatches || updatedMatches.length === 0) {
-      const warningMessage = 'Match must be finished before updates can be applied.';
       console.warn(`⚠️  No finished match found to update for matchId=${matchId}`);
       return {
         success: false,
-        error: warningMessage
+        error: 'errors.matchNotFinished'
       };
     }
 
@@ -571,7 +570,7 @@ export async function updateFinishedMatchMetadata(matchId, { fairPlayAwardId, fa
         console.error('❌ Failed to persist fair play award update for finished match:', statsResult.error);
         return {
           success: false,
-          error: statsResult.error || 'Unable to assign fair play award for this match.'
+          error: statsResult.error || 'errors.fairPlayAwardFailed'
         };
       }
 
@@ -659,7 +658,7 @@ export async function updatePlayerMatchStatsFairPlayAward(matchId, fairPlayAward
       console.error('❌ No player match stats rows updated with fair play award for match:', matchId);
       return {
         success: false,
-        error: 'No player statistics were updated with the fair play award. Ensure the player participated in this match.'
+        error: 'errors.fairPlayNoStats'
       };
     }
 
@@ -695,7 +694,7 @@ export async function getMatch(matchId) {
       if (error.code === 'PGRST116') {
         return {
           success: false,
-          error: 'Match not found'
+          error: 'errors.matchNotFound'
         };
       }
       return {
@@ -1975,7 +1974,7 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
     if (!initialConfig || typeof initialConfig !== 'object') {
       return {
         success: false,
-        error: 'Initial configuration is required'
+        error: 'errors.configRequired'
       };
     }
 
@@ -2175,7 +2174,7 @@ export async function deleteFinishedMatch(matchId) {
     if (!matchResult.data || matchResult.data.length === 0) {
       return {
         success: false,
-        error: 'Match not found or already deleted'
+        error: 'errors.matchNotFoundOrDeleted'
       };
     }
 
@@ -2353,7 +2352,7 @@ export async function updatePlayerMatchStatsBatch(matchId, playerStats = []) {
     if (!Array.isArray(playerStats)) {
       return {
         success: false,
-        error: 'Player stats must be an array'
+        error: 'errors.invalidPlayerStats'
       };
     }
 
@@ -2371,7 +2370,7 @@ export async function updatePlayerMatchStatsBatch(matchId, playerStats = []) {
     if (updateRows.length === 0) {
       return {
         success: false,
-        error: 'No valid player stats to update'
+        error: 'errors.noValidPlayerStats'
       };
     }
 

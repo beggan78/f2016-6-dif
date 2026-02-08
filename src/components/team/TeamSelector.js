@@ -2,9 +2,11 @@ import React from 'react';
 import { Users, Plus, Building, ChevronRight } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
+import { useTranslation } from 'react-i18next';
 
 export function TeamSelector({ onCreateNew }) {
-  const { 
+  const { t } = useTranslation('team');
+  const {
     currentTeam, 
     userTeams, 
     switchCurrentTeam,
@@ -17,7 +19,7 @@ export function TeamSelector({ onCreateNew }) {
       <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
         <div className="flex items-center justify-center space-x-2">
           <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="text-slate-300">Loading teams...</span>
+          <span className="text-slate-300">{t('teamSelector.loading')}</span>
         </div>
       </div>
     );
@@ -39,7 +41,7 @@ export function TeamSelector({ onCreateNew }) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-sky-300 flex items-center">
           <Users className="mr-2 h-5 w-5" />
-          Select Your Team
+          {t('teamSelector.title')}
         </h3>
         <Button
           onClick={onCreateNew}
@@ -47,7 +49,7 @@ export function TeamSelector({ onCreateNew }) {
           size="sm"
           Icon={Plus}
         >
-          New Team
+          {t('teamSelector.newTeam')}
         </Button>
       </div>
 
@@ -66,7 +68,7 @@ export function TeamSelector({ onCreateNew }) {
               </div>
             </div>
             <div className="text-sky-300 text-xs px-2 py-1 bg-sky-700/50 rounded">
-              Current
+              {t('teamSelector.current')}
             </div>
           </div>
         </div>
@@ -75,7 +77,7 @@ export function TeamSelector({ onCreateNew }) {
       {/* Available Teams */}
       {userTeams.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-slate-300">Available Teams ({userTeams.length})</h4>
+          <h4 className="text-sm font-medium text-slate-300">{t('teamSelector.availableTeams', { count: userTeams.length })}</h4>
           <div className="space-y-1">
             {userTeams.map((team) => {
               const isCurrentTeam = currentTeam?.id === team.id;
@@ -110,7 +112,7 @@ export function TeamSelector({ onCreateNew }) {
                       <div className={`text-xs mt-1 ${
                         isCurrentTeam ? 'text-sky-400' : 'text-slate-500'
                       }`}>
-                        Role: {team.userRole}
+                        {t('teamSelector.role', { role: team.userRole })}
                       </div>
                     </div>
                     {!isCurrentTeam && (
@@ -128,16 +130,16 @@ export function TeamSelector({ onCreateNew }) {
       {userTeams.length === 0 && (
         <div className="p-6 bg-slate-700/50 border border-slate-600 rounded-lg text-center">
           <Users className="h-8 w-8 text-slate-400 mx-auto mb-3" />
-          <div className="text-slate-300 font-medium mb-2">No Teams Found</div>
+          <div className="text-slate-300 font-medium mb-2">{t('teamSelector.noTeamsTitle')}</div>
           <div className="text-slate-400 text-sm mb-4">
-            You don't have access to any teams yet. Create your first team to get started.
+            {t('teamSelector.noTeamsMessage')}
           </div>
           <Button
             onClick={onCreateNew}
             variant="primary"
             Icon={Plus}
           >
-            Create or Join a Team
+            {t('teamSelector.createOrJoin')}
           </Button>
         </div>
       )}

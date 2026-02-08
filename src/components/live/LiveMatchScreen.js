@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Radio, Clock, AlertCircle } from 'lucide-react';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { GameEventTimeline } from '../report/GameEventTimeline';
@@ -151,6 +152,7 @@ const liveTimelinePrefsManager = createPersistenceManager(
  * @param {string} props.matchId - UUID of the match to display
  */
 export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBack = null }) {
+  const { t } = useTranslation('live');
   const { currentTeam } = useTeam();
   const [upcomingMatch, setUpcomingMatch] = useState(null);
   const [pollingConfig, setPollingConfig] = useState({ enabled: false, intervalMs: 60000 });
@@ -466,7 +468,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400 mx-auto mb-4"></div>
-            <p className="text-slate-400">Loading match events...</p>
+            <p className="text-slate-400">{t('info.loadingEvents')}</p>
           </div>
         </div>
       </div>
@@ -482,7 +484,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
           <div className="bg-red-900/20 border border-red-700 rounded-lg p-6">
             <div className="flex items-center mb-4">
               <AlertCircle className="h-6 w-6 text-red-400 mr-2" />
-              <h2 className="text-xl font-bold text-red-300">Error Loading Match</h2>
+              <h2 className="text-xl font-bold text-red-300">{t('info.errorLoadingMatch')}</h2>
             </div>
             <p className="text-red-200">{error}</p>
           </div>
@@ -498,7 +500,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           {renderBackNavigation()}
           <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <p className="text-slate-400 text-center">No match events found</p>
+            <p className="text-slate-400 text-center">{t('info.noEventsFound')}</p>
           </div>
         </div>
       </div>
@@ -516,24 +518,24 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
               {!matchMetadata.matchHasStarted ? (
                 <>
                   <Clock className="h-6 w-6 text-slate-400 mr-2" />
-                  <h1 className="text-2xl font-bold text-slate-300">Match Not Started</h1>
+                  <h1 className="text-2xl font-bold text-slate-300">{t('status.matchNotStarted')}</h1>
                 </>
               ) : matchMetadata.isLive ? (
                 <>
                   <Radio className="h-6 w-6 text-red-500 mr-2 animate-pulse" />
-                  <h1 className="text-2xl font-bold text-sky-300">LIVE Match</h1>
+                  <h1 className="text-2xl font-bold text-sky-300">{t('status.liveMatch')}</h1>
                 </>
               ) : (
                 <>
                   <Clock className="h-6 w-6 text-slate-400 mr-2" />
-                  <h1 className="text-2xl font-bold text-slate-300">Match Finished</h1>
+                  <h1 className="text-2xl font-bold text-slate-300">{t('status.matchFinished')}</h1>
                 </>
               )}
             </div>
 
             {matchMetadata.isLive && matchMetadata.matchHasStarted && matchMetadata.currentPeriod > 0 && (
               <div className="text-sm text-slate-400">
-                Period {matchMetadata.currentPeriod} - {currentPeriodMinute}'
+                {t('info.periodWithMinute', { period: matchMetadata.currentPeriod, minute: currentPeriodMinute })}
               </div>
             )}
           </div>
@@ -541,14 +543,14 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
           {/* Last Update Indicator */}
           {lastUpdateTime && (
             <div className="text-xs text-slate-500">
-              Last updated: {lastUpdateTime.toLocaleTimeString()}
+              {t('info.lastUpdated', { time: lastUpdateTime.toLocaleTimeString() })}
             </div>
           )}
         </div>
 
         {/* Match Summary */}
         <div className="space-y-6">
-          <ReportSection icon={Clock} title="Match Summary">
+          <ReportSection icon={Clock} title={t('info.matchSummary')}>
             <MatchSummaryHeader
               ownTeamName={matchMetadata.ownTeamName}
               opponentTeam={matchMetadata.opponentName}
@@ -568,12 +570,12 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
           {/* Event Timeline */}
           <ReportSection
             icon={Clock}
-            title="Game Events"
+            title={t('info.gameEvents')}
             headerExtra={
               <EventToggleButton
                 isVisible={showSubstitutionEvents}
                 onToggle={() => setShowSubstitutionEvents(!showSubstitutionEvents)}
-                label="Substitutions"
+                label={t('info.substitutions')}
               />
             }
           >

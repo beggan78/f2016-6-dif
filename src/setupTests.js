@@ -4,6 +4,9 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
+// Initialize i18n globally for all tests so useTranslation returns actual translations
+import './locales/i18n';
+
 // Mock window.scrollTo for JSDOM tests (JSDOM doesn't implement this)
 Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),

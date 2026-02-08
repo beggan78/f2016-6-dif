@@ -1,21 +1,24 @@
 import React from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * EventToggleButton - Toggle button for showing/hiding substitution events
- * 
+ *
  * @param {Object} props - Component props
  * @param {boolean} props.isVisible - Whether substitutions are currently visible
  * @param {Function} props.onToggle - Callback function when toggle is clicked
- * @param {string} props.label - Label text for the toggle (default: "Substitutions")
+ * @param {string} props.label - Label text for the toggle (default: translated "Substitutions")
  * @param {string} props.className - Optional additional CSS classes
  */
 export function EventToggleButton({
   isVisible = false,
   onToggle,
-  label = "Substitutions",
+  label,
   className = ""
 }) {
+  const { t } = useTranslation('reports');
+  const displayLabel = label || t('timeline.toggleSubstitutions');
   return (
     <button
       onClick={onToggle}
@@ -26,7 +29,7 @@ export function EventToggleButton({
       } ${className}`.trim()}
     >
       {isVisible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-      <span>{label}</span>
+      <span>{displayLabel}</span>
     </button>
   );
 }

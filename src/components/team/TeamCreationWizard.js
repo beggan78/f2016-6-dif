@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
 import { ClubAutocomplete } from './ClubAutocomplete';
 import { ClubJoinModal } from './ClubJoinModal';
@@ -17,18 +18,19 @@ const STEPS = {
 };
 
 export function TeamCreationWizard({ onComplete, onCancel }) {
-  const { 
-    createClub, 
-    getTeamsByClub, 
-    createTeam, 
+  const { t } = useTranslation('team');
+  const {
+    createClub,
+    getTeamsByClub,
+    createTeam,
     createPlayer,
     switchCurrentTeam,
     isClubCreator,
     hasClubs,
     userClubs,
-    loading, 
-    error, 
-    clearError 
+    loading,
+    error,
+    clearError
   } = useTeam();
 
   // Wizard state
@@ -114,7 +116,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
     // Validation
     if (!clubForm.name.trim()) {
-      setErrors({ clubName: 'Club name is required' });
+      setErrors({ clubName: t('wizard.validation.clubNameRequired') });
       return;
     }
 
@@ -129,7 +131,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       setClubTeams([]); // New club has no teams
       setCurrentStep(STEPS.TEAM_CREATION);
     }
-  }, [clubForm, createClub, clearFormErrors]);
+  }, [clubForm, createClub, clearFormErrors, t]);
 
   // Handle existing team selection - show team access request modal
   const handleExistingTeamSelect = useCallback((team) => {
@@ -149,7 +151,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
     // Validation
     if (!teamForm.name.trim()) {
-      setErrors({ teamName: 'Team name is required' });
+      setErrors({ teamName: t('wizard.validation.teamNameRequired') });
       return;
     }
 
@@ -164,7 +166,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       await switchCurrentTeam(team.id);
       setCurrentStep(STEPS.PLAYER_CREATION);
     }
-  }, [teamForm, selectedClub, createTeam, switchCurrentTeam, clearFormErrors]);
+  }, [teamForm, selectedClub, createTeam, switchCurrentTeam, clearFormErrors, t]);
 
   // Handle player creation
   const handleAddPlayer = useCallback(async () => {
@@ -172,7 +174,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
     // Validation
     if (!playerForm.displayName.trim()) {
-      setErrors({ playerName: 'Player name is required' });
+      setErrors({ playerName: t('wizard.validation.playerNameRequired') });
       return;
     }
 
@@ -194,7 +196,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       setPlayers(prev => [...prev, normalizedPlayer]);
       setPlayerForm({ displayName: '' });
     }
-  }, [playerForm, createPlayer, clearFormErrors]);
+  }, [playerForm, createPlayer, clearFormErrors, t]);
 
   // Handle wizard completion
   const handleComplete = useCallback(() => {
@@ -257,21 +259,21 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     <div className="space-y-4">
       <div className="text-center mb-6">
         <Building className="h-8 w-8 text-sky-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-sky-300">Select Your Club</h3>
+        <h3 className="text-lg font-semibold text-sky-300">{t('wizard.clubSelection.title')}</h3>
         <p className="text-slate-400 text-sm mt-2">
-          Search for your club or create a new one
+          {t('wizard.clubSelection.description')}
         </p>
       </div>
-      
+
       <ClubAutocomplete
-        placeholder="Type your club name..."
+        placeholder={t('wizard.clubSelection.placeholder')}
         onSelect={handleClubSelect}
         onCreateNew={handleCreateNewClub}
       />
-      
+
       <div className="flex justify-end">
         <Button onClick={onCancel} variant="secondary">
-          Cancel
+          {t('wizard.clubSelection.cancel')}
         </Button>
       </div>
     </div>
@@ -281,21 +283,21 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     <div className="space-y-4">
       <div className="text-center mb-6">
         <Building className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-sky-300">Create New Club</h3>
+        <h3 className="text-lg font-semibold text-sky-300">{t('wizard.clubCreation.title')}</h3>
         <p className="text-slate-400 text-sm mt-2">
-          Set up your club information
+          {t('wizard.clubCreation.description')}
         </p>
       </div>
 
       <div>
         <label htmlFor="clubLongName" className="block text-sm font-medium text-slate-300 mb-2">
-          Full Club Name *
+          {t('wizard.clubCreation.fullNameLabel')}
         </label>
         <Input
           id="clubLongName"
           value={clubForm.longName}
           onChange={(e) => setClubForm(prev => ({ ...prev, longName: sanitizeNameInput(e.target.value) }))}
-          placeholder="e.g., Sample Football Club"
+          placeholder={t('wizard.clubCreation.fullNamePlaceholder')}
           className={errors.clubLongName ? 'border-rose-500' : ''}
         />
         {errors.clubLongName && (
@@ -305,13 +307,13 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
       <div>
         <label htmlFor="clubName" className="block text-sm font-medium text-slate-300 mb-2">
-          Display Name *
+          {t('wizard.clubCreation.displayNameLabel')}
         </label>
         <Input
           id="clubName"
           value={clubForm.name}
           onChange={(e) => setClubForm(prev => ({ ...prev, name: sanitizeNameInput(e.target.value) }))}
-          placeholder="Enter club name"
+          placeholder={t('wizard.clubCreation.displayNamePlaceholder')}
           className={errors.clubName ? 'border-rose-500' : ''}
         />
         {errors.clubName && (
@@ -321,187 +323,231 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
       <div>
         <label htmlFor="clubShortName" className="block text-sm font-medium text-slate-300 mb-2">
-          Short Name (optional)
+          {t('wizard.clubCreation.shortNameLabel')}
         </label>
         <Input
           id="clubShortName"
           value={clubForm.shortName}
           onChange={(e) => setClubForm(prev => ({ ...prev, shortName: sanitizeNameInput(e.target.value) }))}
-          placeholder="e.g., DIF"
+          placeholder={t('wizard.clubCreation.shortNamePlaceholder')}
         />
-        <p className="text-slate-500 text-xs mt-1">Used for abbreviations and quick identification</p>
+        <p className="text-slate-500 text-xs mt-1">{t('wizard.clubCreation.shortNameHelper')}</p>
       </div>
 
       <div className="flex justify-end">
-        <Button 
+        <Button
           onClick={handleClubCreation}
           disabled={loading}
           Icon={loading ? null : ArrowRight}
         >
-          {loading ? 'Creating...' : 'Create Club'}
+          {loading ? t('wizard.clubCreation.creating') : t('wizard.clubCreation.createButton')}
         </Button>
       </div>
     </div>
   );
 
-  const renderTeamSelection = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <Users className="h-8 w-8 text-sky-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-sky-300">Select Team</h3>
-        <p className="text-slate-400 text-sm mt-2">
-          Choose an existing team or create a new one for <strong>{selectedClub.name}</strong>
-        </p>
-      </div>
+  const renderTeamSelection = () => {
+    const description = t('wizard.teamSelection.description', { clubName: selectedClub.name });
+    const parts = description.split(/(<strong>.*?<\/strong>)/);
 
-      {clubTeams.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-slate-300">Existing Teams</h4>
-          <div className="space-y-1">
-            {clubTeams.map((team) => (
-              <button
-                key={team.id}
-                onClick={() => handleExistingTeamSelect(team)}
-                className="w-full p-3 bg-slate-700 border border-slate-600 hover:bg-slate-600 rounded-lg text-left transition-colors"
-              >
-                <div className="text-slate-100 font-medium">{team.name}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="border-t border-slate-600 pt-4">
-        <Button
-          onClick={() => setCurrentStep(STEPS.TEAM_CREATION)}
-          variant="primary"
-          Icon={Plus}
-          className="w-full"
-        >
-          Create New Team
-        </Button>
-      </div>
-
-    </div>
-  );
-
-  const renderTeamCreation = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <Users className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-sky-300">Create New Team</h3>
-        <p className="text-slate-400 text-sm mt-2">
-          Set up your team for <strong>{selectedClub.name}</strong>
-        </p>
-      </div>
-
-      <div>
-        <label htmlFor="teamName" className="block text-sm font-medium text-slate-300 mb-2">
-          Team Name *
-        </label>
-        <Input
-          id="teamName"
-          value={teamForm.name}
-          onChange={(e) => setTeamForm(prev => ({ ...prev, name: sanitizeNameInput(e.target.value) }))}
-          placeholder="Enter team name"
-          className={errors.teamName ? 'border-rose-500' : ''}
-        />
-        {errors.teamName && (
-          <p className="text-rose-400 text-sm mt-1">{errors.teamName}</p>
-        )}
-        <p className="text-slate-500 text-xs mt-1">e.g., "F16-6", "U16 Boys", "Junior Team"</p>
-      </div>
-
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleTeamCreation}
-          disabled={loading}
-          Icon={loading ? null : ArrowRight}
-        >
-          {loading ? 'Creating...' : 'Create Team'}
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderPlayerCreation = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <UserPlus className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-sky-300">Add Players</h3>
-        <p className="text-slate-400 text-sm mt-2">
-          Add players to <strong>{createdTeam?.name}</strong>
-        </p>
-      </div>
-
-      <div className="flex space-x-2">
-        <div className="flex-1">
-          <Input
-            value={playerForm.displayName}
-            onChange={(e) => setPlayerForm(prev => ({ ...prev, displayName: sanitizeNameInput(e.target.value) }))}
-            placeholder="Player display name"
-            className={errors.playerName ? 'border-rose-500' : ''}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && playerForm.displayName.trim()) {
-                handleAddPlayer();
+    return (
+      <div className="space-y-4">
+        <div className="text-center mb-6">
+          <Users className="h-8 w-8 text-sky-400 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-sky-300">{t('wizard.teamSelection.title')}</h3>
+          <p className="text-slate-400 text-sm mt-2">
+            {parts.map((part, index) => {
+              if (part.startsWith('<strong>') && part.endsWith('</strong>')) {
+                const text = part.replace(/<\/?strong>/g, '');
+                return <strong key={index}>{text}</strong>;
               }
-            }}
-          />
-          {errors.playerName && (
-            <p className="text-rose-400 text-sm mt-1">{errors.playerName}</p>
-          )}
+              return <span key={index}>{part}</span>;
+            })}
+          </p>
         </div>
-        <Button
-          onClick={handleAddPlayer}
-          disabled={loading || !playerForm.displayName.trim()}
-          Icon={UserPlus}
-        >
-          Add
-        </Button>
-      </div>
 
-      {players.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-slate-300">Added Players ({players.length})</h4>
-          <div className="max-h-32 overflow-y-auto space-y-1">
-            {players.map((player) => (
-              <div key={player.id} className="flex items-center p-2 bg-slate-700 rounded text-sm">
-                <span className="text-slate-100">{player.displayName || player.display_name || player.first_name}</span>
-              </div>
-            ))}
+        {clubTeams.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-slate-300">{t('wizard.teamSelection.existingTeamsHeader')}</h4>
+            <div className="space-y-1">
+              {clubTeams.map((team) => (
+                <button
+                  key={team.id}
+                  onClick={() => handleExistingTeamSelect(team)}
+                  className="w-full p-3 bg-slate-700 border border-slate-600 hover:bg-slate-600 rounded-lg text-left transition-colors"
+                >
+                  <div className="text-slate-100 font-medium">{team.name}</div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 text-center">
-        <p className="text-slate-300 text-sm">
-          You can add more players later from the team management screen.
+        <div className="border-t border-slate-600 pt-4">
+          <Button
+            onClick={() => setCurrentStep(STEPS.TEAM_CREATION)}
+            variant="primary"
+            Icon={Plus}
+            className="w-full"
+          >
+            {t('wizard.teamSelection.createButton')}
+          </Button>
+        </div>
+
+      </div>
+    );
+  };
+
+  const renderTeamCreation = () => {
+    const description = t('wizard.teamCreation.description', { clubName: selectedClub.name });
+    const parts = description.split(/(<strong>.*?<\/strong>)/);
+
+    return (
+      <div className="space-y-4">
+        <div className="text-center mb-6">
+          <Users className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-sky-300">{t('wizard.teamCreation.title')}</h3>
+          <p className="text-slate-400 text-sm mt-2">
+            {parts.map((part, index) => {
+              if (part.startsWith('<strong>') && part.endsWith('</strong>')) {
+                const text = part.replace(/<\/?strong>/g, '');
+                return <strong key={index}>{text}</strong>;
+              }
+              return <span key={index}>{part}</span>;
+            })}
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="teamName" className="block text-sm font-medium text-slate-300 mb-2">
+            {t('wizard.teamCreation.teamNameLabel')}
+          </label>
+          <Input
+            id="teamName"
+            value={teamForm.name}
+            onChange={(e) => setTeamForm(prev => ({ ...prev, name: sanitizeNameInput(e.target.value) }))}
+            placeholder={t('wizard.teamCreation.teamNamePlaceholder')}
+            className={errors.teamName ? 'border-rose-500' : ''}
+          />
+          {errors.teamName && (
+            <p className="text-rose-400 text-sm mt-1">{errors.teamName}</p>
+          )}
+          <p className="text-slate-500 text-xs mt-1">{t('wizard.teamCreation.teamNameHelper')}</p>
+        </div>
+
+        <div className="flex justify-end">
+          <Button
+            onClick={handleTeamCreation}
+            disabled={loading}
+            Icon={loading ? null : ArrowRight}
+          >
+            {loading ? t('wizard.teamCreation.creating') : t('wizard.teamCreation.createButton')}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPlayerCreation = () => {
+    const description = t('wizard.playerCreation.description', { teamName: createdTeam?.name });
+    const parts = description.split(/(<strong>.*?<\/strong>)/);
+
+    return (
+      <div className="space-y-4">
+        <div className="text-center mb-6">
+          <UserPlus className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-sky-300">{t('wizard.playerCreation.title')}</h3>
+          <p className="text-slate-400 text-sm mt-2">
+            {parts.map((part, index) => {
+              if (part.startsWith('<strong>') && part.endsWith('</strong>')) {
+                const text = part.replace(/<\/?strong>/g, '');
+                return <strong key={index}>{text}</strong>;
+              }
+              return <span key={index}>{part}</span>;
+            })}
+          </p>
+        </div>
+
+        <div className="flex space-x-2">
+          <div className="flex-1">
+            <Input
+              value={playerForm.displayName}
+              onChange={(e) => setPlayerForm(prev => ({ ...prev, displayName: sanitizeNameInput(e.target.value) }))}
+              placeholder={t('wizard.playerCreation.playerNamePlaceholder')}
+              className={errors.playerName ? 'border-rose-500' : ''}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && playerForm.displayName.trim()) {
+                  handleAddPlayer();
+                }
+              }}
+            />
+            {errors.playerName && (
+              <p className="text-rose-400 text-sm mt-1">{errors.playerName}</p>
+            )}
+          </div>
+          <Button
+            onClick={handleAddPlayer}
+            disabled={loading || !playerForm.displayName.trim()}
+            Icon={UserPlus}
+          >
+            {t('wizard.playerCreation.addButton')}
+          </Button>
+        </div>
+
+        {players.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-slate-300">{t('wizard.playerCreation.addedPlayersHeader', { count: players.length })}</h4>
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {players.map((player) => (
+                <div key={player.id} className="flex items-center p-2 bg-slate-700 rounded text-sm">
+                  <span className="text-slate-100">{player.displayName || player.display_name || player.first_name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 text-center">
+          <p className="text-slate-300 text-sm">
+            {t('wizard.playerCreation.laterNote')}
+          </p>
+        </div>
+
+        <div className="flex justify-end">
+          <Button
+            onClick={handleComplete}
+            variant="accent"
+            Icon={Check}
+          >
+            {t('wizard.playerCreation.completeButton')}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderComplete = () => {
+    const description = t('wizard.complete.description', { teamName: createdTeam?.name });
+    const parts = description.split(/(<strong>.*?<\/strong>)/);
+
+    return (
+      <div className="text-center py-8">
+        <div className="animate-pulse">
+          <Check className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+        </div>
+        <h3 className="text-lg font-semibold text-emerald-300 mb-2">{t('wizard.complete.title')}</h3>
+        <p className="text-slate-400">
+          {parts.map((part, index) => {
+            if (part.startsWith('<strong>') && part.endsWith('</strong>')) {
+              const text = part.replace(/<\/?strong>/g, '');
+              return <strong key={index}>{text}</strong>;
+            }
+            return <span key={index}>{part}</span>;
+          })}
         </p>
       </div>
-
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleComplete}
-          variant="accent"
-          Icon={Check}
-        >
-          Complete Setup
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderComplete = () => (
-    <div className="text-center py-8">
-      <div className="animate-pulse">
-        <Check className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-      </div>
-      <h3 className="text-lg font-semibold text-emerald-300 mb-2">Team Setup Complete!</h3>
-      <p className="text-slate-400">
-        Your team <strong>{createdTeam?.name}</strong> has been created successfully.
-      </p>
-    </div>
-  );
+    );
+  };
 
   const renderCurrentStep = () => {
     switch (currentStep) {

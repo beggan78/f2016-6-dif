@@ -1,14 +1,42 @@
 /**
  * Authentication Error Handling Utilities
- * 
+ *
  * Centralized error handling functions for authentication components.
  * Provides consistent error message formatting and display logic.
  */
 
+import i18next from 'i18next';
 import { VALIDATION_MESSAGES } from './authValidation';
 
 /**
- * Common authentication error messages and their user-friendly versions
+ * Returns translated auth error messages using i18next.
+ * Falls back to English defaults if i18next is not initialized.
+ * @returns {Object} Error message mapping from Supabase error patterns to user-friendly messages
+ */
+const getAuthErrorMessages = () => ({
+  // Supabase auth errors
+  'Invalid login credentials': i18next.t('auth:errors.invalidCredentials', { defaultValue: 'Invalid email or password. Please check your credentials and try again.' }),
+  'Email not confirmed': i18next.t('auth:errors.emailNotConfirmed', { defaultValue: 'Please verify your email with the 6-digit code we sent you.' }),
+  'User already registered': i18next.t('auth:errors.userAlreadyRegistered', { defaultValue: 'An account with this email already exists. Please sign in instead.' }),
+  'Password should be at least 6 characters': i18next.t('auth:errors.passwordTooShort', { defaultValue: 'Password must be at least 6 characters long.' }),
+  'Signup requires a valid password': i18next.t('auth:errors.invalidPassword', { defaultValue: 'Please enter a valid password.' }),
+  'Unable to validate email address': i18next.t('auth:errors.invalidEmail', { defaultValue: 'Please enter a valid email address.' }),
+  'Email address not found': i18next.t('auth:errors.emailNotFound', { defaultValue: 'No account found with this email address.' }),
+  'Too many requests': i18next.t('auth:errors.tooManyRequests', { defaultValue: 'Too many attempts. Please wait a moment before trying again.' }),
+  'Network request failed': i18next.t('auth:errors.connectionError', { defaultValue: 'Connection error. Please check your internet connection and try again.' }),
+
+  // Generic errors
+  'Failed to fetch': i18next.t('auth:errors.connectionError', { defaultValue: 'Connection error. Please check your internet connection and try again.' }),
+  'NetworkError': i18next.t('auth:errors.networkError', { defaultValue: 'Network error. Please try again.' }),
+  'TypeError': i18next.t('auth:validation.general.unexpected', { defaultValue: 'An unexpected error occurred. Please try again.' }),
+
+  // Default fallback
+  'default': i18next.t('auth:validation.general.unexpected', { defaultValue: VALIDATION_MESSAGES.general.unexpected })
+});
+
+/**
+ * Static reference for backward compatibility.
+ * Prefer using getAuthErrorMessages() for translated messages.
  */
 export const AUTH_ERROR_MESSAGES = {
   // Supabase auth errors
@@ -21,12 +49,12 @@ export const AUTH_ERROR_MESSAGES = {
   'Email address not found': 'No account found with this email address.',
   'Too many requests': 'Too many attempts. Please wait a moment before trying again.',
   'Network request failed': 'Connection error. Please check your internet connection and try again.',
-  
+
   // Generic errors
   'Failed to fetch': 'Connection error. Please check your internet connection and try again.',
   'NetworkError': 'Network error. Please try again.',
   'TypeError': 'An unexpected error occurred. Please try again.',
-  
+
   // Default fallback
   'default': VALIDATION_MESSAGES.general.unexpected
 };
@@ -40,10 +68,10 @@ export const formatAuthError = (error) => {
   if (!error) {
     return null;
   }
-  
+
   // Handle different error formats
   let errorMessage = '';
-  
+
   if (typeof error === 'string') {
     errorMessage = error;
   } else if (error.message) {
@@ -53,18 +81,21 @@ export const formatAuthError = (error) => {
   } else if (error.msg) {
     errorMessage = error.msg;
   } else {
-    errorMessage = 'Unknown error';
+    errorMessage = i18next.t('auth:errors.unknownError', { defaultValue: 'Unknown error' });
   }
-  
+
+  // Get translated error messages
+  const translatedMessages = getAuthErrorMessages();
+
   // Look for known error patterns and return user-friendly messages
-  for (const [pattern, friendlyMessage] of Object.entries(AUTH_ERROR_MESSAGES)) {
+  for (const [pattern, friendlyMessage] of Object.entries(translatedMessages)) {
     if (pattern !== 'default' && errorMessage.toLowerCase().includes(pattern.toLowerCase())) {
       return friendlyMessage;
     }
   }
-  
+
   // If no specific pattern matches, return the default message
-  return AUTH_ERROR_MESSAGES.default;
+  return translatedMessages.default;
 };
 
 /**
@@ -180,7 +211,7 @@ export const handleAuthOperation = async (operation, onSuccess, onError, options
   try {
     // Add timeout to prevent hanging operations
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Operation timed out')), timeout);
+      setTimeout(() => reject(new Error(i18next.t('auth:errors.operationTimedOut', { defaultValue: 'Operation timed out' }))), timeout);
     });
     
     const result = await Promise.race([operation(), timeoutPromise]);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getPlayerStats } from '../services/matchStateManager';
 
 /**
@@ -24,6 +25,7 @@ import { getPlayerStats } from '../services/matchStateManager';
  * );
  */
 export function usePlayerRecommendationData(teamId, currentPeriodNumber, selectedSquadPlayers) {
+  const { t } = useTranslation('common');
   const [playerStats, setPlayerStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -61,7 +63,7 @@ export function usePlayerRecommendationData(teamId, currentPeriodNumber, selecte
           setError(null);
         } else {
           setPlayerStats(null);
-          setError(response?.error || 'Failed to load player stats');
+          setError(response?.error || t('errors.failedToLoadPlayerStats'));
         }
       } catch (err) {
         // Check if component is still mounted
@@ -70,7 +72,7 @@ export function usePlayerRecommendationData(teamId, currentPeriodNumber, selecte
         }
 
         setPlayerStats(null);
-        setError(err.message || 'Failed to load player stats');
+        setError(err.message || t('errors.failedToLoadPlayerStats'));
       } finally {
         // Only update loading state if still mounted
         if (isActive) {
@@ -85,7 +87,7 @@ export function usePlayerRecommendationData(teamId, currentPeriodNumber, selecte
     return () => {
       isActive = false;
     };
-  }, [teamId, currentPeriodNumber, selectedSquadPlayers]);
+  }, [teamId, currentPeriodNumber, selectedSquadPlayers, t]);
 
   return { playerStats, loading, error };
 }

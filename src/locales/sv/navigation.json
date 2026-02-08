@@ -1,0 +1,40 @@
+{
+  "back": "Tillbaka",
+  "backTo": {
+    "setup": "Tillbaka till Inställningar",
+    "matchHistory": "Tillbaka till Matchhistorik",
+    "signIn": "Tillbaka till Inloggning"
+  },
+  "goTo": {
+    "rosterManagement": "Gå till Laglisthantering",
+    "connectors": "Gå till Kopplingar"
+  },
+  "return": {
+    "toApp": "Tillbaka till appen"
+  },
+  "menu": {
+    "ariaLabel": "Meny",
+    "profile": "Profil",
+    "preferences": "Inställningar",
+    "teamManagement": "Laghantering",
+    "createTeam": "Skapa Lag",
+    "teamMatches": "Lagmatcher",
+    "statistics": "Statistik",
+    "tacticalBoard": "Taktiktavla",
+    "addPlayer": "Lägg till Spelare",
+    "getLiveMatchLink": "Hämta Live Match-länk",
+    "newGame": "Ny Match",
+    "signIn": "Logga in",
+    "signOut": "Logga ut",
+    "createAccount": "Skapa Konto",
+    "signInToUnlock": "Logga in för att låsa upp:",
+    "cloudSync": "Molnsynk"
+  },
+  "liveMatchLink": {
+    "linkCopied": "Länk Kopierad",
+    "linkCopiedMessage": "Live match-länk kopierad till urklipp!",
+    "liveMatchUrl": "Live Match-URL",
+    "error": "Fel",
+    "errorMessage": "Misslyckades med att skapa live match-länk"
+  }
+}

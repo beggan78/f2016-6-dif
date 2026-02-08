@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Users,
   Settings,
@@ -57,6 +58,7 @@ import {
 } from '../../constants/teamConfiguration';
 
 export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerModal, onShowSuccessMessage }) {
+  const { t } = useTranslation('team');
   const { user } = useAuth();
   const { 
     hasTeams, 
@@ -104,47 +106,47 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
   // Main team management view - define tabs early to avoid hooks order issues
   const tabs = React.useMemo(() => {
     const orderedTabs = [
-      { 
-        id: TAB_VIEWS.OVERVIEW, 
-        label: 'Overview', 
+      {
+        id: TAB_VIEWS.OVERVIEW,
+        label: t('teamManagement.tabs.overview.label'),
         icon: Users,
-        description: 'Team information and members'
+        description: t('teamManagement.tabs.overview.description')
       },
-      canManageTeam ? { 
-        id: TAB_VIEWS.ROSTER, 
-        label: 'Roster', 
+      canManageTeam ? {
+        id: TAB_VIEWS.ROSTER,
+        label: t('teamManagement.tabs.roster.label'),
         icon: Rows4,
-        description: 'Manage team players'
+        description: t('teamManagement.tabs.roster.description')
       } : null,
       canManageTeam ? {
         id: TAB_VIEWS.LOANS,
-        label: 'Loans',
+        label: t('teamManagement.tabs.loans.label'),
         icon: Repeat,
-        description: 'Track player loan matches'
+        description: t('teamManagement.tabs.loans.description')
       } : null,
       isTeamAdmin ? {
         id: TAB_VIEWS.ACCESS,
-        label: 'Access Management',
+        label: t('teamManagement.tabs.access.label'),
         icon: Shield,
-        description: 'Approve requests and invite users',
+        description: t('teamManagement.tabs.access.description'),
         badge: pendingRequestsCount > 0 ? pendingRequestsCount : null
       } : null,
       isTeamAdmin ? {
         id: TAB_VIEWS.CONNECTORS,
-        label: 'Connectors',
+        label: t('teamManagement.tabs.connectors.label'),
         icon: Link,
-        description: 'Manage external provider integrations'
+        description: t('teamManagement.tabs.connectors.description')
       } : null,
       canManageTeam ? {
         id: TAB_VIEWS.PREFERENCES,
-        label: 'Preferences',
+        label: t('teamManagement.tabs.preferences.label'),
         icon: Settings,
-        description: 'Team settings and preferences'
+        description: t('teamManagement.tabs.preferences.description')
       } : null
     ];
 
     return orderedTabs.filter(Boolean);
-  }, [isTeamAdmin, canManageTeam, pendingRequestsCount]);
+  }, [isTeamAdmin, canManageTeam, pendingRequestsCount, t]);
 
   // Ensure activeTab always matches an available tab
   // Skip on initial mount to preserve persisted tab selection from localStorage
@@ -202,7 +204,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
 
   const handleWizardComplete = () => {
     setShowCreateWizard(false);
-    setSuccessMessage('Team created successfully!');
+    setSuccessMessage(t('teamManagement.success.teamCreated'));
     loadTeamData();
   };
 
@@ -212,7 +214,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
 
   const handleAccessModalSuccess = () => {
     setShowAccessModal(false);
-    setSuccessMessage('Access request processed successfully!');
+    setSuccessMessage(t('teamManagement.success.accessProcessed'));
     loadTeamData();
   };
 
@@ -238,19 +240,19 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Team Management</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('teamManagement.header.title')}</h1>
           <Button
             onClick={onNavigateBack}
             variant="secondary"
             size="sm"
           >
-            Back
+            {t('teamManagement.header.back')}
           </Button>
         </div>
         <div className="p-2 bg-slate-700 rounded-lg border border-slate-600">
           <div className="flex items-center justify-center space-x-3">
             <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-            <span className="text-slate-300">Loading team information...</span>
+            <span className="text-slate-300">{t('teamManagement.loading.teamInfo')}</span>
           </div>
         </div>
       </div>
@@ -267,16 +269,16 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Team Setup</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('teamManagement.header.teamSetup')}</h1>
           <Button
             onClick={onNavigateBack}
             variant="secondary"
             size="sm"
           >
-            Back
+            {t('teamManagement.header.back')}
           </Button>
         </div>
-        
+
         <TeamCreationWizard
           onComplete={handleWizardComplete}
           onCancel={handleWizardCancel}
@@ -290,16 +292,16 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-sky-300">Team Management</h1>
+          <h1 className="text-2xl font-bold text-sky-300">{t('teamManagement.header.title')}</h1>
           <Button
             onClick={onNavigateBack}
             variant="secondary"
             size="sm"
           >
-            Back
+            {t('teamManagement.header.back')}
           </Button>
         </div>
-        
+
         <TeamSelector onCreateNew={handleCreateTeam} />
       </div>
     );
@@ -355,13 +357,13 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-sky-300">Team Management</h1>
+        <h1 className="text-2xl font-bold text-sky-300">{t('teamManagement.header.title')}</h1>
         <Button
           onClick={onNavigateBack}
           variant="secondary"
           size="sm"
         >
-          Back
+          {t('teamManagement.header.back')}
         </Button>
       </div>
 
@@ -384,15 +386,15 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
                 {currentTeam.name}
               </h2>
               <p className="text-sky-200 opacity-90">
-                {currentTeam.club?.long_name || 'No club'}
+                {currentTeam.club?.long_name || t('teamManagement.teamHeader.noClub')}
               </p>
             </div>
             <div className="text-right">
               <div className="text-sky-200 text-sm">
-                {isTeamAdmin ? 'Team Admin' : canManageTeam ? 'Coach' : 'Team User'}
+                {isTeamAdmin ? t('teamManagement.teamHeader.roleAdmin') : canManageTeam ? t('teamManagement.teamHeader.roleCoach') : t('teamManagement.teamHeader.roleUser')}
               </div>
               <div className="text-sky-300 text-xs">
-                {teamMembers.length} user{teamMembers.length !== 1 ? 's' : ''}
+                {teamMembers.length} {teamMembers.length !== 1 ? t('teamManagement.teamHeader.usersPlural') : t('teamManagement.teamHeader.users')}
               </div>
             </div>
           </div>
@@ -470,20 +472,22 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
 
 // Team Overview Component
 function TeamOverview({ team, members }) {
+  const { t } = useTranslation('team');
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">Team Information</h3>
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">{t('teamManagement.overview.title')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">
-              Team Name
+              {t('teamManagement.overview.teamName')}
             </label>
             <span className="text-slate-100 text-sm font-medium">{team.name}</span>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">
-              Club
+              {t('teamManagement.overview.club')}
             </label>
             <div className="space-y-1">
               {team.club?.long_name && (
@@ -495,14 +499,14 @@ function TeamOverview({ team, members }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">
-              Team Created
+              {t('teamManagement.overview.teamCreated')}
             </label>
             <span className="text-slate-100 text-sm font-medium">
-              {team.created_at ? new Date(team.created_at).toLocaleDateString('en-US', {
+              {team.created_at ? new Date(team.created_at).toLocaleDateString(undefined, {
                 year: 'numeric',
-                month: 'long', 
+                month: 'long',
                 day: 'numeric'
-              }) : 'Unknown'}
+              }) : t('teamManagement.overview.unknown')}
             </span>
           </div>
         </div>
@@ -510,17 +514,17 @@ function TeamOverview({ team, members }) {
 
       {/* Team Members */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">Team Users</h3>
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">{t('teamManagement.overview.teamUsers')}</h3>
         <div className="space-y-2">
           {members.sort((a, b) => {
-            const nameA = a.user?.name || a.user?.email?.split('@')[0] || 'Unknown User';
-            const nameB = b.user?.name || b.user?.email?.split('@')[0] || 'Unknown User';
+            const nameA = a.user?.name || a.user?.email?.split('@')[0] || t('teamManagement.overview.unknownUser');
+            const nameB = b.user?.name || b.user?.email?.split('@')[0] || t('teamManagement.overview.unknownUser');
             return nameA.localeCompare(nameB);
           }).map((member) => (
             <div key={member.id} className="flex items-center justify-between py-2 px-3 bg-slate-800 rounded-lg">
               <div>
                 <span className="text-slate-100 font-medium">
-                  {member.user?.name || member.user?.email?.split('@')[0] || 'Unknown User'}
+                  {member.user?.name || member.user?.email?.split('@')[0] || t('teamManagement.overview.unknownUser')}
                 </span>
                 {member.user?.email && (
                   <span className="text-slate-400 text-sm ml-2">
@@ -529,7 +533,7 @@ function TeamOverview({ team, members }) {
                 )}
               </div>
               <span className={`text-xs px-2 py-1 rounded-full ${
-                member.role === 'admin' 
+                member.role === 'admin'
                   ? 'bg-emerald-600 text-emerald-100'
                   : member.role === 'coach'
                   ? 'bg-sky-600 text-sky-100'
@@ -539,13 +543,13 @@ function TeamOverview({ team, members }) {
                   ? 'bg-orange-600 text-orange-100'
                   : 'bg-slate-600 text-slate-100'
               }`}>
-                {member.role}
+                {t(`roleManagement.roles.${member.role}`, { defaultValue: member.role })}
               </span>
             </div>
           ))}
           {members.length === 0 && (
             <div className="text-center py-8 text-slate-400">
-              No team users found
+              {t('teamManagement.overview.noUsers')}
             </div>
           )}
         </div>
@@ -559,16 +563,18 @@ export { TeamPreferences };
 
 // Access Management Component
 function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onShowInviteModal, onShowRoleModal }) {
+  const { t } = useTranslation('team');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-200">Access Management</h3>
+        <h3 className="text-lg font-semibold text-slate-200">{t('teamManagement.access.title')}</h3>
         <Button
           onClick={onShowModal}
           variant="primary"
           size="sm"
         >
-          Manage Access
+          {t('teamManagement.access.manageAccess')}
         </Button>
       </div>
 
@@ -578,12 +584,15 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
           <Shield className="w-5 h-5 text-sky-400" />
           <div>
             <p className="text-slate-200 font-medium">
-              {pendingRequests.length} pending access request{pendingRequests.length !== 1 ? 's' : ''}
+              {pendingRequests.length !== 1
+                ? t('teamManagement.access.pendingRequestsPlural', { count: pendingRequests.length })
+                : t('teamManagement.access.pendingRequests', { count: pendingRequests.length })
+              }
             </p>
             <p className="text-slate-400 text-sm">
-              {pendingRequests.length > 0 
-                ? 'Review and approve new team member requests'
-                : 'No pending requests at this time'
+              {pendingRequests.length > 0
+                ? t('teamManagement.access.reviewDescription')
+                : t('teamManagement.access.noPendingDescription')
               }
             </p>
           </div>
@@ -595,7 +604,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
             size="sm"
             Icon={Shield}
           >
-            Review Requests
+            {t('teamManagement.access.reviewRequests')}
           </Button>
         )}
       </div>
@@ -605,36 +614,36 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
           <div className="flex items-center space-x-3 mb-3">
             <UserPlus className="w-5 h-5 text-sky-400" />
-            <h4 className="text-slate-200 font-medium">Invite Users</h4>
+            <h4 className="text-slate-200 font-medium">{t('teamManagement.access.inviteUsers')}</h4>
           </div>
           <p className="text-slate-400 text-sm mb-3">
-            Send invitations to new team members
+            {t('teamManagement.access.inviteDescription')}
           </p>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             size="sm"
             onClick={onShowInviteModal}
             Icon={UserPlus}
           >
-            Invitations
+            {t('teamManagement.access.invitations')}
           </Button>
         </div>
 
         <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
           <div className="flex items-center space-x-3 mb-3">
             <UserCheck className="w-5 h-5 text-sky-400" />
-            <h4 className="text-slate-200 font-medium">Member Roles</h4>
+            <h4 className="text-slate-200 font-medium">{t('teamManagement.access.memberRoles')}</h4>
           </div>
           <p className="text-slate-400 text-sm mb-3">
-            Manage team member permissions
+            {t('teamManagement.access.rolesDescription')}
           </p>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             size="sm"
             onClick={onShowRoleModal}
             Icon={UserCheck}
           >
-            Manage Roles
+            {t('teamManagement.access.manageRoles')}
           </Button>
         </div>
       </div>
@@ -644,14 +653,15 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
 
 // Roster Management Component
 function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, openAddPlayerModal }) {
-  const { 
-    getTeamRoster, 
-    addRosterPlayer, 
-    updateRosterPlayer, 
-    removeRosterPlayer, 
+  const { t } = useTranslation('team');
+  const {
+    getTeamRoster,
+    addRosterPlayer,
+    updateRosterPlayer,
+    removeRosterPlayer,
     refreshTeamPlayers,
     checkPlayerGameHistory,
-    getAvailableJerseyNumbers 
+    getAvailableJerseyNumbers
   } = useTeam();
   
   const [roster, setRoster] = useState([]);
@@ -686,11 +696,11 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       setRoster(rosterData || []);
     } catch (err) {
       console.error('Error loading roster:', err);
-      setError(err.message || 'Failed to load team roster');
+      setError(err.message || t('teamManagement.roster.error.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [team?.id, getTeamRoster]);
+  }, [team?.id, getTeamRoster, t]);
 
   // Load player connection details
   const loadPlayerConnections = useCallback(async () => {
@@ -819,7 +829,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     }
 
     await loadPlayerConnections(); // Reload connection data for consistency
-    setSuccessMessage('Player successfully matched to attendance data');
+    setSuccessMessage(t('teamManagement.roster.success.playerMatched'));
   };
 
   // Handle accept ghost player (add external player to roster)
@@ -838,10 +848,10 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       await loadPlayerConnections();
 
       // Show success message
-      setSuccessMessage(`${ghostPlayer.playerNameInProvider} added to roster`);
+      setSuccessMessage(t('teamManagement.roster.success.ghostAdded', { playerName: ghostPlayer.playerNameInProvider }));
     } catch (error) {
       console.error('Error accepting ghost player:', error);
-      setError(error.message || 'Failed to add player to roster');
+      setError(error.message || t('teamManagement.roster.error.addFailed'));
       needsTeamRefresh = true;
     } finally {
       setAcceptingGhostPlayerId(null);
@@ -870,10 +880,10 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       await loadPlayerConnections();
 
       // Show success message
-      setSuccessMessage(`${ghostPlayer.playerNameInProvider} dismissed`);
+      setSuccessMessage(t('teamManagement.roster.success.ghostDismissed', { playerName: ghostPlayer.playerNameInProvider }));
     } catch (error) {
       console.error('Error dismissing ghost player:', error);
-      setError(error.message || 'Failed to dismiss player');
+      setError(error.message || t('teamManagement.roster.error.dismissFailed'));
     } finally {
       setDismissingGhostPlayerId(null);
     }
@@ -938,17 +948,17 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       
       // Show appropriate success message based on operation type
       if (result.operation === 'deactivated') {
-        setSuccessMessage(`${deletingPlayer.display_name} has been deactivated but kept in records due to game history.`);
+        setSuccessMessage(t('teamManagement.roster.success.playerDeactivated', { playerName: deletingPlayer.display_name }));
       } else {
-        setSuccessMessage(`${deletingPlayer.display_name} has been removed from the roster.`);
+        setSuccessMessage(t('teamManagement.roster.success.playerRemoved', { playerName: deletingPlayer.display_name }));
       }
-      
+
       await loadRoster();
       if (onRefresh) onRefresh();
     } catch (error) {
       // Error is handled by the component through the removeRosterPlayer throw
       console.error('Error in handlePlayerDeleted:', error);
-      setError(error.message || 'Failed to remove player');
+      setError(error.message || t('teamManagement.roster.error.loadFailed'));
     }
   };
 
@@ -979,11 +989,11 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
 
     if (playerIds.length === 1) {
       const playerName = formatPlayerDisplayName(roster.find(player => player.id === playerIds[0]) || loanModalPlayer);
-      setSuccessMessage(`${playerName} loan match recorded.`);
+      setSuccessMessage(t('teamManagement.roster.success.loanRecorded', { playerName }));
       return;
     }
 
-    setSuccessMessage(`${playerIds.length} players loan match recorded.`);
+    setSuccessMessage(t('teamManagement.roster.success.loanRecordedMultiple', { count: playerIds.length }));
   };
 
 
@@ -991,11 +1001,11 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-200">Roster Management</h3>
+          <h3 className="text-lg font-semibold text-slate-200">{t('teamManagement.roster.title')}</h3>
         </div>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin h-6 w-6 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="ml-3 text-slate-300">Loading roster...</span>
+          <span className="ml-3 text-slate-300">{t('teamManagement.roster.loadingRoster')}</span>
         </div>
       </div>
     );
@@ -1006,13 +1016,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <h3 className="text-lg font-semibold text-slate-200">Roster Management</h3>
+          <h3 className="text-lg font-semibold text-slate-200">{t('teamManagement.roster.title')}</h3>
           <span className="text-sm text-slate-400">
-            • {roster.filter(p => p.on_roster).length} players
+            • {t('teamManagement.roster.playersCount', { count: roster.filter(p => p.on_roster).length })}
           </span>
         </div>
         <Button onClick={handleAddPlayer} variant="primary" size="sm" Icon={UserPlus}>
-          Add Player
+          {t('teamManagement.roster.addPlayer')}
         </Button>
       </div>
 
@@ -1038,7 +1048,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
             className="flex items-center space-x-2 px-3 py-2 text-sm text-slate-300 hover:text-slate-100 transition-colors"
           >
             {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            <span>{showInactive ? 'Hide' : 'Show'} Former Players</span>
+            <span>{showInactive ? t('teamManagement.roster.hideFormer') : t('teamManagement.roster.showFormer')}</span>
           </button>
         </div>
       )}
@@ -1051,11 +1061,11 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
             {roster.length === 0 ? (
               <>
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="text-lg font-medium mb-2">No Players Yet</p>
-                <p className="text-sm mb-4">Start building your team roster by adding players.</p>
+                <p className="text-lg font-medium mb-2">{t('teamManagement.roster.noPlayersYet')}</p>
+                <p className="text-sm mb-4">{t('teamManagement.roster.buildRoster')}</p>
                 <div className="flex justify-center">
                   <Button onClick={handleAddPlayer} variant="primary" size="sm" Icon={UserPlus}>
-                    Add First Player
+                    {t('teamManagement.roster.addFirstPlayer')}
                   </Button>
                 </div>
                 {shouldShowOnboarding && (
@@ -1067,7 +1077,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
             ) : (
               <>
                 <Users className="w-8 h-8 mx-auto mb-2 text-sky-200 opacity-50" />
-                <p className="text-sm text-sky-200">No active players found.</p>
+                <p className="text-sm text-sky-200">{t('teamManagement.roster.noActivePlayers')}</p>
                 {shouldShowOnboarding && (
                   <div className="mt-4 px-4">
                     <RosterConnectorOnboarding onNavigateToConnectors={onNavigateToConnectors} />
@@ -1082,16 +1092,16 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
               <thead className="bg-slate-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                    Player
+                    {t('teamManagement.roster.table.player')}
                   </th>
-                  <th className="px-2 py-3 text-center text-xs font-medium text-slate-300" title="Connection Status">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-slate-300" title={t('teamManagement.roster.table.connectionStatus')}>
                     <Link className="w-4 h-4 inline-block" />
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
-                    #
+                    {t('teamManagement.roster.table.number')}
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-slate-300 uppercase tracking-wider">
-                    Actions
+                    {t('teamManagement.roster.table.actions')}
                   </th>
                 </tr>
               </thead>
@@ -1111,7 +1121,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                                 {player.display_name}
                               </span>
                               <span className="text-xs text-slate-500">
-                                From {player.providerName}
+                                {t('teamManagement.roster.ghost.from', { provider: player.providerName })}
                               </span>
                             </div>
                           </div>
@@ -1132,12 +1142,12 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                               {acceptingGhostPlayerId === player.externalPlayerId ? (
                                 <>
                                   <Loader className="w-4 h-4 animate-spin" />
-                                  <span>Adding...</span>
+                                  <span>{t('teamManagement.roster.ghost.adding')}</span>
                                 </>
                               ) : (
                                 <>
                                   <UserPlus className="w-4 h-4" />
-                                  <span>Accept</span>
+                                  <span>{t('teamManagement.roster.ghost.accept')}</span>
                                 </>
                               )}
                             </button>
@@ -1149,12 +1159,12 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                               {dismissingGhostPlayerId === player.externalPlayerId ? (
                                 <>
                                   <Loader className="w-4 h-4 animate-spin" />
-                                  <span>Dismissing...</span>
+                                  <span>{t('teamManagement.roster.ghost.dismissing')}</span>
                                 </>
                               ) : (
                                 <>
                                   <X className="w-4 h-4" />
-                                  <span>Dismiss</span>
+                                  <span>{t('teamManagement.roster.ghost.dismiss')}</span>
                                 </>
                               )}
                             </button>
@@ -1187,7 +1197,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                           player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
                         }`}>
                           {fullName}
-                          {!player.on_roster && <span className="text-slate-400 ml-2">(Former)</span>}
+                          {!player.on_roster && <span className="text-slate-400 ml-2">({t('teamManagement.roster.player.former')})</span>}
                         </span>
                       </div>
                     </td>
@@ -1208,7 +1218,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                           <div className="text-xs space-y-2">
                             {hasConnection ? (
                               <>
-                                <div className="font-semibold text-slate-100">Connected Providers:</div>
+                                <div className="font-semibold text-slate-100">{t('teamManagement.roster.connection.connectedProviders')}</div>
                                 {connections.map((conn, idx) => (
                                   <div key={idx} className="space-y-1">
                                     <div className="flex items-center space-x-2">
@@ -1216,16 +1226,16 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                                       <span className="text-slate-200">{conn.providerName}</span>
                                     </div>
                                     <div className="pl-5 text-slate-300">
-                                      Matched as: <span className="font-medium">{conn.playerNameInProvider}</span>
+                                      {t('teamManagement.roster.connection.matchedAs')} <span className="font-medium">{conn.playerNameInProvider}</span>
                                     </div>
                                   </div>
                                 ))}
                               </>
                             ) : (
                               <>
-                                <div className="font-semibold text-amber-200">Needs Matching</div>
+                                <div className="font-semibold text-amber-200">{t('teamManagement.roster.connection.needsMatching')}</div>
                                 <div className="text-slate-300">
-                                  This player is not matched to any provider data yet.
+                                  {t('teamManagement.roster.connection.notMatched')}
                                 </div>
                                 {connectionDetails.unmatchedExternalPlayers.length > 0 && (
                                   <button
@@ -1235,7 +1245,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                                       setMatchingPlayer(player);
                                     }}
                                   >
-                                    Match Player
+                                    {t('teamManagement.roster.connection.matchPlayer')}
                                   </button>
                                 )}
                               </>
@@ -1265,21 +1275,21 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         <button
                           onClick={() => handleEditPlayer(player)}
                           className="p-1 text-slate-400 hover:text-sky-400 transition-colors"
-                          title="Edit player"
+                          title={t('teamManagement.roster.player.editTitle')}
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleOpenLoanModal(player)}
                           className="p-1 text-slate-400 hover:text-emerald-400 transition-colors"
-                          title="Record Loan"
+                          title={t('teamManagement.roster.player.loanTitle')}
                         >
                           <Repeat className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeletePlayer(player)}
                           className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                          title="Remove player"
+                          title={t('teamManagement.roster.player.removeTitle')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1366,6 +1376,7 @@ function TeamConnectors({ team, onRefresh }) {
 
 // Team Preferences Component
 function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
+  const { t } = useTranslation('team');
   const { loadTeamPreferences, saveTeamPreferences, getTeamRoster } = useTeam();
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
@@ -1435,7 +1446,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         });
       } catch (err) {
         console.error('Failed to load preferences:', err);
-        setError('Failed to load preferences');
+        setError(t('teamManagement.preferences.errors.loadFailed'));
       } finally {
         setLoading(false);
         autoSaveReadyRef.current = true;
@@ -1443,7 +1454,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     };
 
     loadPrefs();
-  }, [team?.id, loadTeamPreferences, deriveTeamCaptainMode]);
+  }, [team?.id, loadTeamPreferences, deriveTeamCaptainMode, t]);
 
   // Load roster for captain selection
   useEffect(() => {
@@ -1456,14 +1467,14 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         setRoster(rosterData || []);
       } catch (err) {
         console.error('Failed to load roster:', err);
-        setError('Failed to load team roster');
+        setError(t('teamManagement.preferences.errors.loadRosterFailed'));
       } finally {
         setRosterLoading(false);
       }
     };
 
     loadRoster();
-  }, [team?.id, getTeamRoster]);
+  }, [team?.id, getTeamRoster, t]);
 
   const handleFormatChange = useCallback((newFormat) => {
     // Get valid formations for the new format (default squadSize to 6)
@@ -1487,9 +1498,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
   const buildCaptainLabel = useCallback((player) => {
     const baseName = player.display_name || [player.first_name, player.last_name].filter(Boolean).join(' ').trim();
-    const safeName = baseName || 'Unnamed Player';
+    const safeName = baseName || t('teamManagement.preferences.unnamedPlayer');
     return player.jersey_number ? `#${player.jersey_number} ${safeName}` : safeName;
-  }, []);
+  }, [t]);
 
   const captainOptions = useMemo(() => {
     const activePlayers = roster.filter(player => player.on_roster);
@@ -1513,12 +1524,12 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     ) {
       options.unshift({
         value: permanentCaptainId,
-        label: 'Previously selected captain'
+        label: t('teamManagement.preferences.previousCaptain')
       });
     }
 
     return options;
-  }, [roster, buildCaptainLabel, teamCaptainMode, permanentCaptainId]);
+  }, [roster, buildCaptainLabel, teamCaptainMode, permanentCaptainId, t]);
 
   const handleTeamCaptainModeChange = useCallback((value) => {
     setTeamCaptainMode(value);
@@ -1552,12 +1563,12 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     setSuccessMessage(null);
 
     if (teamCaptainMode === 'permanent' && !teamCaptainValue) {
-      setError('Please select a player to serve as the permanent team captain.');
+      setError(t('teamManagement.preferences.errors.selectCaptain'));
       return;
     }
 
     if (['9v9', '11v11'].includes(preferences.matchFormat)) {
-      setError('Only 5v5 and 7v7 formats are currently supported. Please select a supported format before saving.');
+      setError(t('teamManagement.preferences.errors.unsupportedFormat'));
       return;
     }
 
@@ -1576,9 +1587,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         if (!isActive) return;
 
         if (onShowFloatingSuccess) {
-          onShowFloatingSuccess('Preferences saved successfully');
+          onShowFloatingSuccess(t('teamManagement.preferences.success.saved'));
         } else {
-          setSuccessMessage('Preferences saved successfully');
+          setSuccessMessage(t('teamManagement.preferences.success.saved'));
           if (successMessageTimeoutRef.current) {
             clearTimeout(successMessageTimeoutRef.current);
           }
@@ -1589,7 +1600,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       } catch (err) {
         console.error('Failed to save preferences:', err);
         if (!isActive) return;
-        setError('Failed to save preferences. Please try again.');
+        setError(t('teamManagement.preferences.errors.saveFailed'));
         setSuccessMessage(null);
       }
     };
@@ -1606,13 +1617,14 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     team?.id,
     onRefresh,
     saveTeamPreferences,
-    onShowFloatingSuccess
+    onShowFloatingSuccess,
+    t
   ]);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="text-slate-400">Loading preferences...</div>
+        <div className="text-slate-400">{t('teamManagement.preferences.loadingPreferences')}</div>
       </div>
     );
   }
@@ -1634,20 +1646,20 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       )}
 
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-200">Team Preferences</h3>
+        <h3 className="text-lg font-semibold text-slate-200">{t('teamManagement.preferences.title')}</h3>
       </div>
 
       {/* Match Settings */}
       <div className="space-y-4">
         <h4 className="text-md font-medium text-slate-300 flex items-center">
           <Target className="w-4 h-4 mr-2" />
-          Match Settings
+          {t('teamManagement.preferences.matchSettings')}
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Match Format
+              {t('teamManagement.preferences.matchFormat')}
             </label>
             <Select
               value={preferences.matchFormat}
@@ -1655,15 +1667,15 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
               options={[
                 { value: '5v5', label: '5v5' },
                 { value: '7v7', label: '7v7' },
-                { value: '9v9', label: '9v9 (Coming Soon)' },
-                { value: '11v11', label: '11v11 (Coming Soon)' }
+                { value: '9v9', label: `9v9 (${t('teamManagement.preferences.comingSoon')})` },
+                { value: '11v11', label: `11v11 (${t('teamManagement.preferences.comingSoon')})` }
               ]}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Formation
+              {t('teamManagement.preferences.formation')}
             </label>
             <Select
               value={preferences.formation}
@@ -1674,7 +1686,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
                 return {
                   value: formationKey,
-                  label: isAvailable ? formationDef.label : `${formationDef.label} (Coming Soon)`,
+                  label: isAvailable ? formationDef.label : `${formationDef.label} (${t('teamManagement.preferences.comingSoon')})`,
                   disabled: !isAvailable
                 };
               })}
@@ -1687,13 +1699,13 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       <div className="space-y-4">
         <h4 className="text-md font-medium text-slate-300 flex items-center">
           <Clock className="w-4 h-4 mr-2" />
-          Time Settings
+          {t('teamManagement.preferences.timeSettings')}
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Period Length (minutes)
+              {t('teamManagement.preferences.periodLength')}
             </label>
             <input
               type="number"
@@ -1710,7 +1722,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Number of Periods
+              {t('teamManagement.preferences.numPeriods')}
             </label>
             <Select
               value={preferences.numPeriods}
@@ -1719,10 +1731,10 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 numPeriods: parseInt(value, 10)
               }))}
               options={[
-                { value: 1, label: '1 Period' },
-                { value: 2, label: '2 Periods' },
-                { value: 3, label: '3 Periods' },
-                { value: 4, label: '4 Periods' }
+                { value: 1, label: `1 ${t('teamManagement.preferences.period')}` },
+                { value: 2, label: `2 ${t('teamManagement.preferences.periods')}` },
+                { value: 3, label: `3 ${t('teamManagement.preferences.periods')}` },
+                { value: 4, label: `4 ${t('teamManagement.preferences.periods')}` }
               ]}
             />
           </div>
@@ -1733,7 +1745,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       <div className="space-y-4">
         <h4 className="text-md font-medium text-slate-300 flex items-center">
           <UserCheck className="w-4 h-4 mr-2" />
-          Substitution Settings
+          {t('teamManagement.preferences.substitutionSettings')}
         </h4>
 
         {/* Alternate Roles Checkbox - MOVED HERE (BEFORE Substitution Logic) */}
@@ -1754,15 +1766,13 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 <CheckCircle className="w-3 h-3 text-white" />
               )}
             </div>
-            <span className="text-slate-300">Alternate roles fairly over time</span>
+            <span className="text-slate-300">{t('teamManagement.preferences.alternateRoles')}</span>
             <Tooltip
               content={
                 <div className="text-xs">
-                  <div className="font-semibold text-slate-100 mb-2">Fair Role Rotation</div>
+                  <div className="font-semibold text-slate-100 mb-2">{t('teamManagement.preferences.alternateRolesTooltip.title')}</div>
                   <div className="text-slate-300">
-                    When enabled, the app will suggest substitutions that ensure all players
-                    experience similar time in each role (defender, midfielder, attacker) over
-                    the course of the season.
+                    {t('teamManagement.preferences.alternateRolesTooltip.description')}
                   </div>
                 </div>
               }
@@ -1777,14 +1787,14 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Substitution Logic
+              {t('teamManagement.preferences.substitutionLogic')}
             </label>
             <Select
               value={preferences.substitutionLogic}
               onChange={(value) => setPreferences(prev => ({ ...prev, substitutionLogic: value }))}
               options={[
-                { value: 'equal_time', label: 'Equal Time in Each Role' },
-                { value: 'same_role', label: 'Keep Same Role' }
+                { value: 'equal_time', label: t('teamManagement.preferences.substitutionOptions.equalTime') },
+                { value: 'same_role', label: t('teamManagement.preferences.substitutionOptions.sameRole') }
               ]}
             />
           </div>
@@ -1795,7 +1805,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       <div className="space-y-4">
         <h4 className="text-md font-medium text-slate-300 flex items-center">
           <Trophy className="w-4 h-4 mr-2" />
-          Game Features
+          {t('teamManagement.preferences.gameFeatures')}
         </h4>
 
         <div className="space-y-3">
@@ -1815,55 +1825,55 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 <CheckCircle className="w-3 h-3 text-white" />
               )}
             </div>
-            <span className="text-slate-300">Track Goal Scorers</span>
+            <span className="text-slate-300">{t('teamManagement.preferences.trackGoalScorer')}</span>
           </label>
 
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Fair Play Award
+            {t('teamManagement.preferences.fairPlayAward')}
           </label>
           <Select
             value={preferences.fairPlayAward}
             onChange={(value) => setPreferences(prev => ({ ...prev, fairPlayAward: value }))}
             options={[
-              { value: 'none', label: 'No Awards' },
-              { value: 'league_only', label: 'Only League' },
-              { value: 'competitive', label: 'League, Cup and Tournament' },
-              { value: 'all_games', label: 'All Games' }
+              { value: 'none', label: t('teamManagement.preferences.fairPlayOptions.none') },
+              { value: 'league_only', label: t('teamManagement.preferences.fairPlayOptions.leagueOnly') },
+              { value: 'competitive', label: t('teamManagement.preferences.fairPlayOptions.competitive') },
+              { value: 'all_games', label: t('teamManagement.preferences.fairPlayOptions.allGames') }
             ]}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Team Captain
+            {t('teamManagement.preferences.teamCaptain')}
           </label>
           <Select
             value={teamCaptainMode}
             onChange={handleTeamCaptainModeChange}
             options={[
-              { value: 'none', label: 'No Team Captain' },
-              { value: 'permanent', label: 'Permanent Team Captain' },
-              { value: 'assign_each_match', label: 'Assign Each Match' }
+              { value: 'none', label: t('teamManagement.preferences.teamCaptainOptions.none') },
+              { value: 'permanent', label: t('teamManagement.preferences.teamCaptainOptions.permanent') },
+              { value: 'assign_each_match', label: t('teamManagement.preferences.teamCaptainOptions.assignEach') }
             ]}
           />
           {teamCaptainMode === 'permanent' && (
             <div className="mt-3 space-y-1">
               <label className="block text-xs font-medium text-slate-400">
-                Permanent Team Captain
+                {t('teamManagement.preferences.permanentCaptain')}
               </label>
               <Select
                 value={permanentCaptainId}
                 onChange={handlePermanentCaptainChange}
                 options={captainOptions}
-                placeholder={rosterLoading ? 'Loading players...' : 'Select Team Captain'}
+                placeholder={rosterLoading ? t('teamManagement.preferences.loadingPlayers') : t('teamManagement.preferences.selectCaptain')}
                 disabled={rosterLoading || captainOptions.length === 0}
               />
               {!rosterLoading && captainOptions.length === 0 && (
                 <p className="text-xs text-slate-400">
-                  Add players to your roster to choose a team captain.
+                  {t('teamManagement.preferences.addPlayersForCaptain')}
                 </p>
               )}
             </div>
@@ -1875,25 +1885,25 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
       <div className="space-y-4">
         <h4 className="text-md font-medium text-slate-300 flex items-center">
           <BarChart3 className="w-4 h-4 mr-2" />
-          Statistics
+          {t('teamManagement.preferences.statistics')}
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Loan Match Weight
+              {t('teamManagement.preferences.loanMatchWeight')}
             </label>
             <Select
               value={String(preferences.loanMatchWeight)}
               onChange={(value) => setPreferences(prev => ({ ...prev, loanMatchWeight: parseFloat(value) }))}
               options={[
-                { value: '1.0', label: 'Full Match (1.0)' },
-                { value: '0.5', label: 'Half Match (0.5)' },
-                { value: '0.0', label: 'No Credit (0.0)' }
+                { value: '1.0', label: t('teamManagement.preferences.loanWeightOptions.full') },
+                { value: '0.5', label: t('teamManagement.preferences.loanWeightOptions.half') },
+                { value: '0.0', label: t('teamManagement.preferences.loanWeightOptions.none') }
               ]}
             />
             <p className="text-xs text-slate-400 mt-1">
-              Controls how loan matches count toward season statistics.
+              {t('teamManagement.preferences.loanWeightDescription')}
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, Sword, RotateCcw, Hand, ArrowDownUp } from 'lucide-react';
-import { POSITION_DISPLAY_NAMES, ICON_STYLES } from '../../components/game/formations/constants';
+import { ICON_STYLES } from '../../components/game/formations/constants';
 import { supportsInactiveUsers } from '../../constants/gameModes';
 import { getPositionRole } from '../logic/positionUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -42,19 +42,79 @@ export function getPositionIcon(position, substitutePositions) {
 }
 
 /**
- * Get the display name for a position, accounting for inactive status
+ * Position display name mappings
+ * Used as fallback when translation function is not available
  */
-export function getPositionDisplayName(position, player, teamConfig, substitutePositions) {
+const POSITION_DISPLAY_NAMES = {
+  goalie: 'Goalie',
+  leftDefender: 'Left Defender',
+  rightDefender: 'Right Defender',
+  leftAttacker: 'Left Attacker',
+  rightAttacker: 'Right Attacker',
+  defender: 'Defender',
+  left: 'Left Mid',
+  right: 'Right Mid',
+  attacker: 'Attacker',
+  leftMidfielder: 'Left Midfielder',
+  rightMidfielder: 'Right Midfielder',
+  centerMidfielder: 'Center Midfielder',
+  substitute_1: 'Substitute',
+  substitute_2: 'Substitute',
+  substitute_3: 'Substitute',
+  substitute_4: 'Substitute',
+  substitute_5: 'Substitute'
+};
+
+/**
+ * Position key to translation key mapping
+ * Maps position identifiers to their game.json translation keys
+ */
+const POSITION_TRANSLATION_KEYS = {
+  goalie: 'formation.positions.goalie',
+  leftDefender: 'formation.positions.leftDefender',
+  rightDefender: 'formation.positions.rightDefender',
+  leftAttacker: 'formation.positions.leftAttacker',
+  rightAttacker: 'formation.positions.rightAttacker',
+  defender: 'formation.positions.defender',
+  left: 'formation.positions.left',
+  right: 'formation.positions.right',
+  attacker: 'formation.positions.attacker',
+  leftMidfielder: 'formation.positions.leftMidfielder',
+  rightMidfielder: 'formation.positions.rightMidfielder',
+  centerMidfielder: 'formation.positions.centerMidfielder',
+  substitute_1: 'formation.positions.substitute',
+  substitute_2: 'formation.positions.substitute',
+  substitute_3: 'formation.positions.substitute',
+  substitute_4: 'formation.positions.substitute',
+  substitute_5: 'formation.positions.substitute'
+};
+
+/**
+ * Get the display name for a position, accounting for inactive status
+ * @param {string} position - Position key
+ * @param {Object} player - Player object
+ * @param {Object} teamConfig - Team configuration
+ * @param {Array} substitutePositions - Substitute position keys
+ * @param {Function} [t] - Optional translation function from useTranslation('game')
+ */
+export function getPositionDisplayName(position, player, teamConfig, substitutePositions, t) {
   // Check if this formation supports inactive players
   const supportsInactive = supportsInactiveUsers(teamConfig);
-  
+
   // For substitute positions with inactive support, check player status
   if (supportsInactive && substitutePositions.includes(position)) {
     if (player?.stats.isInactive) {
-      return 'Inactive';
+      return t ? t('formation.inactiveStatus') : 'Inactive';
     }
   }
-  
+
+  // Use translation function if available
+  const translationKey = POSITION_TRANSLATION_KEYS[position];
+  if (translationKey && t) {
+    return t(translationKey);
+  }
+
+  // Fallback to English display names
   return POSITION_DISPLAY_NAMES[position] || position;
 }
 

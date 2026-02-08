@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { getActiveMatches } from '../services/matchStateManager';
 
@@ -10,6 +11,7 @@ import { getActiveMatches } from '../services/matchStateManager';
  * @returns {{ matches: Array, loading: boolean, error: string|null, refetch: Function }}
  */
 export function useRealtimeTeamMatches(teamId) {
+  const { t } = useTranslation('team');
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,13 +39,13 @@ export function useRealtimeTeamMatches(teamId) {
           }
         } else {
           if (isActive) {
-            setError(result.error || 'Failed to load matches');
+            setError(result.error || t('teamMatches.error.loadFailed'));
           }
         }
       } catch (err) {
         console.error('Error fetching active matches:', err);
         if (isActive) {
-          setError('Failed to load matches');
+          setError(t('teamMatches.error.loadFailed'));
         }
       } finally {
         if (isActive) {
@@ -145,7 +147,7 @@ export function useRealtimeTeamMatches(teamId) {
         subscriptionRef.current.unsubscribe();
       }
     };
-  }, [teamId, setMatches, setLoading, setError]);
+  }, [teamId, setMatches, setLoading, setError, t]);
 
   // Refetch function for manual refresh
   const refetch = async () => {
@@ -158,11 +160,11 @@ export function useRealtimeTeamMatches(teamId) {
       if (result.success) {
         setMatches(result.matches || []);
       } else {
-        setError(result.error || 'Failed to load matches');
+        setError(result.error || t('teamMatches.error.loadFailed'));
       }
     } catch (err) {
       console.error('Error refetching active matches:', err);
-      setError('Failed to load matches');
+      setError(t('teamMatches.error.loadFailed'));
     }
   };
 

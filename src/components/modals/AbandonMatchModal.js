@@ -1,46 +1,51 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { AlertTriangle, X } from 'lucide-react';
 
 /**
  * Modal to warn users before abandoning an active match
- * 
+ *
  * Shows different messages based on match state:
  * - Running match: Warns about losing active match data
- * 
+ *
  * @param {boolean} isOpen - Whether modal is visible
  * @param {function} onAbandon - Called when user confirms abandonment
  * @param {function} onCancel - Called when user cancels abandonment
  * @param {boolean} isMatchRunning - Whether match is currently running
  */
-export function AbandonMatchModal({ 
-  isOpen, 
-  onAbandon, 
-  onCancel, 
-  isMatchRunning 
+export function AbandonMatchModal({
+  isOpen,
+  onAbandon,
+  onCancel,
+  isMatchRunning
 }) {
+  const { t } = useTranslation('modals');
+
   if (!isOpen) return null;
 
   // Determine warning message based on match state
   const getWarningContent = () => {
     if (isMatchRunning) {
       return {
-        title: 'Abandon Active Match?',
-        message: 'You have an active match in progress. All match data, player statistics, and game history will be permanently lost if you start a new game.',
+        title: t('abandonMatch.titleRunning'),
+        message: t('abandonMatch.messageRunning'),
+        subtitle: t('abandonMatch.subtitleRunning'),
         icon: <AlertTriangle className="w-6 h-6 text-amber-400" />,
         iconBg: 'bg-amber-600'
       };
     } else {
       return {
-        title: 'Start New Game?',
-        message: 'This will reset your current session and take you back to the configuration screen.',
+        title: t('abandonMatch.titleNotRunning'),
+        message: t('abandonMatch.messageNotRunning'),
+        subtitle: t('abandonMatch.subtitleNotRunning'),
         icon: <AlertTriangle className="w-6 h-6 text-blue-400" />,
         iconBg: 'bg-blue-600'
       };
     }
   };
 
-  const { title, message, icon, iconBg } = getWarningContent();
+  const { title, message, subtitle, icon, iconBg } = getWarningContent();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -54,7 +59,7 @@ export function AbandonMatchModal({
             <div>
               <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
               <p className="text-sm text-slate-400">
-                {isMatchRunning ? 'Data will be permanently lost' : 'Current session will be reset'}
+                {subtitle}
               </p>
             </div>
           </div>
@@ -71,22 +76,22 @@ export function AbandonMatchModal({
           <p className="text-slate-200 mb-6 leading-relaxed">
             {message}
           </p>
-          
+
           {/* Action Buttons */}
           <div className="flex flex-col gap-3">
-            <Button 
-              onClick={onCancel} 
+            <Button
+              onClick={onCancel}
               variant="accent"
               className="w-full"
             >
-              Cancel
+              {t('abandonMatch.cancel')}
             </Button>
-            <Button 
-              onClick={onAbandon} 
+            <Button
+              onClick={onAbandon}
               variant="danger"
               className="w-full"
             >
-              {isMatchRunning ? 'Abandon Match' : 'Start New Game'}
+              {isMatchRunning ? t('abandonMatch.abandonMatch') : t('abandonMatch.startNewGame')}
             </Button>
           </div>
         </div>

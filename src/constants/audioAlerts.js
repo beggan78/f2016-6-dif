@@ -78,7 +78,8 @@ export const AUDIO_ALERT_OPTIONS = [
  * Language options for the preferences
  */
 export const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' }
+  { value: 'en', label: 'English' },
+  { value: 'sv', label: 'Svenska' }
 ];
 
 /**

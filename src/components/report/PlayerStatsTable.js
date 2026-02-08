@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatTime, formatPlayerName } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -19,6 +20,7 @@ export function PlayerStatsTable({
   matchEvents = [],
   goalScorers = {}
 }) {
+  const { t } = useTranslation('reports');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
   
@@ -48,14 +50,14 @@ export function PlayerStatsTable({
     const allColumns = [
     {
       key: 'name',
-      label: 'Player',
+      label: t('table.columns.player'),
       sortable: true,
       className: 'text-left font-medium text-slate-100',
       render: (player) => formatPlayerName(player)
     },
     {
       key: 'startingRole',
-      label: 'Starting Role',
+      label: t('table.columns.startingRole'),
       sortable: true,
       className: 'text-center text-slate-300',
       render: (player) => {
@@ -65,23 +67,23 @@ export function PlayerStatsTable({
         const genericRole = player.stats?.startedMatchAs;
 
         // Check specific role first
-        if (specificRole === PLAYER_ROLES.GOALIE) return 'Goalie';
-        if (specificRole === PLAYER_ROLES.DEFENDER) return 'Defender';
-        if (specificRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
-        if (specificRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
-        if (specificRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+        if (specificRole === PLAYER_ROLES.GOALIE) return t('table.roles.goalie');
+        if (specificRole === PLAYER_ROLES.DEFENDER) return t('table.roles.defender');
+        if (specificRole === PLAYER_ROLES.MIDFIELDER) return t('table.roles.midfielder');
+        if (specificRole === PLAYER_ROLES.ATTACKER) return t('table.roles.attacker');
+        if (specificRole === PLAYER_ROLES.SUBSTITUTE) return t('table.roles.substitute');
 
         // Fall back to generic role
-        if (genericRole === PLAYER_ROLES.GOALIE) return 'Goalie';
-        if (genericRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-        if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+        if (genericRole === PLAYER_ROLES.GOALIE) return t('table.roles.goalie');
+        if (genericRole === PLAYER_ROLES.SUBSTITUTE) return t('table.roles.substitute');
+        if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return t('table.roles.field');
 
-        return '--'; // Player didn't start the match
+        return t('table.roles.none'); // Player didn't start the match
       }
     },
     {
       key: 'timeOnField',
-      label: 'Outfield',
+      label: t('table.columns.outfield'),
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -91,7 +93,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsDefender',
-      label: 'Defender',
+      label: t('table.columns.defender'),
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -101,7 +103,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsMidfielder',
-      label: 'Midfielder',
+      label: t('table.columns.midfielder'),
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -111,7 +113,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsAttacker',
-      label: 'Attacker',
+      label: t('table.columns.attacker'),
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -121,7 +123,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsGoalie',
-      label: 'Goalie',
+      label: t('table.columns.goalie'),
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -131,7 +133,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'timeAsSubstitute',
-      label: 'Substitute',
+      label: t('table.columns.substitute'),
       sortable: true,
       className: 'text-center text-slate-300 font-mono',
       render: (player) => {
@@ -141,7 +143,7 @@ export function PlayerStatsTable({
     },
     {
       key: 'goalsScored',
-      label: 'Goals',
+      label: t('table.columns.goals'),
       sortable: true,
       className: 'text-center text-slate-300',
       render: (player) => {
@@ -158,7 +160,7 @@ export function PlayerStatsTable({
       if (column.key === 'timeAsAttacker' && !showAttackerColumn) return false;
       return true;
     });
-  }, [playerGoals, players]);
+  }, [playerGoals, players, t]);
 
   // Sort players based on current sort settings
   const sortedPlayers = useMemo(() => {
@@ -179,18 +181,18 @@ export function PlayerStatsTable({
             const genericRole = player.stats?.startedMatchAs;
 
             // Check specific role first
-            if (specificRole === PLAYER_ROLES.GOALIE) return 'Goalie';
-            if (specificRole === PLAYER_ROLES.DEFENDER) return 'Defender';
-            if (specificRole === PLAYER_ROLES.MIDFIELDER) return 'Midfielder';
-            if (specificRole === PLAYER_ROLES.ATTACKER) return 'Attacker';
-            if (specificRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
+            if (specificRole === PLAYER_ROLES.GOALIE) return t('table.roles.goalie');
+            if (specificRole === PLAYER_ROLES.DEFENDER) return t('table.roles.defender');
+            if (specificRole === PLAYER_ROLES.MIDFIELDER) return t('table.roles.midfielder');
+            if (specificRole === PLAYER_ROLES.ATTACKER) return t('table.roles.attacker');
+            if (specificRole === PLAYER_ROLES.SUBSTITUTE) return t('table.roles.substitute');
 
             // Fall back to generic role
-            if (genericRole === PLAYER_ROLES.GOALIE) return 'Goalie';
-            if (genericRole === PLAYER_ROLES.SUBSTITUTE) return 'Sub';
-            if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return 'Field';
+            if (genericRole === PLAYER_ROLES.GOALIE) return t('table.roles.goalie');
+            if (genericRole === PLAYER_ROLES.SUBSTITUTE) return t('table.roles.substitute');
+            if (genericRole === PLAYER_ROLES.FIELD_PLAYER) return t('table.roles.field');
 
-            return '--'; // Empty value sorts to end
+            return t('table.roles.none'); // Empty value sorts to end
           };
           aValue = getRoleValue(a);
           bValue = getRoleValue(b);
@@ -238,7 +240,7 @@ export function PlayerStatsTable({
     });
     
     return sorted;
-  }, [players, sortBy, sortOrder, playerGoals]);
+  }, [players, sortBy, sortOrder, playerGoals, t]);
 
   useEffect(() => {
     const availableColumns = columns.map(c => c.key);
@@ -270,7 +272,7 @@ export function PlayerStatsTable({
     return (
       <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
         <div className="text-center py-8 text-slate-400">
-          <p>No player statistics available</p>
+          <p>{t('table.noStats')}</p>
         </div>
       </div>
     );

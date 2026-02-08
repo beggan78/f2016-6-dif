@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
 import { Link, X, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
+  const { t } = useTranslation('connectors');
   const [credentials, setCredentials] = useState({
     username: '',
     password: ''
@@ -19,15 +21,15 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
     const newErrors = {};
 
     if (!credentials.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = t('sportAdminConnect.validation.usernameRequired');
     } else if (credentials.username.length > 100) {
-      newErrors.username = 'Username must be 100 characters or less';
+      newErrors.username = t('sportAdminConnect.validation.usernameMaxLength');
     }
 
     if (!credentials.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('sportAdminConnect.validation.passwordRequired');
     } else if (credentials.password.length > 200) {
-      newErrors.password = 'Password must be 200 characters or less';
+      newErrors.password = t('sportAdminConnect.validation.passwordMaxLength');
     }
 
     setErrors(newErrors);
@@ -56,7 +58,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
       setShowPassword(false);
     } catch (error) {
       console.error('Error connecting SportAdmin:', error);
-      setGeneralError(error.message || 'Failed to connect SportAdmin. Please check your credentials and try again.');
+      setGeneralError(error.message || t('sportAdminConnect.validation.connectionFailed'));
     } finally {
       setLoading(false);
     }
@@ -94,9 +96,9 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
               <Link className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Connect SportAdmin</h2>
+              <h2 className="text-lg font-semibold text-slate-100">{t('sportAdminConnect.header.title')}</h2>
               <p className="text-sm text-slate-400">
-                Sync attendance and match data
+                {t('sportAdminConnect.header.subtitle')}
               </p>
             </div>
           </div>
@@ -117,10 +119,10 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
               <ShieldCheck className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
                 <p className="text-sky-200 text-sm">
-                  Enter your SportAdmin credentials to enable automatic synchronization.
+                  {t('sportAdminConnect.info.description')}
                 </p>
                 <p className="text-sky-300 text-xs">
-                  Your credentials will be encrypted and stored securely.
+                  {t('sportAdminConnect.info.security')}
                 </p>
               </div>
             </div>
@@ -136,7 +138,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
           {/* Username Field */}
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
-              Username
+              {t('sportAdminConnect.form.labels.username')}
             </label>
             <Input
               id="username"
@@ -144,7 +146,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
               type="text"
               value={credentials.username}
               onChange={(e) => handleInputChange('username', e.target.value)}
-              placeholder="Your SportAdmin username"
+              placeholder={t('sportAdminConnect.form.placeholders.username')}
               disabled={loading}
               autoFocus
             />
@@ -156,7 +158,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
           {/* Password Field */}
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-              Password
+              {t('sportAdminConnect.form.labels.password')}
             </label>
             <div className="relative">
               <Input
@@ -165,7 +167,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
                 type={showPassword ? 'text' : 'password'}
                 value={credentials.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Your SportAdmin password"
+                placeholder={t('sportAdminConnect.form.placeholders.password')}
                 disabled={loading}
               />
               <button
@@ -196,7 +198,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
               disabled={loading}
               Icon={Link}
             >
-              {loading ? 'Connecting...' : 'Connect'}
+              {loading ? t('sportAdminConnect.buttons.connecting') : t('sportAdminConnect.buttons.connect')}
             </Button>
             <Button
               type="button"
@@ -205,7 +207,7 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
               className="flex-1"
               disabled={loading}
             >
-              Cancel
+              {t('sportAdminConnect.buttons.cancel')}
             </Button>
           </div>
         </form>

@@ -1,0 +1,305 @@
+{
+  "header": {
+    "title": "Matchkonfiguration"
+  },
+  "squad": {
+    "selectTitle": "Välj Trupp (5-15 Spelare) - Valda: {{count}}",
+    "addPlayerTitle": "Lägg till Spelare i Ditt Lag",
+    "selectAll": "Välj alla",
+    "allSelected": "Alla Valda",
+    "addPlayer": "Lägg till Spelare",
+    "temporaryLabel": "(Tillfällig)",
+    "noPlayers": {
+      "title": "Inga Spelare Tillagda Än",
+      "description": "Din laglista är tom. Lägg till spelare för att börja ställa in ditt spel."
+    },
+    "exceededFormat": "Du har valt {{count}} spelare, vilket överstiger {{format}}-gränsen på {{max}}. Uppdatera matchformatet eller justera truppen."
+  },
+  "matchDetails": {
+    "opponentLabel": "Motståndare",
+    "opponentPlaceholder": "Ange motståndarlags namn (valfritt)",
+    "matchTypeLabel": "Matchtyp",
+    "venueLabel": "Arena",
+    "opponentSuggestions": {
+      "ariaLabel": "Tidigare motståndarförslag",
+      "noMatches": "Inga tidigare motståndare matchar \"{{query}}\""
+    }
+  },
+  "gameSettings": {
+    "periodsLabel": "Antal Perioder",
+    "durationLabel": "Periodlängd (minuter)",
+    "alertLabel": "Bytesvarning"
+  },
+  "formation": {
+    "header": "Matchformat & Formation",
+    "formatLabel": "Matchformat",
+    "formationLabel": "Spelsystem",
+    "formatExceeded": "Du har valt {{count}} spelare, vilket överstiger {{format}}-gränsen på {{max}}. Uppdatera matchformatet eller justera truppen innan du konfigurerar formationer."
+  },
+  "goalies": {
+    "header": "Målvakter",
+    "periodLabel": "Period {{period}} Målvakt",
+    "placeholder": "Välj Målvakt"
+  },
+  "captain": {
+    "header": "Kapten",
+    "label": "Lagkapten",
+    "hint": "Valfritt - välj en lagkapten för denna match",
+    "noCaptain": "Ingen Kapten"
+  },
+  "buttons": {
+    "saveConfig": "Spara",
+    "savingConfig": "Sparar...",
+    "getLiveLink": "Live Match-länk",
+    "creatingLink": "Skapar Länk...",
+    "proceedToPeriod": "Fortsätt",
+    "randomize": "🎲 Slumpa Konfiguration (Debug)"
+  },
+  "sync": {
+    "syncing": "Synkroniserar laglista...",
+    "syncSuccess": "✅ {{message}}",
+    "syncFailed": "Synkronisering misslyckades: {{error}}",
+    "syncError": "Synkroniseringsfel: {{error}}"
+  },
+  "addPlayerModal": {
+    "title": "Lägg till Spelare",
+    "message": "Välj hur du vill lägga till en spelare.",
+    "addToTeam": "Lägg till Spelare i Laget",
+    "addTemporary": "Lägg till Tillfällig Spelare",
+    "cancel": "Avbryt"
+  },
+  "liveLinkNotifications": {
+    "authRequired": "Autentisering Krävs",
+    "authRequiredMessage": "Du måste vara inloggad med ett lag för att dela en live match-länk.",
+    "creating": "Skapar live match-länk...",
+    "linkCopied": "Länk Kopierad!",
+    "linkCopiedMessage": "Live match-länk kopierad till urklipp!",
+    "liveMatchUrl": "Live Match-URL",
+    "failed": "Misslyckades med att skapa live match-länk",
+    "failedWithError": "Misslyckades med att skapa live match-länk: {{error}}"
+  },
+  "matchTypes": {
+    "league": {
+      "label": "Serie",
+      "description": "Officiell seriematch"
+    },
+    "friendly": {
+      "label": "Träningsmatch",
+      "description": "Träningsmatch eller vänskapsmatch"
+    },
+    "cup": {
+      "label": "Cup",
+      "description": "Turnering eller cupmatch"
+    },
+    "tournament": {
+      "label": "Turnering",
+      "description": "Turneringsmatch eller slutspel"
+    },
+    "internal": {
+      "label": "Internmatch",
+      "description": "Intern träningsmatch"
+    }
+  },
+  "venueTypes": {
+    "home": {
+      "label": "Hemma",
+      "description": "Matchen spelas på hemmaplan med bekanta omgivningar."
+    },
+    "away": {
+      "label": "Borta",
+      "description": "Matchen spelas på motståndarens arena."
+    },
+    "neutral": {
+      "label": "Neutral",
+      "description": "Matchen spelas på neutral plan för båda lagen."
+    }
+  },
+  "pendingMatch": {
+    "errors": {
+      "checkFailed": "Misslyckades med att kontrollera pågående matcher. Kontrollera din internetanslutning och försök igen.",
+      "title": "Misslyckades med att Kontrollera Pågående Matcher",
+      "retrying": "Försöker igen...",
+      "tryAgain": "Försök Igen"
+    }
+  },
+  "teamBanner": {
+    "label": "Lag: {{clubName}} {{teamName}}"
+  },
+  "cloudSync": {
+    "available": "Molnsynkronisering Tillgänglig",
+    "description": "Håll dina data säkra på alla enheter",
+    "featureDescription": "Spara ditt lag, konfigurationer och matchdata. Kom åt dina data från vilken enhet som helst och lås upp säsongsstatistik."
+  },
+  "dataMigration": {
+    "title": "Migrera Lokal Data",
+    "description": "Vi hittade matchhistorik sparad lokalt. Vill du synkronisera den till ditt molnkonto?",
+    "migrating": "Migrerar...",
+    "migratingFull": "Migrerar lokal data till molnet...",
+    "migrateButton": "Migrera Data",
+    "laterButton": "Senare",
+    "failed": "Migrering misslyckades",
+    "failedWithError": "Migrering misslyckades: {{error}}"
+  },
+  "saveConfig": {
+    "saving": "Sparar konfiguration...",
+    "savedSuccess": "{{message}}",
+    "savedSuccessDefault": "Konfiguration sparad",
+    "errors": {
+      "failed": "Misslyckades med att spara konfiguration",
+      "failedWithMessage": "Misslyckades med att spara konfiguration: {{error}}",
+      "noMatchId": "Inget match-ID returnerades från sparoperationen"
+    }
+  },
+  "positionRecommendations": {
+    "title": "Rekommenderade Startpositioner",
+    "timeframe": "Senaste 6 månaderna",
+    "loading": "Beräknar positionsrekommendationer...",
+    "error": "Kan inte beräkna positionsrekommendationer.",
+    "description": "Rättvisa positionstilldelningar baserat på senaste rollfördelning.",
+    "noRecommendations": "Inga positionsrekommendationer tillgängliga.",
+    "unknown": "Okänd",
+    "dismiss": "Avfärda",
+    "acceptAll": "Acceptera Alla",
+    "reasons": {
+      "noMatchHistory": "Ingen matchhistorik",
+      "roleTimePercentage": "{{percentage}}% {{role}}-tid"
+    }
+  },
+  "formationVoting": {
+    "description": "Endast 2-2 och 1-2-1 formationerna är för närvarande implementerade. Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare per formation räknas.",
+    "errors": {
+      "loginRequired": "Du måste vara inloggad för att rösta på formationer",
+      "submitFailed": "Misslyckades skicka röst. Försök igen.",
+      "voteSubmissionFailed": "Misslyckades registrera röst"
+    },
+    "messages": {
+      "duplicateVote": "Du har redan röstat på {{formation}}-formationen i {{format}}-format.",
+      "voteRecorded": "Din röst för {{formation}}-formationen har registrerats!"
+    }
+  },
+  "formationPreview": {
+    "formations": {
+      "2-2": {
+        "name": "2-2 Formation",
+        "description": "2 backar, 2 forwards"
+      },
+      "1-2-1": {
+        "name": "1-2-1 Formation",
+        "description": "1 back, 2 mittfält, 1 forward"
+      },
+      "2-2-2": {
+        "name": "2-2-2 Formation",
+        "description": "2 backar, 2 mittfält, 2 forwards"
+      },
+      "2-3-1": {
+        "name": "2-3-1 Formation",
+        "description": "2 backar, 3 mittfält, 1 forward"
+      }
+    },
+    "positions": {
+      "leftAttacker": "Vänsterforward",
+      "rightAttacker": "Högerforward",
+      "attacker": "Forward",
+      "leftDefender": "Vänsterback",
+      "rightDefender": "Högerback",
+      "defender": "Back",
+      "leftMid": "Vänster Mitt",
+      "rightMid": "Höger Mitt",
+      "leftMidfielder": "Vänster Mittfält",
+      "rightMidfielder": "Höger Mittfält",
+      "centerMidfielder": "Mittfält Center",
+      "goalie": "Målvakt"
+    },
+    "roles": {
+      "defenders": "Backar",
+      "defender": "Back",
+      "attackers": "Forwards",
+      "attacker": "Forward",
+      "midfielders": "Mittfält"
+    }
+  },
+  "periodSetup": {
+    "header": {
+      "title": "Period {{period}} Laguppställning"
+    },
+    "score": {
+      "title": "Nuvarande Ställning",
+      "opponent": "Motståndare"
+    },
+    "substituteRecommendations": {
+      "title": "Rekommenderade Avbytare",
+      "timeframe": "Senaste 6 månaderna",
+      "loading": "Laddar rekommendationer för avbytare...",
+      "error": "Kan inte ladda rekommendationer för avbytare just nu.",
+      "description": "Spelare som sällan startat som avbytare nyligen. Överväg att ge dem en start som avbytare.",
+      "noEligible": "Inga avbytare att rekommendera.",
+      "dismiss": "Avfärda",
+      "accept": "Acceptera"
+    },
+    "goalie": {
+      "header": "Målvakt för Period {{period}}",
+      "headerInactive": "Målvakt för Period {{period}} (Inaktiv - behöver aktiveras)",
+      "placeholder": "Välj Målvakt för denna Period"
+    },
+    "saveStatus": {
+      "saving": "Sparar periodkonfiguration...",
+      "success": "✅ {{message}}",
+      "error": "❌ {{message}}",
+      "defaultSuccess": "Periodkonfiguration sparad",
+      "defaultError": "Misslyckades med att spara periodkonfiguration"
+    },
+    "buttons": {
+      "enterGame": "Starta Match",
+      "saveConfig": "Spara Konfiguration",
+      "saving": "Sparar...",
+      "backToConfig": "Tillbaka till Konfiguration",
+      "randomize": "🎲 Slumpa Formation (Debug)"
+    },
+    "modals": {
+      "inactiveGoalie": {
+        "title": "Inaktiv Målvakt Upptäckt",
+        "message": "{{playerName}} är inaktiv men vald som målvakt för nästa period. Vill du fortsätta med {{playerName}} som målvakt?",
+        "confirm": "Aktivera & Fortsätt",
+        "cancel": "Välj Annan Målvakt"
+      },
+      "recommendationRerun": {
+        "title": "Kör Om Formationsrekommendationer?",
+        "message": "Du har bytt målvakt från {{formerGoalie}} till {{newGoalie}}. Vill du köra om formationsrekommendationerna med den nya målvakten?",
+        "confirm": "Ja, Kör Om Rekommendationer",
+        "cancel": "Nej, Behåll Nuvarande Formation"
+      },
+      "activatePlayer": {
+        "title": "Aktivera Spelare",
+        "message": "Sätt tillbaka {{playerName}} i rotation?",
+        "confirm": "Aktivera",
+        "cancel": "Avbryt"
+      }
+    },
+    "alerts": {
+      "selectGoalieFirst": "Välj en målvakt först innan du slumpar formationen.",
+      "noPlayersAvailable": "Inga spelare tillgängliga för positionering.",
+      "randomizeFailed": "Misslyckades med att generera slumpmässig formation.",
+      "alreadyAssigned": "{{playerName}} är redan tilldelad. Välj en annan spelare."
+    },
+    "fallbacks": {
+      "substituteTitle": "Avbytare",
+      "unknownPlayer": "Okänd",
+      "selectPosition": "Välj {{title}}"
+    },
+    "positions": {
+      "goalie": "Målvakt",
+      "leftDefender": "Vänster Back",
+      "rightDefender": "Höger Back",
+      "leftAttacker": "Vänster Forward",
+      "rightAttacker": "Höger Forward",
+      "defender": "Back",
+      "left": "Vänster Mittfält",
+      "right": "Höger Mittfält",
+      "attacker": "Forward",
+      "leftMidfielder": "Vänster Mittfältare",
+      "rightMidfielder": "Höger Mittfältare",
+      "centerMidfielder": "Centralt Mittfält",
+      "substitute": "Avbytare"
+    }
+  }
+}

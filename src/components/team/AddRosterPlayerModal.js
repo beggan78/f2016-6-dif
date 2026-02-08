@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
 import { UserPlus, X } from 'lucide-react';
 
 export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailableJerseyNumbers }) {
+  const { t } = useTranslation('team');
   const [playerData, setPlayerData] = useState({
     first_name: '',
     last_name: '',
@@ -31,23 +33,23 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
     const newErrors = {};
 
     if (!playerData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = t('addRosterPlayerModal.validation.firstNameRequired');
     } else if (playerData.first_name.trim().length < 2) {
-      newErrors.first_name = 'First name must be at least 2 characters';
+      newErrors.first_name = t('addRosterPlayerModal.validation.firstNameMinLength');
     } else if (playerData.first_name.trim().length > 50) {
-      newErrors.first_name = 'First name must be at most 50 characters';
+      newErrors.first_name = t('addRosterPlayerModal.validation.firstNameMaxLength');
     }
 
     if (playerData.last_name && playerData.last_name.trim().length > 50) {
-      newErrors.last_name = 'Last name must be at most 50 characters';
+      newErrors.last_name = t('addRosterPlayerModal.validation.lastNameMaxLength');
     }
 
     if (!playerData.display_name.trim()) {
-      newErrors.display_name = 'Display name is required';
+      newErrors.display_name = t('addRosterPlayerModal.validation.displayNameRequired');
     } else if (playerData.display_name.trim().length < 2) {
-      newErrors.display_name = 'Display name must be at least 2 characters';
+      newErrors.display_name = t('addRosterPlayerModal.validation.displayNameMinLength');
     } else if (playerData.display_name.trim().length > 50) {
-      newErrors.display_name = 'Display name must be at most 50 characters';
+      newErrors.display_name = t('addRosterPlayerModal.validation.displayNameMaxLength');
     }
 
     if (playerData.jersey_number && (
@@ -55,7 +57,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
       playerData.jersey_number > 100 ||
       !availableNumbers.includes(parseInt(playerData.jersey_number))
     )) {
-      newErrors.jersey_number = 'Please select a valid jersey number';
+      newErrors.jersey_number = t('addRosterPlayerModal.validation.jerseyNumberInvalid');
     }
 
     setErrors(newErrors);
@@ -89,7 +91,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
       setErrors({});
 
       // Show success message briefly
-      setSuccessMessage(`${playerData.display_name.trim()} added successfully!`);
+      setSuccessMessage(t('addRosterPlayerModal.success.playerAdded', { playerName: playerData.display_name.trim() }));
       setTimeout(() => setSuccessMessage(''), 2000);
 
       // Refresh available jersey numbers
@@ -106,7 +108,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
 
     } catch (error) {
       console.error('Error adding player:', error);
-      setErrors({ general: error.message || 'Failed to add player' });
+      setErrors({ general: error.message || t('addRosterPlayerModal.validation.failedToAdd') });
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
 
   // Jersey number options
   const jerseyOptions = [
-    { value: '', label: 'No jersey number' },
+    { value: '', label: t('addRosterPlayerModal.jerseyNumber.noNumber') },
     ...availableNumbers.map(num => ({
       value: num.toString(),
       label: `#${num}`
@@ -147,8 +149,8 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               <UserPlus className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Add Player</h2>
-              <p className="text-sm text-slate-400">Add a new player to {team.name}</p>
+              <h2 className="text-lg font-semibold text-slate-100">{t('addRosterPlayerModal.header.title')}</h2>
+              <p className="text-sm text-slate-400">{t('addRosterPlayerModal.header.subtitle', { teamName: team.name })}</p>
             </div>
           </div>
           <button
@@ -177,14 +179,14 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
           {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              First Name *
+              {t('addRosterPlayerModal.form.labels.firstName')}
             </label>
             <Input
               name="first_name"
               value={playerData.first_name}
               onChange={(e) => handleInputChange('first_name', e.target.value)}
               onBlur={handleFirstNameBlur}
-              placeholder="Enter first name"
+              placeholder={t('addRosterPlayerModal.form.placeholders.firstName')}
               disabled={loading}
               className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -196,13 +198,13 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
           {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Last Name
+              {t('addRosterPlayerModal.form.labels.lastName')}
             </label>
             <Input
               name="last_name"
               value={playerData.last_name}
               onChange={(e) => handleInputChange('last_name', e.target.value)}
-              placeholder="Enter last name (optional)"
+              placeholder={t('addRosterPlayerModal.form.placeholders.lastName')}
               disabled={loading}
               className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -214,13 +216,13 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
           {/* Display Name */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Display Name *
+              {t('addRosterPlayerModal.form.labels.displayName')}
             </label>
             <Input
               name="display_name"
               value={playerData.display_name}
               onChange={(e) => handleInputChange('display_name', e.target.value)}
-              placeholder="Enter display name"
+              placeholder={t('addRosterPlayerModal.form.placeholders.displayName')}
               disabled={loading}
               className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -228,14 +230,14 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               <p className="mt-1 text-sm text-rose-400">{errors.display_name}</p>
             )}
             <p className="mt-1 text-xs text-slate-400">
-              This is the name displayed in the app (auto-fills from first name)
+              {t('addRosterPlayerModal.form.helperText.displayName')}
             </p>
           </div>
 
           {/* Jersey Number */}
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Jersey Number
+              {t('addRosterPlayerModal.form.labels.jerseyNumber')}
             </label>
             <Select
               value={playerData.jersey_number}
@@ -249,7 +251,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
             )}
             {availableNumbers.length === 0 && (
               <p className="mt-1 text-sm text-amber-400">
-                All jersey numbers (1-100) are taken
+                {t('addRosterPlayerModal.jerseyNumber.allTaken')}
               </p>
             )}
           </div>
@@ -263,7 +265,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               disabled={loading}
               className="flex-1"
             >
-              {loading ? 'Adding...' : 'Add Player'}
+              {loading ? t('addRosterPlayerModal.buttons.adding') : t('addRosterPlayerModal.buttons.addPlayer')}
             </Button>
             <Button
               type="button"
@@ -271,7 +273,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              {t('addRosterPlayerModal.buttons.cancel')}
             </Button>
           </div>
         </form>

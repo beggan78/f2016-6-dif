@@ -1,10 +1,11 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 
 /**
  * ReportNavigation - Navigation controls for the match report header
- * 
+ *
  * @param {Object} props - Component props
  * @param {Function} props.onNavigateBack - Callback for general back navigation
  * @param {string} props.className - Optional additional CSS classes
@@ -13,6 +14,8 @@ export function ReportNavigation({
   onNavigateBack,
   className = ""
 }) {
+  const { t } = useTranslation('navigation');
+
   // Don't render if no navigation callback is provided
   if (!onNavigateBack) {
     return null;
@@ -27,7 +30,7 @@ export function ReportNavigation({
         size="sm"
         data-testid="button-back"
       >
-        Back
+        {t('back')}
       </Button>
     </div>
   );

@@ -13,6 +13,7 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { EVENT_TYPES, calculateMatchTime } from '../../utils/gameEventLogger';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -111,6 +112,8 @@ export function GameEventTimeline({
   onPlayerFilterChange,
   debugMode = false
 }) {
+  const { t } = useTranslation('reports');
+
   // Load sort preference using PersistenceManager, default to 'asc' (oldest first)
   const [sortOrder, setSortOrder] = useState(() => {
     const preferences = timelinePrefsManager.loadState();
@@ -370,7 +373,7 @@ export function GameEventTimeline({
   };
 
   const formatPositionLabel = (positionKey) => {
-    if (!positionKey || typeof positionKey !== 'string') return 'Unknown position';
+    if (!positionKey || typeof positionKey !== 'string') return t('events.unknownPosition');
     return positionKey
       .replace(/_/g, ' ')
       .replace(/([A-Z])/g, ' $1')
@@ -386,15 +389,15 @@ export function GameEventTimeline({
     
     switch (type) {
       case EVENT_TYPES.MATCH_START:
-        return `Match started`;
+        return t('events.matchStarted');
       case EVENT_TYPES.MATCH_END:
-        return `Match ended`;
+        return t('events.matchEnded');
       case EVENT_TYPES.PERIOD_START:
-        const periodStartNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || 'Unknown';
-        return `Period ${periodStartNumber} started`;
+        const periodStartNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || t('events.unknown');
+        return t('events.periodStarted', { period: periodStartNumber });
       case EVENT_TYPES.PERIOD_END:
-        const periodEndNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || 'Unknown';
-        return `Period ${periodEndNumber} ended`;
+        const periodEndNumber = eventData.periodNumber || event.periodNumber || eventData.period || event.period || t('events.unknown');
+        return t('events.periodEnded', { period: periodEndNumber });
       case EVENT_TYPES.GOAL_SCORED:
         // Extract score data for new format: "3-2 - Own Team Scored - PlayerName"
         const ownScore = eventData.ownScore;
@@ -402,48 +405,51 @@ export function GameEventTimeline({
         const ownScorer = goalScorers[event.id]
           ? (getPlayerName ? (getPlayerName(goalScorers[event.id]) || null) : null)
           : (eventData.scorerId ? (getPlayerName ? (getPlayerName(eventData.scorerId) || null) : null) : null);
-        
+
         // Format with score and team, optionally include scorer
         if (ownScore !== undefined && opponentScore !== undefined) {
-          const baseFormat = `${ownScore}-${opponentScore} ${ownTeamName} Scored`;
+          const baseFormat = t('events.goalScoredWithScore', { ownScore, opponentScore, team: ownTeamName });
           return ownScorer ? `${baseFormat} - ${ownScorer}` : baseFormat;
         } else {
           // Fallback to old format if score data missing
-          const fallbackScorer = ownScorer || 'Unknown scorer';
-          return `Goal for ${ownTeamName} - ${fallbackScorer}`;
+          const fallbackScorer = ownScorer || t('events.unknownScorer');
+          return t('events.goalFor', { team: ownTeamName, scorer: fallbackScorer });
         }
-        
+
       case EVENT_TYPES.GOAL_CONCEDED:
         // Extract score data for new format: "4-2 - Eagles United Scored" (no scorer)
         const awayOwnScore = eventData.ownScore;
         const awayOpponentScore = eventData.opponentScore;
-        
+
         // Format with score and team only (no scorer for away team)
         if (awayOwnScore !== undefined && awayOpponentScore !== undefined) {
-          return `${awayOwnScore}-${awayOpponentScore} ${opponentTeam} Scored`;
+          return t('events.goalScoredWithScore', { ownScore: awayOwnScore, opponentScore: awayOpponentScore, team: opponentTeam });
         } else {
           // Fallback to old format if score data missing
-          return `Goal for ${opponentTeam}`;
+          return t('events.goalForTeam', { team: opponentTeam });
         }
       case EVENT_TYPES.SUBSTITUTION:
         const playersOffArray = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);
         const playersOnArray = eventData.playersOn || (eventData.inPlayerId ? [eventData.inPlayerId] : []);
-        
+
         // Get player names for all players going off
-        const playersOffNames = playersOffArray.map(playerId => 
-          playerId ? (getPlayerName ? (getPlayerName(playerId) || 'Unknown') : 'Unknown') : 'Unknown'
-        ).filter(name => name !== 'Unknown');
-        
+        const unknownLabel = t('events.unknown');
+        const playersOffNames = playersOffArray.map(playerId =>
+          playerId ? (getPlayerName ? (getPlayerName(playerId) || unknownLabel) : unknownLabel) : unknownLabel
+        ).filter(name => name !== unknownLabel);
+
         // Get player names for all players coming on
-        const playersOnNames = playersOnArray.map(playerId => 
-          playerId ? (getPlayerName ? (getPlayerName(playerId) || 'Unknown') : 'Unknown') : 'Unknown'
-        ).filter(name => name !== 'Unknown');
-        
+        const playersOnNames = playersOnArray.map(playerId =>
+          playerId ? (getPlayerName ? (getPlayerName(playerId) || unknownLabel) : unknownLabel) : unknownLabel
+        ).filter(name => name !== unknownLabel);
+
         // Create display strings with text indicators for direction
-        const offPlayersDisplay = playersOffNames.length > 0 ? playersOffNames.join(' & ') + ' (Out)' : 'Unknown (Out)';
-        const onPlayersDisplay = playersOnNames.length > 0 ? playersOnNames.join(' & ') + ' (In)' : 'Unknown (In)';
-        
-        return `Substitution: ${offPlayersDisplay} → ${onPlayersDisplay}`;
+        const outLabel = t('events.out');
+        const inLabel = t('events.in');
+        const offPlayersDisplay = playersOffNames.length > 0 ? playersOffNames.join(' & ') + ` (${outLabel})` : `${unknownLabel} (${outLabel})`;
+        const onPlayersDisplay = playersOnNames.length > 0 ? playersOnNames.join(' & ') + ` (${inLabel})` : `${unknownLabel} (${inLabel})`;
+
+        return `${t('events.substitution')}: ${offPlayersDisplay} → ${onPlayersDisplay}`;
       case EVENT_TYPES.GOALIE_SWITCH:
         const goaliePositionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
         const oldGoalieChange = goaliePositionChanges.find(change => (change.oldPosition || '').toLowerCase() === 'goalie');
@@ -471,25 +477,25 @@ export function GameEventTimeline({
         const parts = [];
 
         if (newGoalieName || newGoaliePreviousPosition || newGoalieChange) {
-          const previousRole = newGoaliePreviousPosition ? ` (from ${formatPositionLabel(newGoaliePreviousPosition)})` : '';
-          parts.push(`New goalie: ${newGoalieName || 'Unknown'}${previousRole}`);
+          const previousRole = newGoaliePreviousPosition ? ` (${t('events.from')} ${formatPositionLabel(newGoaliePreviousPosition)})` : '';
+          parts.push(`${t('events.newGoalie')}: ${newGoalieName || t('events.unknown')}${previousRole}`);
         }
 
         if (oldGoalieName || oldGoalieNewPosition || oldGoalieChange) {
           const destination = oldGoalieNewPosition
             ? ` → ${formatPositionLabel(oldGoalieNewPosition)}`
-            : ' leaves goal';
-          parts.push(`Old goalie: ${oldGoalieName || 'Unknown'}${destination}`);
+            : ` ${t('events.leavesGoal')}`;
+          parts.push(`${t('events.oldGoalie')}: ${oldGoalieName || t('events.unknown')}${destination}`);
         }
 
         if (otherPositionChanges.length > 0) {
           const summary = otherPositionChanges.map(change => {
-            const name = resolveChangeName(change) || 'Unknown';
+            const name = resolveChangeName(change) || t('events.unknown');
             const oldPos = formatPositionLabel(change.oldPosition);
             const newPos = formatPositionLabel(change.newPosition);
             return `${name} (${oldPos} → ${newPos})`;
           }).join(' | ');
-          parts.push(`Other switches: ${summary}`);
+          parts.push(`${t('events.otherSwitches')}: ${summary}`);
         }
 
         if (parts.length > 0) {
@@ -500,7 +506,7 @@ export function GameEventTimeline({
           const summary = goaliePositionChanges.map(change => {
             const name =
               resolveChangeName(change) ||
-              'Unknown';
+              t('events.unknown');
             const oldPos = formatPositionLabel(change.oldPosition);
             const newPos = formatPositionLabel(change.newPosition);
             return `${name} (${oldPos} → ${newPos})`;
@@ -508,9 +514,9 @@ export function GameEventTimeline({
           return summary;
         }
 
-        const oldGoalie = oldGoalieName || 'Unknown';
-        const newGoalie = newGoalieName || 'Unknown';
-        return `New goalie: ${newGoalie} | Old goalie: ${oldGoalie}`;
+        const oldGoalie = oldGoalieName || t('events.unknown');
+        const newGoalie = newGoalieName || t('events.unknown');
+        return `${t('events.newGoalie')}: ${newGoalie} | ${t('events.oldGoalie')}: ${oldGoalie}`;
       case EVENT_TYPES.GOALIE_ASSIGNMENT:
         const goalieId = eventData.goalieId || event.playerId;
         const goalieNameFromId = goalieId ? (getPlayerName ? (getPlayerName(goalieId) || null) : null) : null;
@@ -519,9 +525,9 @@ export function GameEventTimeline({
           return eventData.description;
         }
         if (assignedGoalieName) {
-          return `${assignedGoalieName} is goalie`;
+          return t('events.playerIsGoalie', { name: assignedGoalieName });
         }
-        return 'Goalie assigned';
+        return t('events.goalieAssigned');
       case EVENT_TYPES.POSITION_CHANGE:
         const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
         if (positionChanges.length > 0) {
@@ -529,16 +535,16 @@ export function GameEventTimeline({
             const name =
               change.playerName ||
               (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
-              'Unknown';
+              t('events.unknown');
             const newPos = formatPositionLabel(change.newPosition);
             return `${name} → ${newPos}`;
           }).join(' | ');
-          return `Position switch: ${summary}`;
+          return `${t('events.positionSwitch')}: ${summary}`;
         }
         if (eventData.player1Id && eventData.player2Id) {
-          const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || 'Unknown') : 'Unknown') : 'Unknown';
-          const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || 'Unknown') : 'Unknown') : 'Unknown';
-          return `Position switch: ${player1} ↔ ${player2}`;
+          const player1 = eventData.player1Id ? (getPlayerName ? (getPlayerName(eventData.player1Id) || t('events.unknown')) : t('events.unknown')) : t('events.unknown');
+          const player2 = eventData.player2Id ? (getPlayerName ? (getPlayerName(eventData.player2Id) || t('events.unknown')) : t('events.unknown')) : t('events.unknown');
+          return `${t('events.positionSwitch')}: ${player1} ↔ ${player2}`;
         }
 
         const positionChangeName =
@@ -546,56 +552,56 @@ export function GameEventTimeline({
           (eventData.player1Id && getPlayerName ? (getPlayerName(eventData.player1Id) || null) : null) ||
           (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
           eventData.playerName ||
-          'Unknown';
+          t('events.unknown');
 
         const oldPosition = eventData.old_position || eventData.oldPosition;
         const newPosition = eventData.new_position || eventData.newPosition;
 
         if (newPosition || oldPosition) {
-          const movement = oldPosition ? `${formatPositionLabel(oldPosition)} → ${formatPositionLabel(newPosition || 'Unknown')}` : `→ ${formatPositionLabel(newPosition || 'Unknown')}`;
-          return `Position change: ${positionChangeName} ${movement}`;
+          const movement = oldPosition ? `${formatPositionLabel(oldPosition)} → ${formatPositionLabel(newPosition || t('events.unknown'))}` : `→ ${formatPositionLabel(newPosition || t('events.unknown'))}`;
+          return `${t('events.positionChange')}: ${positionChangeName} ${movement}`;
         }
 
-        return `Position change: ${positionChangeName}`;
+        return `${t('events.positionChange')}: ${positionChangeName}`;
       case EVENT_TYPES.PLAYER_INACTIVATED:
         const inactivatedPlayerName =
           eventData.display_name ||
           eventData.playerName ||
           (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
-          'Unknown';
-        return `${inactivatedPlayerName} inactivated`;
+          t('events.unknown');
+        return t('events.playerInactivated', { name: inactivatedPlayerName });
       case EVENT_TYPES.PLAYER_ACTIVATED:
         const activatedPlayerName =
           eventData.display_name ||
           eventData.playerName ||
           (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
-          'Unknown';
-        return `${activatedPlayerName} re-activated`;
+          t('events.unknown');
+        return t('events.playerActivated', { name: activatedPlayerName });
       case EVENT_TYPES.FAIR_PLAY_AWARD:
         const fairPlayName =
           eventData.display_name ||
           eventData.playerName ||
           (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
-          'Unknown player';
-        return `Fair Play Award: ${fairPlayName}`;
+          t('events.unknownPlayer');
+        return `${t('events.fairPlayAward')}: ${fairPlayName}`;
       case EVENT_TYPES.TIMER_PAUSED:
-        return `Timer paused`;
+        return t('events.timerPaused');
       case EVENT_TYPES.TIMER_RESUMED:
-        return `Timer resumed`;
+        return t('events.timerResumed');
       case EVENT_TYPES.PERIOD_PAUSED:
-        return `Period paused`;
+        return t('events.periodPaused');
       case EVENT_TYPES.PERIOD_RESUMED:
-        return `Period resumed`;
+        return t('events.periodResumed');
       case EVENT_TYPES.INTERMISSION:
-        return `Intermission`;
+        return t('events.intermission');
       case EVENT_TYPES.GOAL_CORRECTED:
-        return `Goal corrected`;
+        return t('events.goalCorrected');
       case EVENT_TYPES.GOAL_UNDONE:
-        return `Goal undone`;
+        return t('events.goalUndone');
       case EVENT_TYPES.SUBSTITUTION_UNDONE:
-        return `Substitution undone`;
+        return t('events.substitutionUndone');
       case EVENT_TYPES.TECHNICAL_TIMEOUT:
-        return `Technical timeout`;
+        return t('events.technicalTimeout');
       default:
         return `${type.replace(/_/g, ' ')}`;
     }
@@ -667,7 +673,7 @@ export function GameEventTimeline({
                   </span>
                   {event.undone && (
                     <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded">
-                      UNDONE
+                      {t('events.undone')}
                     </span>
                   )}
                 </div>
@@ -678,7 +684,7 @@ export function GameEventTimeline({
                 </p>
                 {isClickable && (
                   <p className="text-xs text-slate-400 mt-1">
-                    Click to edit scorer
+                    {t('events.clickToEditScorer')}
                   </p>
                 )}
               </div>
@@ -726,7 +732,7 @@ export function GameEventTimeline({
           <div className="flex items-center space-x-3">
             <Clock className="h-5 w-5 text-slate-400" />
             <div className="text-center">
-              <p className="text-sm font-medium text-slate-300">Intermission</p>
+              <p className="text-sm font-medium text-slate-300">{t('events.intermission')}</p>
               <p className="text-xs text-slate-400 mt-1">
                 {minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`}
               </p>
@@ -744,11 +750,11 @@ export function GameEventTimeline({
     const details = [];
 
     if (event.periodNumber && event.type !== EVENT_TYPES.MATCH_END && event.type !== EVENT_TYPES.FAIR_PLAY_AWARD) {
-      details.push(`Period: ${event.periodNumber}`);
+      details.push(`${t('details.period')}: ${event.periodNumber}`);
     }
 
     if (eventData.ownScore !== undefined && eventData.opponentScore !== undefined) {
-      details.push(`Score: ${eventData.ownScore} - ${eventData.opponentScore}`);
+      details.push(`${t('details.score')}: ${eventData.ownScore} - ${eventData.opponentScore}`);
     }
 
     if (event.type === EVENT_TYPES.FAIR_PLAY_AWARD) {
@@ -758,29 +764,29 @@ export function GameEventTimeline({
         (event.playerId && getPlayerName ? (getPlayerName(event.playerId) || null) : null) ||
         null;
       if (recipientName) {
-        details.push(`Awarded to: ${recipientName}`);
+        details.push(`${t('details.awardedTo')}: ${recipientName}`);
       }
     }
 
     if (event.undone) {
-      details.push(`Undone: ${event.undoReason || 'user action'}`);
+      details.push(`${t('details.undone')}: ${event.undoReason || t('details.userAction')}`);
       if (event.undoTimestamp) {
-        details.push(`Undone at: ${calculateMatchTime(event.undoTimestamp, matchStartTime)}`);
+        details.push(`${t('details.undoneAt')}: ${calculateMatchTime(event.undoTimestamp, matchStartTime)}`);
       }
     }
 
     if (event.relatedEventId) {
-      details.push(`Related to: ${event.relatedEventId}`);
+      details.push(`${t('details.relatedTo')}: ${event.relatedEventId}`);
     }
 
     const positionChanges = Array.isArray(eventData.positionChanges) ? eventData.positionChanges : [];
     if (positionChanges.length > 0) {
-      details.push('Position changes:');
+      details.push(`${t('details.positionChanges')}:`);
       positionChanges.forEach(change => {
         const name =
           change.playerName ||
           (change.playerId && getPlayerName ? (getPlayerName(change.playerId) || null) : null) ||
-          'Unknown';
+          t('events.unknown');
         const oldPos = formatPositionLabel(change.oldPosition);
         const newPos = formatPositionLabel(change.newPosition);
         details.push(`- ${name}: ${oldPos} → ${newPos}`);
@@ -789,10 +795,10 @@ export function GameEventTimeline({
 
     const startingLineup = Array.isArray(eventData.startingLineup) ? eventData.startingLineup : [];
     if (startingLineup.length > 0) {
-      details.push('Starting positions:');
+      details.push(`${t('details.startingPositions')}:`);
       startingLineup.forEach((entry) => {
         const positionLabel = formatPositionLabel(entry.position);
-        const playerName = entry.name || 'Unknown';
+        const playerName = entry.name || t('events.unknown');
         details.push(`- ${positionLabel}: ${playerName}`);
       });
     }
@@ -815,7 +821,7 @@ export function GameEventTimeline({
     return (
       <div className="text-center py-8">
         <Clock className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-        <p className="text-slate-400">No events recorded</p>
+        <p className="text-slate-400">{t('timeline.noEvents')}</p>
       </div>
     );
   }
@@ -826,19 +832,19 @@ export function GameEventTimeline({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <span className="text-sm text-slate-400">
-            {filteredAndSortedEvents.length} events
+            {t('controls.eventCount', { count: filteredAndSortedEvents.length })}
           </span>
           
           {/* Player Filter Dropdown */}
           {availablePlayers.length > 0 && onPlayerFilterChange && (
             <div className="flex items-center space-x-2">
-              <label className="text-xs text-slate-400">Player:</label>
+              <label className="text-xs text-slate-400">{t('controls.player')}:</label>
               <select
                 value={selectedPlayerId || ''}
                 onChange={(e) => onPlayerFilterChange(e.target.value || null)}
                 className="text-xs bg-slate-700 border border-slate-600 rounded px-2 py-1 text-slate-300 hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500"
               >
-                <option value="">All Players</option>
+                <option value="">{t('controls.allPlayers')}</option>
                 {availablePlayers.map(player => (
                   <option key={player.id} value={player.id}>
                     {formatPlayerName(player)}
@@ -853,7 +859,7 @@ export function GameEventTimeline({
           onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
           className="flex items-center space-x-1 text-sm text-slate-400 hover:text-slate-300 transition-colors"
         >
-          <span>{sortOrder === 'desc' ? 'Newest first' : 'Oldest first'}</span>
+          <span>{sortOrder === 'desc' ? t('controls.newestFirst') : t('controls.oldestFirst')}</span>
           {sortOrder === 'desc' ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </button>
       </div>
@@ -880,7 +886,7 @@ export function GameEventTimeline({
               <div className="flex items-center space-x-2 mb-4">
                 <div className="h-px bg-slate-600 flex-1"></div>
                 <h3 className="text-sm font-medium text-slate-300 px-3">
-                  Period {periodNumber}
+                  {t('controls.periodLabel', { period: periodNumber })}
                 </h3>
                 <div className="h-px bg-slate-600 flex-1"></div>
               </div>

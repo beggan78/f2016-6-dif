@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Repeat, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, MultiSelect } from '../shared/UI';
 import { formatPlayerDisplayName } from '../../utils/playerUtils';
 
@@ -11,6 +12,7 @@ export function PlayerLoanModal({
   loan = null,
   defaultPlayerId = ''
 }) {
+  const { t } = useTranslation('team');
   const isEditMode = Boolean(loan);
 
   const [formState, setFormState] = useState({
@@ -63,15 +65,15 @@ export function PlayerLoanModal({
     const nextErrors = {};
 
     if (!formState.playerIds || formState.playerIds.length === 0) {
-      nextErrors.playerIds = 'Select at least one player';
+      nextErrors.playerIds = t('loanModal.validation.playersRequired');
     }
     if (!formState.receivingTeamName.trim()) {
-      nextErrors.receivingTeamName = 'Receiving team is required';
+      nextErrors.receivingTeamName = t('loanModal.validation.receivingTeamRequired');
     } else if (formState.receivingTeamName.trim().length > 200) {
-      nextErrors.receivingTeamName = 'Receiving team must be 200 characters or less';
+      nextErrors.receivingTeamName = t('loanModal.validation.receivingTeamMaxLength');
     }
     if (!formState.loanDate) {
-      nextErrors.loanDate = 'Loan date is required';
+      nextErrors.loanDate = t('loanModal.validation.loanDateRequired');
     }
 
     setErrors(nextErrors);
@@ -101,7 +103,7 @@ export function PlayerLoanModal({
     } catch (error) {
       console.error('Player loan save error:', error);
       setErrors({
-        general: error?.message || 'Failed to save loan record'
+        general: error?.message || t('loanModal.validation.saveFailed')
       });
     } finally {
       setLoading(false);
@@ -120,17 +122,17 @@ export function PlayerLoanModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-100">
-                {isEditMode ? 'Edit Loan' : 'Record Loan'}
+                {isEditMode ? t('loanModal.header.titleEdit') : t('loanModal.header.titleNew')}
               </h2>
               <p className="text-sm text-slate-400">
-                {isEditMode ? 'Update loan appearance details' : 'Track a player appearance for another team'}
+                {isEditMode ? t('loanModal.header.subtitleEdit') : t('loanModal.header.subtitleNew')}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            aria-label="Close"
+            aria-label={t('loanModal.header.closeLabel')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -145,13 +147,13 @@ export function PlayerLoanModal({
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Player(s)
+              {t('loanModal.form.labels.players')}
             </label>
             <MultiSelect
               value={formState.playerIds}
               onChange={(value) => handleChange('playerIds', value)}
               options={playerOptions}
-              placeholder="Select one or more players"
+              placeholder={t('loanModal.form.placeholders.players')}
               disabled={loading}
             />
             {errors.playerIds && (
@@ -161,12 +163,12 @@ export function PlayerLoanModal({
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Receiving Team
+              {t('loanModal.form.labels.receivingTeam')}
             </label>
             <Input
               value={formState.receivingTeamName}
               onChange={(e) => handleChange('receivingTeamName', e.target.value)}
-              placeholder="Enter receiving team name"
+              placeholder={t('loanModal.form.placeholders.receivingTeam')}
               disabled={loading}
               className={errors.receivingTeamName ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
@@ -177,7 +179,7 @@ export function PlayerLoanModal({
 
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              Loan Date
+              {t('loanModal.form.labels.loanDate')}
             </label>
             <Input
               type="date"
@@ -198,14 +200,14 @@ export function PlayerLoanModal({
               variant="secondary"
               disabled={loading}
             >
-              Cancel
+              {t('loanModal.buttons.cancel')}
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={loading}
             >
-              {loading ? 'Saving...' : isEditMode ? 'Save Changes' : 'Record Loan'}
+              {loading ? t('loanModal.buttons.saving') : isEditMode ? t('loanModal.buttons.saveChanges') : t('loanModal.buttons.recordLoan')}
             </Button>
           </div>
         </form>

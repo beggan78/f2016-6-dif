@@ -72,86 +72,146 @@ export const SYNC_JOB_TYPE = {
   VERIFICATION: 'verification'
 };
 
+// Get translated connector providers
+export function getConnectorProviders(t) {
+  return {
+    SPORTADMIN: {
+      ...CONNECTOR_PROVIDERS.SPORTADMIN,
+      description: t('connectors:providers.sportadmin.description'),
+      features: [
+        t('connectors:providers.sportadmin.features.practiceAttendance'),
+        t('connectors:providers.sportadmin.features.upcomingMatches')
+      ]
+    },
+    SVENSKA_LAG: {
+      ...CONNECTOR_PROVIDERS.SVENSKA_LAG,
+      description: t('connectors:providers.svenska_lag.description'),
+      features: [
+        t('connectors:providers.svenska_lag.features.comingSoon')
+      ]
+    },
+    MYCLUB: {
+      ...CONNECTOR_PROVIDERS.MYCLUB,
+      description: t('connectors:providers.myclub.description'),
+      features: [
+        t('connectors:providers.myclub.features.comingSoon')
+      ]
+    }
+  };
+}
+
 // Get status badge color and icon based on connector status
-export function getStatusBadgeStyle(status) {
+export function getStatusBadgeStyle(status, t) {
+  const labels = t ? {
+    connected: t('connectors:statusLabels.connected'),
+    verifying: t('connectors:statusLabels.verifying'),
+    error: t('connectors:statusLabels.error'),
+    disconnected: t('connectors:statusLabels.disconnected'),
+    unknown: t('connectors:statusLabels.unknown')
+  } : {
+    connected: 'Connected',
+    verifying: 'Verifying',
+    error: 'Error',
+    disconnected: 'Disconnected',
+    unknown: 'Unknown'
+  };
+
   switch (status) {
     case CONNECTOR_STATUS.CONNECTED:
       return {
         color: 'bg-emerald-600 text-emerald-100',
         icon: 'check-circle',
-        label: 'Connected'
+        label: labels.connected
       };
     case CONNECTOR_STATUS.VERIFYING:
       return {
         color: 'bg-yellow-600 text-yellow-100',
         icon: 'loader',
-        label: 'Verifying'
+        label: labels.verifying
       };
     case CONNECTOR_STATUS.ERROR:
       return {
         color: 'bg-rose-600 text-rose-100',
         icon: 'alert-circle',
-        label: 'Error'
+        label: labels.error
       };
     case CONNECTOR_STATUS.DISCONNECTED:
       return {
         color: 'bg-slate-600 text-slate-100',
         icon: 'circle',
-        label: 'Disconnected'
+        label: labels.disconnected
       };
     default:
       return {
         color: 'bg-slate-600 text-slate-100',
         icon: 'circle',
-        label: 'Unknown'
+        label: labels.unknown
       };
   }
 }
 
 // Get sync job status badge style
-export function getSyncJobStatusStyle(status) {
+export function getSyncJobStatusStyle(status, t) {
+  const labels = t ? {
+    completed: t('connectors:syncStatusLabels.completed'),
+    running: t('connectors:syncStatusLabels.running'),
+    waiting: t('connectors:syncStatusLabels.waiting'),
+    retrying: t('connectors:syncStatusLabels.retrying'),
+    failed: t('connectors:syncStatusLabels.failed'),
+    cancelled: t('connectors:syncStatusLabels.cancelled'),
+    unknown: t('connectors:syncStatusLabels.unknown')
+  } : {
+    completed: 'Completed',
+    running: 'Running',
+    waiting: 'Waiting',
+    retrying: 'Retrying',
+    failed: 'Failed',
+    cancelled: 'Cancelled',
+    unknown: 'Unknown'
+  };
+
   switch (status) {
     case SYNC_JOB_STATUS.COMPLETED:
       return {
         color: 'bg-emerald-600 text-emerald-100',
         icon: 'check-circle',
-        label: 'Completed'
+        label: labels.completed
       };
     case SYNC_JOB_STATUS.RUNNING:
       return {
         color: 'bg-sky-600 text-sky-100',
         icon: 'loader',
-        label: 'Running'
+        label: labels.running
       };
     case SYNC_JOB_STATUS.WAITING:
       return {
         color: 'bg-yellow-600 text-yellow-100',
         icon: 'clock',
-        label: 'Waiting'
+        label: labels.waiting
       };
     case SYNC_JOB_STATUS.RETRYING:
       return {
         color: 'bg-amber-600 text-amber-100',
         icon: 'refresh-cw',
-        label: 'Retrying'
+        label: labels.retrying
       };
     case SYNC_JOB_STATUS.FAILED:
       return {
         color: 'bg-rose-600 text-rose-100',
         icon: 'x-circle',
-        label: 'Failed'
+        label: labels.failed
       };
     case SYNC_JOB_STATUS.CANCELLED:
       return {
         color: 'bg-slate-600 text-slate-100',
         icon: 'x',
-        label: 'Cancelled'
+        label: labels.cancelled
       };
     default:
       return {
         color: 'bg-slate-600 text-slate-100',
         icon: 'circle',
-        label: 'Unknown'
+        label: labels.unknown
       };
   }
 }

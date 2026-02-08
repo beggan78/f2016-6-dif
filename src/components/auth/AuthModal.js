@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { PasswordReset } from './PasswordReset';
@@ -13,6 +14,7 @@ export const AUTH_MODES = {
 };
 
 export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, initialEmail = '' }) {
+  const { t } = useTranslation('auth');
   const [currentMode, setCurrentMode] = useState(initialMode);
   const [emailContext, setEmailContext] = useState(initialEmail); // Email to carry between modes
   const [verificationEmail, setVerificationEmail] = useState(''); // Email for verification mode
@@ -136,15 +138,15 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
         {/* Modal Header with Close Button */}
         <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center">
           <div className="text-lg font-semibold text-sky-300">
-            {currentMode === AUTH_MODES.LOGIN && 'Sign In'}
-            {currentMode === AUTH_MODES.SIGNUP && 'Create Account'}
-            {currentMode === AUTH_MODES.RESET && 'Reset Password'}
-            {currentMode === AUTH_MODES.VERIFY && 'Verify Email'}
+            {currentMode === AUTH_MODES.LOGIN && t('authModal.titles.login')}
+            {currentMode === AUTH_MODES.SIGNUP && t('authModal.titles.signup')}
+            {currentMode === AUTH_MODES.RESET && t('authModal.titles.reset')}
+            {currentMode === AUTH_MODES.VERIFY && t('authModal.titles.verify')}
           </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label="Close modal"
+            aria-label={t('authModal.closeModal')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

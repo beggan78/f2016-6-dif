@@ -1,0 +1,1034 @@
+{
+  "management": {
+    "title": "Laghantering",
+    "tabs": {
+      "overview": "Översikt",
+      "roster": "Trupp",
+      "loans": "Lån",
+      "access": "Åtkomsthantering",
+      "connectors": "Kopplingar",
+      "preferences": "Inställningar"
+    }
+  },
+  "roster": {
+    "title": "Laglista",
+    "addPlayer": "Lägg Till Spelare",
+    "editPlayer": "Redigera Spelare",
+    "deletePlayer": "Ta Bort Spelare",
+    "noPlayers": "Inga spelare i truppen",
+    "addPlayersToStart": "Lägg till spelare för att komma igång"
+  },
+  "player": {
+    "name": "Namn",
+    "number": "Nummer",
+    "position": "Föredragen Position",
+    "status": "Status",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "temporary": "Tillfällig"
+  },
+  "addPlayer": {
+    "title": "Lägg Till Spelare",
+    "addToTeam": "Lägg Till Spelare i Laget",
+    "addTemporary": "Lägg Till Tillfällig Spelare",
+    "cancel": "Avbryt"
+  },
+  "editPlayer": {
+    "title": "Redigera Spelare",
+    "save": "Spara Ändringar",
+    "cancel": "Avbryt"
+  },
+  "deletePlayer": {
+    "title": "Ta Bort Spelare",
+    "confirm": "Är du säker på att du vill ta bort {{playerName}} från laget?",
+    "delete": "Ta Bort",
+    "cancel": "Avbryt"
+  },
+  "loans": {
+    "title": "Spelarlån",
+    "loanDate": "Lånedatum",
+    "receivingTeam": "Mottagande Lag",
+    "players": "Spelare",
+    "noLoans": "Inga aktiva lån",
+    "addLoan": "Lägg Till Lån"
+  },
+  "access": {
+    "title": "Lagåtkomst",
+    "role": "Roll",
+    "admin": "Administratör",
+    "coach": "Tränare",
+    "viewer": "Åskådare",
+    "invite": "Bjud In Medlem",
+    "remove": "Ta Bort"
+  },
+  "invite": {
+    "title": "Bjud In Lagmedlem",
+    "email": "E-postadress",
+    "role": "Roll",
+    "send": "Skicka Inbjudan",
+    "cancel": "Avbryt"
+  },
+  "creation": {
+    "title": "Skapa Lag",
+    "teamName": "Lagnamn",
+    "clubName": "Klubbnamn",
+    "ageGroup": "Åldersgrupp",
+    "create": "Skapa Lag",
+    "cancel": "Avbryt"
+  },
+  "selector": {
+    "title": "Välj Lag",
+    "noTeams": "Inga lag tillgängliga",
+    "createTeam": "Skapa Lag"
+  },
+  "addRosterPlayerModal": {
+    "header": {
+      "title": "Lägg Till Spelare",
+      "subtitle": "Lägg till ny spelare i {{teamName}}"
+    },
+    "form": {
+      "labels": {
+        "firstName": "Förnamn *",
+        "lastName": "Efternamn",
+        "displayName": "Visningsnamn *",
+        "jerseyNumber": "Tröjnummer"
+      },
+      "placeholders": {
+        "firstName": "Ange förnamn",
+        "lastName": "Ange efternamn (valfritt)",
+        "displayName": "Ange visningsnamn"
+      },
+      "helperText": {
+        "displayName": "Detta är namnet som visas i appen (fylls i automatiskt från förnamn)"
+      }
+    },
+    "validation": {
+      "firstNameRequired": "Förnamn krävs",
+      "firstNameMinLength": "Förnamn måste vara minst 2 tecken",
+      "firstNameMaxLength": "Förnamn får vara högst 50 tecken",
+      "lastNameMaxLength": "Efternamn får vara högst 50 tecken",
+      "displayNameRequired": "Visningsnamn krävs",
+      "displayNameMinLength": "Visningsnamn måste vara minst 2 tecken",
+      "displayNameMaxLength": "Visningsnamn får vara högst 50 tecken",
+      "jerseyNumberInvalid": "Välj ett giltigt tröjnummer",
+      "failedToAdd": "Misslyckades lägga till spelare"
+    },
+    "jerseyNumber": {
+      "noNumber": "Inget tröjnummer",
+      "allTaken": "Alla tröjnummer (1-100) är upptagna"
+    },
+    "buttons": {
+      "addPlayer": "Lägg Till Spelare",
+      "adding": "Lägger till...",
+      "cancel": "Avbryt"
+    },
+    "success": {
+      "playerAdded": "{{playerName}} tillagd!"
+    }
+  },
+  "editRosterPlayerModal": {
+    "header": {
+      "title": "Redigera Spelare",
+      "subtitle": "Uppdatera {{playerName}}s information"
+    },
+    "form": {
+      "labels": {
+        "firstName": "Förnamn *",
+        "lastName": "Efternamn",
+        "displayName": "Visningsnamn *",
+        "jerseyNumber": "Tröjnummer",
+        "onRoster": "Aktiv i truppen"
+      },
+      "placeholders": {
+        "firstName": "Ange förnamn",
+        "lastName": "Ange efternamn (valfritt)",
+        "displayName": "Ange visningsnamn"
+      },
+      "helperText": {
+        "displayName": "Detta är namnet som visas i appen"
+      }
+    },
+    "validation": {
+      "firstNameRequired": "Förnamn krävs",
+      "firstNameMinLength": "Förnamn måste vara minst 2 tecken",
+      "firstNameMaxLength": "Förnamn får vara högst 50 tecken",
+      "lastNameMaxLength": "Efternamn får vara högst 50 tecken",
+      "displayNameRequired": "Visningsnamn krävs",
+      "displayNameMinLength": "Visningsnamn måste vara minst 2 tecken",
+      "displayNameMaxLength": "Visningsnamn får vara högst 50 tecken",
+      "jerseyNumberRange": "Tröjnummer måste vara mellan 1 och 99",
+      "jerseyNumberTaken": "Detta tröjnummer är redan upptaget",
+      "failedToUpdate": "Misslyckades uppdatera spelare"
+    },
+    "jerseyNumber": {
+      "noNumber": "Inget tröjnummer",
+      "currentLabel": "#{{number}} (nuvarande)",
+      "allTaken": "Alla tröjnummer (1-99) är upptagna"
+    },
+    "playerInfo": {
+      "header": "Spelarinformation",
+      "created": "Skapad:",
+      "lastUpdated": "Senast Uppdaterad:",
+      "unknown": "Okänd"
+    },
+    "buttons": {
+      "updatePlayer": "Uppdatera Spelare",
+      "updating": "Uppdaterar...",
+      "cancel": "Avbryt"
+    }
+  },
+  "wizard": {
+    "clubSelection": {
+      "title": "Välj Din Klubb",
+      "description": "Sök efter din klubb eller skapa en ny",
+      "placeholder": "Skriv klubbnamn...",
+      "cancel": "Avbryt"
+    },
+    "clubCreation": {
+      "title": "Skapa Ny Klubb",
+      "description": "Ange klubbinformation",
+      "fullNameLabel": "Fullständigt Klubbnamn *",
+      "fullNamePlaceholder": "t.ex., Djurgårdens IF Fotboll",
+      "displayNameLabel": "Visningsnamn *",
+      "displayNamePlaceholder": "Ange klubbnamn",
+      "shortNameLabel": "Kortnamn (valfritt)",
+      "shortNamePlaceholder": "t.ex., DIF",
+      "shortNameHelper": "Används för förkortningar och snabb identifiering",
+      "creating": "Skapar...",
+      "createButton": "Skapa Klubb"
+    },
+    "teamSelection": {
+      "title": "Välj Lag",
+      "description": "Välj ett befintligt lag eller skapa ett nytt för <strong>{{clubName}}</strong>",
+      "existingTeamsHeader": "Befintliga Lag",
+      "createButton": "Skapa Nytt Lag"
+    },
+    "teamCreation": {
+      "title": "Skapa Nytt Lag",
+      "description": "Ställ in ditt lag för <strong>{{clubName}}</strong>",
+      "teamNameLabel": "Lagnamn *",
+      "teamNamePlaceholder": "Ange lagnamn",
+      "teamNameHelper": "t.ex., \"F16-6\", \"P16\", \"Juniorlag\"",
+      "creating": "Skapar...",
+      "createButton": "Skapa Lag"
+    },
+    "playerCreation": {
+      "title": "Lägg Till Spelare",
+      "description": "Lägg till spelare i <strong>{{teamName}}</strong>",
+      "playerNamePlaceholder": "Spelarens visningsnamn",
+      "addButton": "Lägg Till",
+      "addedPlayersHeader": "Tillagda Spelare ({{count}})",
+      "laterNote": "Du kan lägga till fler spelare senare från laghanteringen.",
+      "completeButton": "Slutför Konfiguration"
+    },
+    "complete": {
+      "title": "Lagkonfiguration Klar!",
+      "description": "Ditt lag <strong>{{teamName}}</strong> har skapats."
+    },
+    "validation": {
+      "clubNameRequired": "Klubbnamn krävs",
+      "teamNameRequired": "Lagnamn krävs",
+      "playerNameRequired": "Spelarnamn krävs"
+    }
+  },
+  "inviteModal": {
+    "header": {
+      "title": "Bjud In Lagmedlem",
+      "closeLabel": "Stäng",
+      "teamFallback": "Lag"
+    },
+    "form": {
+      "labels": {
+        "email": "E-postadress",
+        "role": "Lagroll",
+        "message": "Personligt Meddelande"
+      },
+      "placeholders": {
+        "email": "Ange e-postadress",
+        "message": "Lägg till ett personligt meddelande till inbjudan..."
+      },
+      "hints": {
+        "role": "Välj lämplig roll för denna lagmedlem",
+        "messageOptional": "(valfritt)",
+        "characterCount": "{{count}}/500 tecken"
+      },
+      "roles": {
+        "coach": "Tränare",
+        "parent": "Förälder",
+        "player": "Spelare",
+        "admin": "Administratör"
+      }
+    },
+    "buttons": {
+      "send": "Skicka Inbjudan",
+      "sending": "Skickar Inbjudan...",
+      "refresh": "Förnya",
+      "delete": "Ta Bort"
+    },
+    "validation": {
+      "emailRequired": "E-postadress krävs",
+      "emailInvalid": "Ange en giltig e-postadress",
+      "roleRequired": "Välj en roll",
+      "messageTooLong": "Meddelandet får vara högst 500 tecken",
+      "sendFailed": "Misslyckades skicka inbjudan. Försök igen."
+    },
+    "success": {
+      "invitationSent": "Inbjudan skickad!",
+      "invitationRefreshed": "Inbjudan förnyad!",
+      "invitationDeleted": "Inbjudan borttagen!"
+    },
+    "invitations": {
+      "pendingHeader": "Väntande Inbjudningar",
+      "expiredHeader": "Utgångna Inbjudningar",
+      "countLabel": "({{count}})",
+      "noPending": "Inga väntande inbjudningar",
+      "loading": "Laddar inbjudningar...",
+      "status": {
+        "pending": "Väntande",
+        "expired": "Utgången"
+      },
+      "details": {
+        "sent": "Skickad: {{date}}",
+        "remaining": "{{time}} kvar",
+        "hoursMinutesRemaining": "{{hours}}t {{minutes}}m kvar",
+        "minutesRemaining": "{{minutes}}m kvar"
+      }
+    },
+    "info": {
+      "title": "Vad händer nu?",
+      "steps": {
+        "emailSent": "Den inbjudna får ett e-postmeddelande med en säker inbjudningslänk",
+        "accountSetup": "De kan skapa ett konto eller logga in om de redan har ett",
+        "autoAdded": "När inbjudan accepteras läggs de automatiskt till i ditt lag",
+        "manageRoles": "Du kan hantera deras roll och behörigheter när som helst"
+      }
+    }
+  },
+  "loanModal": {
+    "header": {
+      "titleNew": "Registrera Lån",
+      "titleEdit": "Redigera Lån",
+      "subtitleNew": "Spåra en spelares uppträdande för annat lag",
+      "subtitleEdit": "Uppdatera lånedetaljer",
+      "closeLabel": "Stäng"
+    },
+    "form": {
+      "labels": {
+        "players": "Spelare",
+        "receivingTeam": "Mottagande Lag",
+        "loanDate": "Lånedatum"
+      },
+      "placeholders": {
+        "players": "Välj en eller flera spelare",
+        "receivingTeam": "Ange mottagande lag"
+      }
+    },
+    "validation": {
+      "playersRequired": "Välj minst en spelare",
+      "receivingTeamRequired": "Mottagande lag krävs",
+      "receivingTeamMaxLength": "Mottagande lag får vara högst 200 tecken",
+      "loanDateRequired": "Lånedatum krävs",
+      "saveFailed": "Misslyckades spara lånepost"
+    },
+    "buttons": {
+      "cancel": "Avbryt",
+      "saving": "Sparar...",
+      "recordLoan": "Registrera Lån",
+      "saveChanges": "Spara Ändringar"
+    }
+  },
+  "loansView": {
+    "header": {
+      "title": "Spelarlån",
+      "newLoanButton": "Nytt Lån"
+    },
+    "filters": {
+      "title": "Filter",
+      "expandLabel": "Visa filter",
+      "collapseLabel": "Dölj filter",
+      "clearButton": "Rensa filter",
+      "labels": {
+        "players": "Spelare",
+        "teams": "Lag",
+        "status": "Status",
+        "timePeriod": "Tidsperiod"
+      },
+      "placeholders": {
+        "allPlayers": "Alla spelare",
+        "allTeams": "Alla lag"
+      },
+      "statusOptions": {
+        "all": "Alla",
+        "upcoming": "Kommande",
+        "past": "Tidigare"
+      }
+    },
+    "match": {
+      "upcomingBadge": "Kommande",
+      "playersLabel": "Spelare ({{count}}):",
+      "editLabel": "Redigera match",
+      "deleteLabel": "Ta bort match"
+    },
+    "emptyStates": {
+      "noLoans": {
+        "title": "Inga lånmatcher registrerade än",
+        "description": "Spåra när dina spelare spelar för andra lag.",
+        "button": "Registrera Första Matchen"
+      },
+      "noResults": {
+        "title": "Inga lån hittades",
+        "description": "Försök justera dina filter.",
+        "button": "Rensa Filter"
+      },
+      "loading": "Laddar lånmatcher..."
+    },
+    "messages": {
+      "retry": "Försök Igen",
+      "loanRecordedSingle": "Lånmatch registrerad för 1 spelare.",
+      "loanRecordedMultiple": "Lånmatch registrerad för {{count}} spelare.",
+      "loanUpdatedSingle": "Lånmatch uppdaterad för 1 spelare.",
+      "loanUpdatedMultiple": "Lånmatch uppdaterad för {{count}} spelare.",
+      "loanDeleted": "Tog bort {{count}} spelare från lånmatch.",
+      "loadFailed": "Misslyckades ladda spelarlån",
+      "rosterLoadFailed": "Misslyckades ladda trupp för lån",
+      "deleteFailed": "Misslyckades ta bort lånmatch"
+    },
+    "deleteConfirmation": {
+      "title": "Ta bort lånmatch",
+      "message": "Ta bort {{count}} spelare från lånmatchen {{teamName}} den {{date}}?",
+      "confirmButton": "Ta Bort Match",
+      "cancelButton": "Avbryt"
+    },
+    "fallback": {
+      "unknownTeam": "Okänt Lag",
+      "unknownPlayerDeleted": "Okänd Spelare (borttagen)"
+    }
+  },
+  "teamManagement": {
+    "header": {
+      "title": "Laghantering",
+      "teamSetup": "Laginställning",
+      "back": "Tillbaka"
+    },
+    "loading": {
+      "teamInfo": "Laddar laginformation..."
+    },
+    "success": {
+      "teamCreated": "Laget skapat!",
+      "accessProcessed": "Åtkomstbegäran behandlad!"
+    },
+    "tabs": {
+      "overview": {
+        "label": "Översikt",
+        "description": "Laginformation och medlemmar"
+      },
+      "roster": {
+        "label": "Trupp",
+        "description": "Hantera lagspelare"
+      },
+      "loans": {
+        "label": "Lån",
+        "description": "Spåra spelarlån"
+      },
+      "access": {
+        "label": "Åtkomsthantering",
+        "description": "Godkänn förfrågningar och bjud in användare"
+      },
+      "connectors": {
+        "label": "Kopplingar",
+        "description": "Hantera externa leverantörer"
+      },
+      "preferences": {
+        "label": "Inställningar",
+        "description": "Lag inställningar och preferenser"
+      }
+    },
+    "teamHeader": {
+      "noClub": "Ingen klubb",
+      "roleAdmin": "Lag Administratör",
+      "roleCoach": "Tränare",
+      "roleUser": "Laganvändare",
+      "users": "användare",
+      "usersPlural": "användare"
+    },
+    "overview": {
+      "title": "Laginformation",
+      "teamName": "Lagnamn",
+      "club": "Klubb",
+      "teamCreated": "Lag Skapat",
+      "unknown": "Okänd",
+      "teamUsers": "Laganvändare",
+      "unknownUser": "Okänd Användare",
+      "noUsers": "Inga laganvändare funna"
+    },
+    "access": {
+      "title": "Åtkomsthantering",
+      "manageAccess": "Hantera Åtkomst",
+      "pendingRequests": "{{count}} väntande åtkomstbegäran",
+      "pendingRequestsPlural": "{{count}} väntande åtkomstbegäranden",
+      "reviewDescription": "Granska och godkänn nya lagmedlemsbegäranden",
+      "noPendingDescription": "Inga väntande begäranden för tillfället",
+      "reviewRequests": "Granska Begäranden",
+      "inviteUsers": "Bjud In Användare",
+      "inviteDescription": "Skicka inbjudningar till nya lagmedlemmar",
+      "invitations": "Inbjudningar",
+      "memberRoles": "Medlemsroller",
+      "rolesDescription": "Hantera lagmedlemmars behörigheter",
+      "manageRoles": "Hantera Roller"
+    },
+    "roster": {
+      "title": "Trupphantering",
+      "playersCount": "{{count}} spelare",
+      "addPlayer": "Lägg Till Spelare",
+      "loadingRoster": "Laddar trupp...",
+      "showFormer": "Visa Före Detta Spelare",
+      "hideFormer": "Dölj Före Detta Spelare",
+      "noPlayersYet": "Inga Spelare Ännu",
+      "buildRoster": "Börja bygga din lagtrupp genom att lägga till spelare.",
+      "addFirstPlayer": "Lägg Till Första Spelaren",
+      "noActivePlayers": "Inga aktiva spelare funna.",
+      "table": {
+        "player": "Spelare",
+        "connectionStatus": "Anslutningsstatus",
+        "number": "#",
+        "actions": "Åtgärder"
+      },
+      "ghost": {
+        "from": "Från {{provider}}",
+        "accept": "Acceptera",
+        "adding": "Lägger till...",
+        "dismiss": "Avvisa",
+        "dismissing": "Avvisar..."
+      },
+      "player": {
+        "former": "Före Detta",
+        "editTitle": "Redigera spelare",
+        "loanTitle": "Registrera Lån",
+        "removeTitle": "Ta bort spelare"
+      },
+      "connection": {
+        "connectedProviders": "Anslutna Leverantörer:",
+        "matchedAs": "Matchad som:",
+        "needsMatching": "Behöver Matchning",
+        "notMatched": "Denna spelare är inte matchad till någon leverantörsdata än.",
+        "matchPlayer": "Matcha Spelare"
+      },
+      "success": {
+        "playerMatched": "Spelare matchad till närvarodata",
+        "ghostAdded": "{{playerName}} tillagd i truppen",
+        "ghostDismissed": "{{playerName}} avvisad",
+        "playerDeactivated": "{{playerName}} har inaktiverats men behållits i register på grund av matchhistorik.",
+        "playerRemoved": "{{playerName}} har tagits bort från truppen.",
+        "loanRecorded": "{{playerName}} lånmatch registrerad.",
+        "loanRecordedMultiple": "{{count}} spelares lånmatch registrerad."
+      },
+      "error": {
+        "loadFailed": "Misslyckades ladda lagtrupp",
+        "addFailed": "Misslyckades lägga till spelare i truppen",
+        "dismissFailed": "Misslyckades avvisa spelare"
+      }
+    },
+    "preferences": {
+      "title": "Laginställningar",
+      "loadingPreferences": "Laddar inställningar...",
+      "matchSettings": "Matchinställningar",
+      "matchFormat": "Matchformat",
+      "formation": "Formation",
+      "comingSoon": "Kommer Snart",
+      "timeSettings": "Tidsinställningar",
+      "periodLength": "Periodlängd (minuter)",
+      "numPeriods": "Antal Perioder",
+      "period": "Period",
+      "periods": "Perioder",
+      "substitutionSettings": "Bytesregler",
+      "alternateRoles": "Rotera roller rättvist över tid",
+      "alternateRolesTooltip": {
+        "title": "Rättvis Rollrotation",
+        "description": "När aktiverad kommer appen föreslå byten som säkerställer att alla spelare får liknande tid i varje roll (back, mittfält, forward) under säsongen."
+      },
+      "substitutionLogic": "Byteslogik",
+      "substitutionOptions": {
+        "equalTime": "Lika Tid i Varje Roll",
+        "sameRole": "Behåll Samma Roll"
+      },
+      "gameFeatures": "Matchfunktioner",
+      "trackGoalScorer": "Spåra Målskyttar",
+      "fairPlayAward": "Fair Play-pris",
+      "fairPlayOptions": {
+        "none": "Inga Priser",
+        "leagueOnly": "Endast Serie",
+        "competitive": "Serie, Cup och Turnering",
+        "allGames": "Alla Matcher"
+      },
+      "teamCaptain": "Lagkapten",
+      "teamCaptainOptions": {
+        "none": "Ingen Lagkapten",
+        "permanent": "Permanent Lagkapten",
+        "assignEach": "Tilldela Varje Match"
+      },
+      "permanentCaptain": "Permanent Lagkapten",
+      "selectCaptain": "Välj Lagkapten",
+      "loadingPlayers": "Laddar spelare...",
+      "addPlayersForCaptain": "Lägg till spelare i din trupp för att välja en lagkapten.",
+      "statistics": "Statistik",
+      "loanMatchWeight": "Lånmatchvikt",
+      "loanWeightOptions": {
+        "full": "Hel Match (1.0)",
+        "half": "Halv Match (0.5)",
+        "none": "Ingen Kredit (0.0)"
+      },
+      "loanWeightDescription": "Styr hur lånmatcher räknas mot säsongsstatistik.",
+      "unnamedPlayer": "Namnlös Spelare",
+      "previousCaptain": "Tidigare vald lagkapten",
+      "errors": {
+        "selectCaptain": "Välj en spelare som permanent lagkapten.",
+        "unsupportedFormat": "Endast 5v5 och 7v7 format stöds för närvarande. Välj ett format som stöds innan du sparar.",
+        "saveFailed": "Misslyckades spara inställningar. Försök igen.",
+        "loadFailed": "Misslyckades ladda inställningar",
+        "loadRosterFailed": "Misslyckades ladda laguppställningen"
+      },
+      "success": {
+        "saved": "Inställningar sparade"
+      }
+    }
+  },
+  "roleManagement": {
+    "title": "Hantera Lagroller",
+    "managePermissions": "Hantera roller och behörigheter för {{count}} lagmedlem",
+    "managePermissionsPlural": "Hantera roller och behörigheter för {{count}} lagmedlemmar",
+    "security": {
+      "title": "Säkerhetsrestriktioner",
+      "cannotModifySelf": "Du kan inte ändra din egen roll eller ta bort dig själv",
+      "adminProtected": "Administratörsroller är skyddade från ändring av andra administratörer",
+      "lastAdmin": "Minst en administratör måste finnas kvar i laget"
+    },
+    "roles": {
+      "admin": "Administratör",
+      "adminDescription": "Fullständig laghanteringsåtkomst",
+      "coach": "Tränare",
+      "coachDescription": "Hantera lag och spelare",
+      "player": "Spelare",
+      "playerDescription": "Grundläggande lagmedlem",
+      "parent": "Förälder",
+      "parentDescription": "Visa laginformation"
+    },
+    "badges": {
+      "you": "Du",
+      "lastAdmin": "Sista Admin"
+    },
+    "errors": {
+      "coachCannotPromote": "Tränare kan inte befordra medlemmar till administratörsroll",
+      "cannotModifySelf": "Du kan inte ändra din egen roll",
+      "cannotModifyAdmin": "Administratörer kan inte ändra andra administratörers roller",
+      "lastAdminDemotion": "Kan inte degradera den sista administratören. Minst en administratör måste finnas kvar.",
+      "noChanges": "Inga ändringar att spara",
+      "updateFailed": "Misslyckades uppdatera medlemsroller",
+      "cannotRemoveSelf": "Du kan inte ta bort dig själv från laget",
+      "cannotRemoveAdmin": "Administratörer kan inte tas bort. Degradera dem först, sedan ta bort.",
+      "removeFailed": "Misslyckades ta bort lagmedlem"
+    },
+    "success": {
+      "rolesUpdated": "Uppdaterade {{count}} medlemsroll(er)",
+      "memberRemoved": "Tog bort {{name}} från laget"
+    },
+    "pendingChange": "Rollen ändras från {{from}} till {{to}}",
+    "unsavedChanges": "{{count}} osparad(e) ändring(ar)",
+    "confirmRemove": "Är du säker på att du vill ta bort {{name}} från laget?",
+    "buttons": {
+      "cancel": "Avbryt",
+      "close": "Stäng",
+      "saving": "Sparar...",
+      "saveChanges": "Spara Ändringar"
+    },
+    "tooltips": {
+      "cannotRemoveSelf": "Kan inte ta bort dig själv",
+      "cannotRemoveAdmin": "Kan inte ta bort administratörer",
+      "removeFromTeam": "Ta bort från laget"
+    },
+    "noMembers": "Inga lagmedlemmar hittades",
+    "unknownUser": "Okänd Användare"
+  },
+  "deletePlayerModal": {
+    "title": "Ta Bort Spelare",
+    "subtitleDelete": "Denna spelare kommer att tas bort permanent",
+    "subtitleDeactivate": "Denna spelare kommer att inaktiveras",
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "warning": {
+      "title": "Är du säker på att du vill ta bort denna spelare?",
+      "permanentDelete": "tas bort permanent",
+      "permanentDeleteFull": "Spelaren har ingen matchhistorik och kommer att tas bort permanent",
+      "cannotUndo": "Denna åtgärd kan inte ångras",
+      "deactivated": "inaktiveras",
+      "deactivatedFull": "Spelaren har matchhistorik och kommer att inaktiveras (sättas som inaktiv)"
+    },
+    "whatHappensNext": "Vad händer nu",
+    "deleteConsequences": {
+      "jerseyAvailable": "Tröjnumret blir tillgängligt för andra spelare"
+    },
+    "deactivateConsequences": {
+      "statsPreserved": "All matchstatistik och historik bevaras",
+      "jerseyAvailable": "Tröjnumret blir tillgängligt för andra spelare",
+      "canReactivate": "Spelaren kan återaktiveras senare vid behov"
+    },
+    "buttons": {
+      "deletePlayer": "Ta Bort Spelare",
+      "deactivatePlayer": "Inaktivera Spelare",
+      "cancel": "Avbryt"
+    },
+    "unknownPlayer": "Okänd Spelare"
+  },
+  "invitationNotification": {
+    "title": "Laginbjudningar",
+    "closeLabel": "Stäng",
+    "successJoined": "Gick med i {{teamName}}!",
+    "inviteDescription": "Du har blivit inbjuden att gå med i ett lag. Välj att acceptera eller avböja varje inbjudan nedan.",
+    "inviteDescriptionPlural": "Du har blivit inbjuden att gå med i {{count}} lag. Välj att acceptera eller avböja varje inbjudan nedan.",
+    "role": "Roll: {{role}}",
+    "expires": "Utgår: {{date}}",
+    "invitedBy": "Inbjuden av {{name}}",
+    "buttons": {
+      "declining": "Avböjer...",
+      "decline": "Avböj",
+      "accepting": "Accepterar...",
+      "accept": "Acceptera",
+      "decideLater": "Jag bestämmer mig senare"
+    }
+  },
+  "clubAutocomplete": {
+    "placeholder": "Sök efter din klubb...",
+    "createNewClub": "Skapa ny klubb",
+    "noClubsFound": "Inga klubbar hittades för \"{{query}}\""
+  },
+  "playerMatching": {
+    "title": "Matcha Spelare till Leverantör",
+    "subtitle": "Länka truppspelare till närvarodata",
+    "rosterPlayer": "Truppspelare",
+    "selectProvider": "Välj en spelare från leverantör...",
+    "selectProviderLabel": "Matcha till Leverantörsspelare *",
+    "selectProviderHelp": "Välj vilken spelare från de anslutna leverantörerna som matchar denna truppspelare.",
+    "errors": {
+      "selectPlayer": "Välj en spelare från leverantören",
+      "matchFailed": "Misslyckades matcha spelare"
+    },
+    "buttons": {
+      "cancel": "Avbryt",
+      "matching": "Matchar...",
+      "matchPlayer": "Matcha Spelare"
+    }
+  },
+  "clubJoin": {
+    "title": "Gå Med i Klubb",
+    "successTitle": "Gick Med!",
+    "successMessage": "Du har gått med i {{clubName}}. Du kan nu komma åt lag inom denna klubb.",
+    "joinBenefitsTitle": "Gå med i denna klubb för att:",
+    "benefits": {
+      "accessTeams": "Komma åt lag inom klubben",
+      "requestJoin": "Begära att gå med i befintliga lag",
+      "createTeams": "Skapa nya lag för klubben"
+    },
+    "buttons": {
+      "cancel": "Avbryt",
+      "joining": "Går med...",
+      "joinClub": "Gå Med i Klubb"
+    }
+  },
+  "clubMembership": {
+    "title": "Klubbhantering",
+    "subtitle": "Hantera dina klubbmedlemskap och upptäck nya klubbar",
+    "tabs": {
+      "myClubs": "Mina Klubbar",
+      "findClubs": "Hitta Klubbar",
+      "requests": "Förfrågningar"
+    },
+    "myClubs": {
+      "title": "Mina Klubbar",
+      "empty": "Du är inte medlem i några klubbar ännu",
+      "emptyHint": "Sök efter klubbar för att begära medlemskap",
+      "joined": "Gick med {{date}}"
+    },
+    "search": {
+      "title": "Hitta Klubbar",
+      "placeholder": "Sök efter klubbar...",
+      "searching": "Söker...",
+      "searchButton": "Sök",
+      "resultsTitle": "Sökresultat",
+      "joined": "Medlem",
+      "joinClub": "Gå Med i Klubb",
+      "noResults": "Inga klubbar hittades som matchar \"{{query}}\"",
+      "noResultsHint": "Prova ett annat sökord eller be en klubbadministratör att bjuda in dig"
+    },
+    "requests": {
+      "title": "Väntande Förfrågningar",
+      "empty": "Inga väntande medlemsförfrågningar",
+      "wantsToJoin": "vill gå med i {{clubName}}",
+      "requested": "Begärd {{date}}",
+      "reject": "Avvisa",
+      "approve": "Godkänn"
+    }
+  },
+  "teamSelector": {
+    "title": "Välj Ditt Lag",
+    "newTeam": "Nytt Lag",
+    "current": "Nuvarande",
+    "availableTeams": "Tillgängliga Lag ({{count}})",
+    "role": "Roll: {{role}}",
+    "loading": "Laddar lag...",
+    "noTeamsTitle": "Inga Lag Hittade",
+    "noTeamsMessage": "Du har inte tillgång till några lag ännu. Skapa ditt första lag för att komma igång.",
+    "createOrJoin": "Skapa eller Gå Med i ett Lag"
+  },
+  "teamMatches": {
+    "title": "Lagmatcher",
+    "back": "Tillbaka",
+    "loading": "Laddar matcher...",
+    "error": {
+      "loadFailed": "Misslyckades ladda matcher",
+      "loadUpcomingFailed": "Misslyckades ladda kommande matcher",
+      "tryAgain": "Försök Igen",
+      "copyFailed": "Misslyckades kopiera länk",
+      "deleteFailed": "Misslyckades ta bort väntande match"
+    },
+    "empty": {
+      "title": "Inga Aktiva Matcher",
+      "description": "Ditt lag har inga väntande eller pågående matcher just nu."
+    },
+    "states": {
+      "running": "Pågår",
+      "pending": "Väntande",
+      "upcoming": "Kommande"
+    },
+    "notifications": {
+      "linkCopied": "Länk Kopierad",
+      "linkCopiedMessage": "Livematchlänk kopierad till urklipp!",
+      "liveMatchUrl": "Livematch-URL",
+      "couldNotCopy": "Kunde inte kopiera länk",
+      "error": "Fel",
+      "matchDeleted": "Match Borttagen",
+      "matchDeletedMessage": "Väntande match borttagen."
+    },
+    "timestamps": {
+      "noDate": "Inget datum",
+      "today": "Idag kl {{time}}",
+      "yesterday": "Igår kl {{time}}",
+      "dateTbd": "Datum ej bestämt"
+    },
+    "buttons": {
+      "resumeSetup": "Återuppta",
+      "openLive": "Öppna Live",
+      "copying": "Kopierar...",
+      "copyLink": "Kopiera Länk",
+      "deleting": "Tar bort...",
+      "delete": "Ta Bort",
+      "plan": "Planera"
+    },
+    "upcoming": {
+      "title": "Kommande Matcher",
+      "description": "Framtida matcher från anslutna scheman. Inte planerade ännu.",
+      "notPlanned": "Inte planerad ännu"
+    },
+    "planModal": {
+      "title": "Planera Matcher",
+      "cancel": "Avbryt",
+      "planSelected": "Planera Valda"
+    }
+  },
+  "planMatches": {
+    "title": "Planera Matcher",
+    "back": "Tillbaka",
+    "teamRequired": "Lagkontext krävs.",
+    "noMatches": "Inga matcher valda.",
+    "toolbar": {
+      "sortByPractices": "Sortera efter träningar per match",
+      "sortByAttendance": "Sortera efter närvaroprocent",
+      "statsLoading": "Statistik...",
+      "recommend": "Rekommendera"
+    },
+    "autoSelect": {
+      "title": "Automatiskt Urval",
+      "squadSizeMulti": "Truppstorlek per match",
+      "squadSizeSingle": "Truppstorlek för denna match",
+      "ensureCoverage": "Varje spelare spelar minst en match?",
+      "prioritizePractices": "Prioritera träningar/matchpoäng",
+      "prioritizeAttendance": "Prioritera närvaroprocent",
+      "cancel": "Avbryt",
+      "apply": "Tillämpa"
+    },
+    "matchCard": {
+      "saving": "Sparar...",
+      "saved": "Sparad",
+      "save": "Spara",
+      "roster": "Trupp",
+      "selected": "Valda",
+      "empty": "Tom."
+    },
+    "playerSelector": {
+      "noPlayers": "Inga truppspelare.",
+      "markAvailable": "Markera tillgänglig",
+      "markUnavailable": "Markera ej tillgänglig",
+      "practicesTooltip": "Träningar per match"
+    },
+    "notifications": {
+      "noPlayersTitle": "Inga spelare valda",
+      "noPlayersMessage": "Välj spelare innan du planerar denna match.",
+      "matchPlanned": "Match planerad",
+      "pendingCreated": "Väntande match skapad.",
+      "planningFailed": "Planering misslyckades",
+      "planningFailedMessage": "Misslyckades planera match."
+    },
+    "unknownPlayer": "Okänd Spelare"
+  },
+  "accessRequestModal": {
+    "header": {
+      "title": "Lagåtkomst"
+    },
+    "tabs": {
+      "request": "Begär Åtkomst",
+      "manageRequests": "Hantera Förfrågningar",
+      "teamManagement": "Laghantering"
+    },
+    "request": {
+      "header": {
+        "title": "Begär Lagåtkomst",
+        "subtitle": "Begär att gå med i"
+      },
+      "form": {
+        "roleLabel": "Önskad Roll *",
+        "roleHint": "Lagtränaren kommer att granska och tilldela din slutliga roll",
+        "messageLabel": "Meddelande till Lagtränaren",
+        "messagePlaceholder": "Presentera dig själv och förklara varför du vill gå med i detta lag...",
+        "characterCount": "{{count}}/500 tecken",
+        "roles": {
+          "coach": "Tränare",
+          "parent": "Förälder",
+          "admin": "Administratör"
+        }
+      },
+      "buttons": {
+        "cancel": "Avbryt",
+        "sending": "Skickar...",
+        "sendRequest": "Skicka Förfrågan",
+        "close": "Stäng"
+      },
+      "success": {
+        "submitted": "Förfrågan skickad! Lagadministratören kommer att granska din förfrågan."
+      },
+      "warnings": {
+        "pendingTitle": "Förfrågan Väntande",
+        "pendingMessage": "Du har redan en väntande förfrågan för detta lag"
+      },
+      "yourRequests": {
+        "title": "Dina Förfrågningar",
+        "role": "Roll: {{role}}",
+        "messageLabel": "Meddelande:",
+        "reviewLabel": "Granskning:",
+        "cancel": "Avbryt"
+      },
+      "status": {
+        "pending": "väntande",
+        "approved": "godkänd",
+        "rejected": "avvisad"
+      }
+    },
+    "manage": {
+      "header": {
+        "title": "Hantera Lagförfrågningar",
+        "badgeAdmin": "Administratör",
+        "badgeCoach": "Tränare",
+        "subtitle": "Granska åtkomstförfrågningar för",
+        "adminPrivileges": "Du har fullständiga administratörsbehörigheter för detta lag"
+      },
+      "empty": {
+        "title": "Inga väntande förfrågningar",
+        "description": "Nya lagåtkomstförfrågningar kommer att visas här"
+      },
+      "privacyNotice": "📧 E-postadresser visas för att hjälpa till att identifiera förfrågande personer och är endast synliga för lagadministratörer.",
+      "request": {
+        "unnamedUser": "Namnlös Användare",
+        "requestedRole": "Önskad roll:",
+        "messageLabel": "Meddelande:",
+        "statusPending": "Väntande",
+        "atTime": "kl"
+      },
+      "buttons": {
+        "reject": "Avvisa",
+        "approve": "Godkänn som {{role}}",
+        "rejectReason": "Förfrågan nekad av lagtränaren"
+      },
+      "members": {
+        "title": "Lagmedlemmar ({{count}})",
+        "empty": "Inga lagmedlemmar hittades",
+        "joined": "Gick med {{date}}",
+        "remove": "Ta Bort",
+        "cannotRemoveAdmin": "Kan inte ta bort administratör",
+        "removeMember": "Ta bort medlem",
+        "confirmRemove": "Är du säker på att du vill ta bort denna medlem från laget?",
+        "removed": "Medlem borttagen från laget"
+      }
+    },
+    "success": {
+      "requestApproved": "Förfrågan godkänd!"
+    }
+  },
+  "errors": {
+    "loadTeams": "Misslyckades ladda lag",
+    "loginRequired": "Du måste vara inloggad för att fortsätta",
+    "createClub": "Misslyckades skapa klubb",
+    "createTeam": "Misslyckades skapa lag",
+    "teamNameExists": "Ett lag med detta namn finns redan i denna klubb. Begär att gå med i det befintliga laget.",
+    "noTeamSelected": "Inget lag valt",
+    "createPlayer": "Misslyckades skapa spelare",
+    "teamNotFound": "Laget hittades inte",
+    "initUserData": "Misslyckades initiera användardata",
+    "checkClubMembership": "Misslyckades kontrollera klubbmedlemskap",
+    "alreadyClubMember": "Du är redan medlem i denna klubb",
+    "joinClub": "Misslyckades gå med i klubb",
+    "clubMembershipNotFound": "Klubbmedlemskap hittades inte",
+    "loginRequiredLeaveClub": "Du måste vara inloggad för att lämna klubb",
+    "leaveClub": "Misslyckades lämna klubb",
+    "teamMembershipNotFound": "Lagmedlemskap hittades inte",
+    "loginRequiredLeaveTeam": "Du måste vara inloggad för att lämna lag",
+    "leaveTeam": "Misslyckades lämna lag",
+    "loginRequiredDeleteTeam": "Du måste vara inloggad för att ta bort lag",
+    "deleteTeam": "Misslyckades ta bort lag",
+    "approveClubMembership": "Misslyckades godkänna klubbmedlemskap",
+    "rejectClubMembership": "Misslyckades avvisa klubbmedlemskap",
+    "loginRequiredInvite": "Du måste vara inloggad för att skicka inbjudningar",
+    "noPermissionInvite": "Du har inte behörighet att bjuda in användare till detta lag",
+    "coachCannotInviteAdmin": "Tränare kan inte bjuda in användare som administratörer",
+    "sendInvitation": "Misslyckades skicka inbjudan",
+    "cancelInvitation": "Misslyckades avbryta inbjudan",
+    "loginRequiredAccept": "Du måste vara inloggad för att acceptera inbjudningar",
+    "acceptInvitation": "Misslyckades acceptera inbjudan",
+    "loadInvitations": "Misslyckades ladda väntande inbjudningar",
+    "loginRequiredDecline": "Du måste vara inloggad för att avböja inbjudningar",
+    "declineInvitation": "Misslyckades avböja inbjudan",
+    "loginRequiredRefresh": "Du måste vara inloggad för att förnya inbjudningar",
+    "refreshInvitation": "Misslyckades förnya inbjudan",
+    "loginRequiredDelete": "Du måste vara inloggad för att ta bort inbjudningar",
+    "deleteInvitation": "Misslyckades ta bort inbjudan",
+    "pendingRequestExists": "Du har redan en väntande förfrågan för detta lag. Vänta tills den nuvarande förfrågan har granskats, eller avbryt den först för att skicka en ny.",
+    "requestTeamAccess": "Misslyckades begära lagåtkomst",
+    "fetchRequestDetails": "Misslyckades hämta förfrågandetaljer",
+    "addUserToTeam": "Misslyckades lägga till användare i laget",
+    "updateRequestStatus": "Misslyckades uppdatera förfrågans status",
+    "approveTeamAccess": "Misslyckades godkänna lagåtkomst",
+    "rejectTeamAccess": "Misslyckades avvisa lagåtkomst",
+    "cancelRequest": "Misslyckades avbryta förfrågan",
+    "updateMemberRole": "Misslyckades uppdatera medlemsroll",
+    "removeTeamMember": "Misslyckades ta bort lagmedlem",
+    "genericError": "Ett oväntat fel uppstod",
+    "loginRequiredCreateTeam": "Du måste vara inloggad för att skapa ett lag",
+    "loginRequiredCreateClub": "Du måste vara inloggad för att skapa klubb"
+  },
+  "context": {
+    "invitationSentTo": "Inbjudan skickad till {{email}}",
+    "welcomeToTeam": "Välkommen till laget! Du har lagts till.",
+    "invitationDeclined": "Inbjudan avböjd",
+    "invitationDeleted": "Inbjudan borttagen",
+    "teamFallbackName": "Lag",
+    "teamAdminFallback": "Lagadministratör"
+  }
+}

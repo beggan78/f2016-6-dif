@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateLoginForm } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
 
 export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify, onClose, initialEmail = '' }) {
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
@@ -25,7 +27,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
   }, [email, password, authError, clearAuthError]);
 
   const validateForm = () => {
-    const { isValid, errors: validationErrors } = validateLoginForm({ email, password });
+    const { isValid, errors: validationErrors } = validateLoginForm({ email, password }, { t });
     setErrors(validationErrors);
     return isValid;
   };
@@ -52,7 +54,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
         onClose();
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('login.errors.unexpected') });
     }
   };
 
@@ -68,8 +70,8 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-sky-300">Welcome Back</h2>
-        <p className="text-slate-400 mt-2">Sign in to your account</p>
+        <h2 className="text-2xl font-bold text-sky-300">{t('login.header.title')}</h2>
+        <p className="text-slate-400 mt-2">{t('login.header.subtitle')}</p>
       </div>
 
       {/* Error Message */}
@@ -83,14 +85,14 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-            Email Address
+            {t('login.form.emailLabel')}
           </label>
           <Input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
+            placeholder={t('login.form.emailPlaceholder')}
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.email, 'field').container}
           />
@@ -101,14 +103,14 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-            Password
+            {t('login.form.passwordLabel')}
           </label>
           <Input
             id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={t('login.form.passwordPlaceholder')}
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.password, 'field').container}
           />
@@ -126,7 +128,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
           disabled={loading}
           className="w-full"
         >
-          {loading ? 'Signing In...' : 'Sign In'}
+          {loading ? t('login.form.submittingButton') : t('login.form.submitButton')}
         </Button>
       </form>
 
@@ -138,18 +140,18 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
           className="text-sky-400 hover:text-sky-300 text-sm transition-colors"
           disabled={loading}
         >
-          Forgot your password?
+          {t('login.links.forgotPassword')}
         </button>
-        
+
         <div className="text-slate-400 text-sm">
-          Don't have an account?{' '}
+          {t('login.links.noAccount')}{' '}
           <button
             type="button"
             onClick={onSwitchToSignup}
             className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
             disabled={loading}
           >
-            Sign up
+            {t('login.links.signUp')}
           </button>
         </div>
       </div>

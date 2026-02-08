@@ -1,0 +1,23 @@
+{
+  "multiSelect": {
+    "allSelected": "All selected",
+    "selected": "selected",
+    "noOptions": "No options available",
+    "clearSelection": "Clear selection",
+    "done": "Done"
+  },
+  "badges": {
+    "comingSoon": "Coming Soon",
+    "new": "New",
+    "beta": "Beta"
+  },
+  "loading": "Loading...",
+  "error": "An error occurred",
+  "retry": "Retry",
+  "close": "Close",
+  "ok": "OK",
+  "back": "Back",
+  "inactive": "Inactive",
+  "opponent": "Opponent",
+  "user": "User"
+}

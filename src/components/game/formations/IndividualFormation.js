@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { findPlayerById } from '../../../utils/playerUtils';
 import { getFieldPositions, getSubstitutePositions, getPositionRole } from '../../../game/logic/positionUtils';
 import { supportsInactiveUsers } from '../../../constants/gameModes';
@@ -36,6 +37,9 @@ export function IndividualFormation({
   renderSection = 'all',
   ...domProps
 }) {
+  const { t } = useTranslation('game');
+  const inactiveLabel = t('formation.inactive');
+
   // Create formation-aware team config for position utilities
   const formationAwareTeamConfig = React.useMemo(() => {
     if (selectedFormation && selectedFormation !== teamConfig.formation) {
@@ -78,7 +82,8 @@ export function IndividualFormation({
           targetFieldPosition,
           null,
           formationAwareTeamConfig,
-          substitutePositions
+          substitutePositions,
+          t
         );
 
         // Find the player at the target field position
@@ -92,7 +97,7 @@ export function IndividualFormation({
       });
       return labels;
     },
-    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions, formation, getPlayerNameById]
+    [substituteTargetMapping, formationAwareTeamConfig, substitutePositions, formation, getPlayerNameById, t]
   );
 
   // Handle null/undefined formation after hook definitions to satisfy rules of hooks
@@ -162,7 +167,7 @@ export function IndividualFormation({
 
     // Get utilities
     const longPressEvents = isGoaliePosition && goalieHandlers ? goalieHandlers.goalieEvents : getPositionEvents(quickTapHandlers, position);
-    const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions);
+    const positionDisplayName = getPositionDisplayName(position, player, formationAwareTeamConfig, substitutePositions, t);
     const icon = getPositionIcon(position, substitutePositions);
     const incomingPositionLabel = incomingPositionLabels[position] || null;
     const shouldShowIncomingPosition = isSubstitutePosition && incomingPositionLabel && (!modeSupportsInactive || !isInactive);
@@ -186,7 +191,7 @@ export function IndividualFormation({
                 ({incomingPositionLabel})
               </span>
             )}
-            {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">(Inactive)</span>}
+            {modeSupportsInactive && isInactive && <span className="text-xs text-slate-600">{inactiveLabel}</span>}
           </span>
           <div className="flex space-x-1">
             {/* Primary indicators (full opacity) - only show for active players */}

@@ -85,7 +85,7 @@ export class DataSyncManager {
       // First, ensure we have a current team
       const teamId = await this.getCurrentTeamId();
       if (!teamId) {
-        throw new Error('No current team selected. Please create or select a team first.');
+        throw new Error('errors.noTeamSelected');
       }
 
       const formatValue = matchData?.format || matchData?.teamConfig?.format || FORMATS.FORMAT_5V5;
@@ -131,7 +131,7 @@ export class DataSyncManager {
         success: true, 
         match: match, 
         storage: 'cloud',
-        message: 'Match saved to your history successfully!'
+        message: 'errors.matchSavedSuccess'
       };
     } catch (error) {
       console.error('Error saving match to cloud:', error);

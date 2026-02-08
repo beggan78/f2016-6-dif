@@ -287,16 +287,19 @@ export const calculatePositionRecommendations = (
     const roleKey = roleToDeficitKey(role);
     const percentage = player.percentages[roleKey] || 0;
 
-    let reason;
+    let reasonKey;
+    let reasonParams;
     if (!player.hasHistory) {
-      reason = 'No match history';
+      reasonKey = 'noMatchHistory';
     } else {
-      reason = `${percentage.toFixed(1)}% ${roleKey} time`;
+      reasonKey = 'roleTimePercentage';
+      reasonParams = { percentage: percentage.toFixed(1), role: roleKey };
     }
 
     recommendations[position] = {
       playerId,
-      reason
+      reasonKey,
+      reasonParams
     };
   });
 

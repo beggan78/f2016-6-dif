@@ -1,20 +1,23 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ThumbsUp, Info, CheckCircle, AlertTriangle, LogIn } from 'lucide-react';
 import { Button } from './UI';
 
-const FeatureVoteModal = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  featureName, 
+const FeatureVoteModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  featureName,
   loading = false,
   error = null,
   successMessage = null,
   infoMessage = null,
   isAuthenticated = false,
   authModal = null,
-  children 
+  children
 }) => {
+  const { t } = useTranslation('modals');
+
   if (!isOpen) return null;
 
   const handleAuthRequired = () => {
@@ -47,24 +50,24 @@ const FeatureVoteModal = ({
             <div className="flex-1">
               {successMessage ? (
                 <div>
-                  <h2 className="text-xl font-bold text-emerald-200 mb-2">Vote Recorded!</h2>
+                  <h2 className="text-xl font-bold text-emerald-200 mb-2">{t('featureVote.voteRecorded')}</h2>
                   <p className="text-emerald-100 mb-4">{successMessage}</p>
                 </div>
               ) : infoMessage ? (
                 <div>
-                  <h2 className="text-xl font-bold text-sky-200 mb-2">Vote Already Recorded</h2>
+                  <h2 className="text-xl font-bold text-sky-200 mb-2">{t('featureVote.voteAlreadyRecorded')}</h2>
                   <p className="text-sky-100 mb-4">{infoMessage}</p>
                 </div>
               ) : error ? (
                 <div>
-                  <h2 className="text-xl font-bold text-rose-200 mb-2">Vote Failed</h2>
+                  <h2 className="text-xl font-bold text-rose-200 mb-2">{t('featureVote.voteFailed')}</h2>
                   <p className="text-rose-100 mb-4">{error}</p>
                 </div>
               ) : (
                 <div>
-                  <h2 className="text-xl font-bold text-sky-200 mb-2">Feature Coming Soon!</h2>
+                  <h2 className="text-xl font-bold text-sky-200 mb-2">{t('featureVote.featureComingSoon')}</h2>
                   <p className="text-slate-300 mb-4">
-                    The "{featureName}" formation is not yet implemented. You can vote for it to be prioritized.
+                    {t('featureVote.featureDescription', { featureName })}
                   </p>
                   <div className="text-xs text-slate-400 mb-6">
                     {children}
@@ -76,27 +79,27 @@ const FeatureVoteModal = ({
               <X className="w-6 h-6" />
             </button>
           </div>
-          
+
           {/* Buttons */}
           <div className="flex justify-end space-x-3 mt-2">
             <Button onClick={onClose} variant="secondary">
-              {successMessage || infoMessage ? 'Close' : 'Cancel'}
+              {successMessage || infoMessage ? t('featureVote.close') : t('featureVote.cancel')}
             </Button>
-            
+
             {/* Only show vote button if not already successful and no critical error */}
             {!successMessage && !infoMessage && (
               <>
                 {!isAuthenticated ? (
                   <Button onClick={handleAuthRequired} Icon={LogIn}>
-                    Sign In to Vote
+                    {t('featureVote.signInToVote')}
                   </Button>
                 ) : (
-                  <Button 
-                    onClick={onConfirm} 
+                  <Button
+                    onClick={onConfirm}
                     Icon={loading ? undefined : ThumbsUp}
                     disabled={loading}
                   >
-                    {loading ? 'Submitting...' : `Vote for ${featureName}`}
+                    {loading ? t('featureVote.submitting') : t('featureVote.voteFor', { featureName })}
                   </Button>
                 )}
               </>

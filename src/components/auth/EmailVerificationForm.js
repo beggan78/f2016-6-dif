@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateOtpCode } from '../../utils/authValidation';
@@ -20,6 +21,7 @@ import { checkOtpExpiry } from '../../utils/timeUtils';
  * @returns {React.ReactNode}
  */
 export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClose }) {
+  const { t } = useTranslation('auth');
   const [code, setCode] = useState('');
   const [errors, setErrors] = useState({});
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -86,7 +88,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
   };
 
   const validateForm = () => {
-    const { isValid, error } = validateOtpCode(code);
+    const { isValid, error } = validateOtpCode(code, { t });
     if (!isValid) {
       setErrors({ code: error });
       return false;
@@ -112,7 +114,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         onSuccess();
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('emailVerification.errors.unexpected') });
     }
   };
 
@@ -134,7 +136,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         setOtpStatus({ isExpired: false, minutesRemaining: 59 });
       }
     } catch (error) {
-      setErrors({ general: 'Failed to resend code. Please try again.' });
+      setErrors({ general: t('emailVerification.errors.resendFailed') });
     }
   };
 
@@ -155,9 +157,9 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-sky-300">Check Your Email</h2>
+        <h2 className="text-2xl font-bold text-sky-300">{t('emailVerification.header.title')}</h2>
         <p className="text-slate-400 mt-2">
-          We sent a 6-digit code to <span className="text-slate-300 font-medium">{email}</span>
+          {t('emailVerification.header.sentTo')} <span className="text-slate-300 font-medium">{email}</span>
         </p>
       </div>
 
@@ -174,7 +176,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="verification-code" className="block text-sm font-medium text-slate-300 mb-2">
-              Verification Code
+              {t('emailVerification.form.codeLabel')}
             </label>
             <Input
               ref={codeInputRef}
@@ -185,19 +187,19 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
               value={code}
               onChange={handleCodeChange}
               onKeyDown={handleKeyDown}
-              placeholder="Enter 6-digit code"
+              placeholder={t('emailVerification.form.codePlaceholder')}
               disabled={loading}
               className={`text-center text-lg tracking-widest ${getErrorDisplayClasses(!!errors.code, 'field').container}`}
               maxLength={6}
               autoComplete="one-time-code"
-              aria-label="Enter 6-digit verification code"
+              aria-label={t('emailVerification.form.codePlaceholder')}
               aria-describedby="code-help-text"
             />
             {errors.code && (
               <p className={getErrorDisplayClasses(!!errors.code, 'field').text}>{errors.code}</p>
             )}
             <p id="code-help-text" className="text-slate-500 text-xs mt-1">
-              Enter the 6-digit code from your email
+              {t('emailVerification.form.codeHint')}
             </p>
           </div>
 
@@ -209,7 +211,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
             disabled={loading || code.length !== 6}
             className="w-full"
           >
-            {loading ? 'Verifying...' : 'Verify Email'}
+            {loading ? t('emailVerification.form.submittingButton') : t('emailVerification.form.submitButton')}
           </Button>
         </form>
       ) : (
@@ -218,13 +220,13 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
           {/* Expired Message */}
           <div className="bg-amber-900/50 border border-amber-600 rounded-lg p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label="Code expired">
+              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label={t('emailVerification.expiry.title')}>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-amber-300 font-medium">Your verification code has expired</p>
+              <p className="text-amber-300 font-medium">{t('emailVerification.expiry.title')}</p>
             </div>
             <p className="text-amber-200 text-sm">
-              Verification codes are valid for 60 minutes. Please request a new code to continue.
+              {t('emailVerification.expiry.description')}
             </p>
           </div>
 
@@ -238,14 +240,14 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
             className="w-full"
           >
             {loading
-              ? 'Sending...'
+              ? t('emailVerification.expiry.sendingButton')
               : resendCooldown > 0
-                ? `Send New Code (${resendCooldown}s)`
-                : 'Send New Verification Code'}
+                ? t('emailVerification.expiry.cooldownButton', { seconds: resendCooldown })
+                : t('emailVerification.expiry.sendNewButton')}
           </Button>
 
           <p className="text-slate-400 text-sm text-center">
-            A new 6-digit code will be sent to <span className="text-slate-300 font-medium">{email}</span>
+            {t('emailVerification.expiry.confirmMessage')} <span className="text-slate-300 font-medium">{email}</span>
           </p>
         </div>
       )}
@@ -259,9 +261,9 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
           disabled={loading}
           aria-expanded={showHelpSection}
           aria-controls="help-section"
-          aria-label={showHelpSection ? "Hide troubleshooting help" : "Show troubleshooting help"}
+          aria-label={showHelpSection ? t('emailVerification.help.toggleButtonHide') : t('emailVerification.help.toggleButtonShow')}
         >
-          <span>Didn't receive an email?</span>
+          <span>{t('emailVerification.help.toggleButton')}</span>
           {showHelpSection ? (
             <ChevronUp className="h-4 w-4" />
           ) : (
@@ -278,50 +280,48 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
                 onClick={handleResendCode}
                 disabled={resendCooldown > 0 || loading}
                 className="text-sky-400 hover:text-sky-300 font-medium transition-colors disabled:text-slate-500 disabled:cursor-not-allowed"
-                aria-label={resendCooldown > 0 ? `Resend code available in ${resendCooldown} seconds` : "Resend verification code"}
+                aria-label={resendCooldown > 0 ? t('emailVerification.help.resendCooldown', { seconds: resendCooldown }) : t('emailVerification.help.resendButton')}
               >
-                {resendCooldown > 0 ? `Resend code again in ${resendCooldown}s` : 'Resend verification code'}
+                {resendCooldown > 0 ? t('emailVerification.help.resendCooldown', { seconds: resendCooldown }) : t('emailVerification.help.resendButton')}
               </button>
             </div>
 
             {/* Troubleshooting Tips */}
             <div className="space-y-3">
-              <h4 id="help-title" className="text-slate-300 font-medium text-sm">Troubleshooting tips:</h4>
-              
+              <h4 id="help-title" className="text-slate-300 font-medium text-sm">{t('emailVerification.help.title')}</h4>
+
               <div className="space-y-2 text-xs text-slate-400">
                 <div className="flex items-start gap-2">
                   <span className="text-slate-500 mt-0.5">•</span>
-                  <span>Check your spam/junk folder - automated emails sometimes end up there</span>
+                  <span>{t('emailVerification.help.tips.spam')}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
                   <span className="text-slate-500 mt-0.5">•</span>
-                  <span>Wait a few minutes - email delivery can take 2-5 minutes</span>
+                  <span>{t('emailVerification.help.tips.wait')}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
                   <span className="text-slate-500 mt-0.5">•</span>
-                  <span>Check that <span className="text-slate-300 font-medium">{email}</span> is correct</span>
+                  <span>{t('emailVerification.help.tips.checkEmail', { email: <span className="text-slate-300 font-medium">{email}</span> })}</span>
                 </div>
-                
+
                 <div className="flex items-start gap-2">
                   <span className="text-slate-500 mt-0.5">•</span>
-                  <span>Some email providers (especially corporate) may block automated emails</span>
+                  <span>{t('emailVerification.help.tips.provider')}</span>
                 </div>
               </div>
             </div>
 
             {/* Email Enumeration Protection Explanation */}
             <div className="pt-3 border-t border-slate-600">
-              <h4 className="text-slate-300 font-medium text-sm mb-2">Account already exists?</h4>
+              <h4 className="text-slate-300 font-medium text-sm mb-2">{t('emailVerification.help.enumeration.title')}</h4>
               <div className="space-y-2 text-xs text-slate-400">
                 <p>
-                  If an account with your email already exists, you won't receive a signup email. 
-                  This is intentional security behavior.
+                  {t('emailVerification.help.enumeration.description')}
                 </p>
                 <p>
-                  <strong className="text-slate-300">Why not just say the email is in use?</strong> This protects your privacy by preventing
-                  bad actors from discovering which email addresses are registered with us.
+                  <strong className="text-slate-300">{t('emailVerification.help.enumeration.whyTitle')}</strong> {t('emailVerification.help.enumeration.whyDescription')}
                 </p>
                 <div className="pt-2">
                   <button
@@ -329,9 +329,9 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
                     onClick={onSwitchToLogin}
                     className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
                     disabled={loading}
-                    aria-label="Switch to sign in form if account already exists"
+                    aria-label={t('emailVerification.help.enumeration.signInLink')}
                   >
-                    Try signing in instead →
+                    {t('emailVerification.help.enumeration.signInLink')}
                   </button>
                 </div>
               </div>
@@ -343,26 +343,26 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
       {/* Footer Links */}
       <div className="text-center space-y-2">
         <div className="text-slate-400 text-sm">
-          Already have an account?{' '}
+          {t('emailVerification.footer.hasAccount')}{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
             className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
             disabled={loading}
-            aria-label="Switch to sign in form"
+            aria-label={t('emailVerification.footer.signInLink')}
           >
-            Sign in
+            {t('emailVerification.footer.signInLink')}
           </button>
         </div>
-        
+
         <button
           type="button"
           onClick={onClose}
           className="text-slate-400 hover:text-slate-300 text-sm transition-colors"
           disabled={loading}
-          aria-label="Close email verification form"
+          aria-label={t('emailVerification.footer.closeButton')}
         >
-          Close
+          {t('emailVerification.footer.closeButton')}
         </button>
       </div>
     </div>

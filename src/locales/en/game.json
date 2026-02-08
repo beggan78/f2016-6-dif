@@ -1,0 +1,150 @@
+{
+  "period": {
+    "label": "Period {{number}}",
+    "ordinal": {
+      "1st": "1st",
+      "2nd": "2nd",
+      "3rd": "3rd",
+      "4th": "4th",
+      "nth": "{{number}}th"
+    }
+  },
+  "startScreen": {
+    "startMatch": "Start Match",
+    "startPeriod": "Start {{ordinal}} Period",
+    "instructions": "Tap to begin the period and start timers",
+    "backToSetup": "Back to Setup"
+  },
+  "timers": {
+    "matchClock": "Match Clock",
+    "substitutionTimer": "Substitution Timer",
+    "pauseTooltip": "Pause substitution timer",
+    "resumeTooltip": "Resume substitution timer"
+  },
+  "score": {
+    "instructions": "Tap team name to add goal • Hold score to edit"
+  },
+  "substitution": {
+    "button": "SUB NOW",
+    "buttonSingle": "SUB 1 PLAYER",
+    "buttonMultiple": "SUB {{count}} PLAYERS",
+    "makeSubstitution": "Make substitution",
+    "cannotSubstitute": "All substitutes are inactive - cannot substitute",
+    "undoTooltip": "Undo last substitution",
+    "undoDisabled": "No substitution to undo",
+    "decreaseCount": "Decrease number of players to substitute",
+    "increaseCount": "Increase number of players to substitute",
+    "undoModal": {
+      "title": "Undo Substitution",
+      "message": "Are you sure you want to undo the last substitution? This will reverse player positions and time tracking.",
+      "confirm": "Undo",
+      "cancel": "Cancel"
+    }
+  },
+  "actions": {
+    "endPeriod": "End Period"
+  },
+  "modals": {
+    "fieldPlayer": {
+      "setNext": "Set as Next",
+      "removeFromNext": "Remove from Next",
+      "subNow": "Sub Now",
+      "changePosition": "Change Position",
+      "cancel": "Cancel"
+    },
+    "substitute": {
+      "inactivate": "Inactivate",
+      "activate": "Activate",
+      "cancel": "Cancel"
+    },
+    "goalie": {
+      "switchGoalie": "Switch Goalie",
+      "cancel": "Cancel"
+    }
+  },
+  "formation": {
+    "noConfig": "No team configuration available",
+    "invalidConfig": "Invalid team configuration",
+    "inactive": "(Inactive)",
+    "positions": {
+      "goalie": "Goalie",
+      "leftDefender": "Left Defender",
+      "rightDefender": "Right Defender",
+      "leftAttacker": "Left Attacker",
+      "rightAttacker": "Right Attacker",
+      "defender": "Defender",
+      "left": "Left Mid",
+      "right": "Right Mid",
+      "attacker": "Attacker",
+      "leftMidfielder": "Left Midfielder",
+      "rightMidfielder": "Right Midfielder",
+      "centerMidfielder": "Center Midfielder",
+      "substitute": "Substitute"
+    },
+    "inactiveStatus": "Inactive"
+  },
+  "finished": {
+    "title": "Match Complete!",
+    "subtitle": "Great game! Here's the summary:",
+    "finalScore": "Final Score",
+    "matchTime": "Match Time",
+    "periods": "Periods",
+    "fairPlay": "Fair Play Award",
+    "fairPlayDescription": "Most balanced playing time",
+    "topScorer": "Top Scorer",
+    "topScorerGoals": "{{count}} goal",
+    "topScorerGoals_other": "{{count}} goals",
+    "noGoals": "No goals scored",
+    "viewReport": "View Full Report",
+    "newMatch": "New Match"
+  },
+  "validation": {
+    "selectPlayersCount": "Please select between {{min}} and {{max}} players for the squad.",
+    "assignGoaliePerPeriod": "Please assign a goalie for each period.",
+    "invalidFormation": "Invalid formation detected. Please ensure all positions are properly assigned.",
+    "completeFormation": "Please complete the team formation with 1 goalie and {{count}} unique outfield players.",
+    "completeFormationAssignment": "Please complete the formation assignment.",
+    "assignAllPositions": "Please assign all positions including goalie.",
+    "noActiveMatch": "No active match to save.",
+    "teamContextRequired": "Team context required for saving configuration."
+  },
+  "helpMessages": {
+    "fieldPlayerOptions": "Hold for options",
+    "substituteToggleActivate": "Hold to activate",
+    "substituteToggleInactivate": "Hold to inactivate"
+  },
+  "persistence": {
+    "retrying": "Retrying save (attempt {{attempt}}/{{maxAttempts}})...",
+    "failedAfterRetries": "Failed to save match after {{maxAttempts}} attempts",
+    "failedToSaveMatch": "Failed to save match",
+    "cannotRetry": "Cannot retry: No pending match data found.",
+    "cannotSaveNoMatchId": "Cannot save match: No match ID.",
+    "cannotSaveNoPlayerData": "Cannot save match: No player data available.",
+    "cannotSaveMissingStartTime": "Cannot save match: Missing start time.",
+    "cannotSaveIncompleteData": "Cannot save match: Incomplete match data ({{fields}})",
+    "cannotSaveNoParticipants": "Cannot save match: No participating players found.",
+    "playerStatsFailed": "Player stats failed for: {{names}}",
+    "playerStatsFailedCount": "Player stats failed for {{count}} player(s)",
+    "configSaved": "Configuration saved",
+    "configSavedWithWarnings": "Configuration saved (with warnings)",
+    "failedToSaveConfig": "Failed to save configuration",
+    "failedToSaveConfigError": "Failed to save configuration: {{error}}"
+  },
+  "stats": {
+    "title": "Game Finished - Statistics",
+    "opponent": "Opponent",
+    "fairPlayAward": "Fair Play Award",
+    "notAwarded": "Not awarded",
+    "fairPlayWinner": "FAIR PLAY WINNER",
+    "savingSelection": "Saving selection...",
+    "selectionSavesAutomatically": "Selection saves automatically",
+    "matchSaved": "Match saved to history",
+    "viewMatchReport": "View Match Report",
+    "startNewGame": "Start New Game",
+    "errors": {
+      "noMatchId": "No match ID found. Please restart the match to enable saving.",
+      "signInRequired": "Please sign in to save match updates.",
+      "saveFailed": "Failed to save match updates"
+    }
+  }
+}

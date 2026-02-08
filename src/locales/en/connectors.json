@@ -1,0 +1,163 @@
+{
+  "section": {
+    "title": "External Connectors",
+    "description": "Connect to external platforms to sync your roster"
+  },
+  "card": {
+    "connected": "Connected",
+    "disconnected": "Not Connected",
+    "verifying": "Verifying...",
+    "error": "Connection Error",
+    "retrying": "Retrying...",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "configure": "Configure"
+  },
+  "sportAdmin": {
+    "title": "SportAdmin",
+    "description": "Sync your team roster from SportAdmin",
+    "modal": {
+      "title": "Connect to SportAdmin",
+      "email": "SportAdmin Email",
+      "emailPlaceholder": "Enter your SportAdmin email",
+      "password": "SportAdmin Password",
+      "passwordPlaceholder": "Enter your SportAdmin password",
+      "teamId": "Team ID",
+      "teamIdPlaceholder": "Enter your SportAdmin team ID",
+      "connect": "Connect",
+      "cancel": "Cancel",
+      "connecting": "Connecting..."
+    }
+  },
+  "disconnect": {
+    "title": "Disconnect {{provider}}?",
+    "subtitle": "This will stop automatic synchronization",
+    "confirmMessage": "Are you sure you want to disconnect {{provider}}?",
+    "warningAutoSync": "Automatic data synchronization will stop",
+    "warningCredentials": "Stored credentials will be removed",
+    "reassureData": "Existing attendance and match data will be preserved",
+    "reassureReconnect": "You can reconnect at any time",
+    "disconnecting": "Disconnecting...",
+    "disconnect": "Disconnect",
+    "cancel": "Cancel",
+    "errorFallback": "Failed to disconnect provider"
+  },
+  "status": {
+    "syncing": "Syncing roster...",
+    "lastSync": "Last synced: {{time}}",
+    "neverSynced": "Never synced",
+    "syncSuccess": "Roster synced successfully",
+    "syncError": "Failed to sync roster"
+  },
+  "sportAdminConnect": {
+    "header": {
+      "title": "Connect SportAdmin",
+      "subtitle": "Sync attendance and match data"
+    },
+    "info": {
+      "description": "Enter your SportAdmin credentials to enable automatic synchronization.",
+      "security": "Your credentials will be encrypted and stored securely."
+    },
+    "form": {
+      "labels": {
+        "username": "Username",
+        "password": "Password"
+      },
+      "placeholders": {
+        "username": "Your SportAdmin username",
+        "password": "Your SportAdmin password"
+      }
+    },
+    "validation": {
+      "usernameRequired": "Username is required",
+      "usernameMaxLength": "Username must be 100 characters or less",
+      "passwordRequired": "Password is required",
+      "passwordMaxLength": "Password must be 200 characters or less",
+      "connectionFailed": "Failed to connect SportAdmin. Please check your credentials and try again."
+    },
+    "buttons": {
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "cancel": "Cancel"
+    }
+  },
+  "connectorsSection": {
+    "title": "Connectors",
+    "infoBanner": "Connect external team management platforms to automatically sync practice attendance and match schedules.",
+    "loadingConnectors": "Loading connectors...",
+    "connectedProviders": "Connected Providers",
+    "availableProviders": "Available Providers",
+    "connected": "Connected",
+    "connect": "Connect",
+    "dismiss": "Dismiss",
+    "connectedSuccess": "SportAdmin connected successfully! Verification in progress (takes up to 5 minutes)...",
+    "syncStarted": "Sync started successfully!",
+    "disconnectedSuccess": "Provider disconnected successfully!",
+    "retryingConnection": "Retrying connection...",
+    "immediateSyncFailed": "Immediate sync failed, will run on schedule."
+  },
+  "onboarding": {
+    "syncTitle": "Sync Players from External Platforms",
+    "syncDescription": "Connect to your team management platform to automatically sync your roster and practice attendance."
+  },
+  "unmappedBanner": {
+    "title": "Players Available to Match",
+    "description": "You have unmapped players from {{providerName}} waiting to be matched to your roster."
+  },
+  "providerLogo": {
+    "fallbackLabel": "Connector",
+    "logoAlt": "{{providerName}} logo",
+    "logoPlaceholder": "{{label}} logo placeholder"
+  },
+  "connectorCard": {
+    "lastVerified": "Last verified:",
+    "lastSync": "Last sync:",
+    "never": "Never",
+    "connectionCreated": "Connection Created",
+    "errorPrefix": "Error:",
+    "connectionError": "Connection Error",
+    "buttons": {
+      "retryConnection": "Retry Connection",
+      "manualSync": "Manual Sync",
+      "syncing": "Syncing...",
+      "disconnect": "Disconnect"
+    }
+  },
+  "providers": {
+    "sportadmin": {
+      "description": "Swedish team management platform",
+      "features": {
+        "practiceAttendance": "Practice Attendance",
+        "upcomingMatches": "Upcoming Matches"
+      }
+    },
+    "svenska_lag": {
+      "description": "Swedish team management platform",
+      "features": {
+        "comingSoon": "Coming Soon"
+      }
+    },
+    "myclub": {
+      "description": "Team management platform",
+      "features": {
+        "comingSoon": "Coming Soon"
+      }
+    }
+  },
+  "statusLabels": {
+    "connected": "Connected",
+    "verifying": "Verifying",
+    "error": "Error",
+    "disconnected": "Disconnected",
+    "unknown": "Unknown"
+  },
+  "syncStatusLabels": {
+    "completed": "Completed",
+    "running": "Running",
+    "waiting": "Waiting",
+    "retrying": "Retrying",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "unknown": "Unknown"
+  }
+}

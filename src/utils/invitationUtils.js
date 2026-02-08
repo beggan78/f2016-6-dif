@@ -154,23 +154,23 @@ export const getInvitationStatus = (user, invitationParams) => {
 
   // Check if user needs account completion (including authenticated users who need password)
   if (needsAccountCompletion(invitationParams, user)) {
-    return { 
+    return {
       type: 'account_setup',
-      message: 'Complete your account setup to join the team'
+      messageKey: 'auth:invitation.statusMessages.accountSetup'
     };
   }
 
   if (invitationParams.isCustomInvitation && !user) {
     return {
-      type: 'sign_in_required', 
-      message: 'Sign in to accept your team invitation'
+      type: 'sign_in_required',
+      messageKey: 'auth:invitation.statusMessages.signInRequired'
     };
   }
 
   if (user && shouldProcessInvitation(user, invitationParams)) {
     return {
       type: 'ready_to_process',
-      message: 'Processing your team invitation...'
+      messageKey: 'auth:invitation.statusMessages.processing'
     };
   }
 

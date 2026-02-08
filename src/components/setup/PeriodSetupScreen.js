@@ -13,6 +13,7 @@ import { calculatePositionRecommendations } from '../../game/logic/positionRecom
 import { PositionRecommendationCard } from './PositionRecommendationCard';
 import { usePlayerRecommendationData } from '../../hooks/usePlayerRecommendationData';
 import { orderFieldPositionsForDisplay } from '../../utils/positionDisplayOrder';
+import { useTranslation } from 'react-i18next';
 
 const humanizePositionKey = (positionKey) => {
   return positionKey
@@ -28,14 +29,27 @@ const getPositionConfig = (positionKey) => {
   }
 
   if (positionKey.startsWith('substitute_')) {
+    // Note: useTranslation not available in helper function - component handles translation
     return { title: 'Substitute', position: positionKey };
   }
 
   return { title: humanizePositionKey(positionKey), position: positionKey };
 };
 
+/**
+ * Translate a position key to a localized display name
+ * Falls back to the config title if no translation key exists
+ */
+function getTranslatedPositionTitle(position, config, t) {
+  // Use a normalized key: strip numeric suffixes from substitute positions
+  const normalizedKey = position.startsWith('substitute_') ? 'substitute' : position;
+  const translationKey = `periodSetup.positions.${normalizedKey}`;
+  const translated = t(translationKey, { defaultValue: '' });
+  return translated || config.title;
+}
+
 // Dynamic component for rendering individual position cards
-function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
   const modeDefinition = getModeDefinition(teamConfig);
   if (!modeDefinition) {
     return null;
@@ -48,16 +62,18 @@ function IndividualPositionCards({ positions = null, teamConfig, formation, onPl
     <>
       {allPositions.map(position => {
         const config = getPositionConfig(position);
+        const displayTitle = getTranslatedPositionTitle(position, config, t);
 
         return (
           <IndividualPositionCard
             key={position}
-            title={config.title}
+            title={displayTitle}
             position={config.position}
             playerId={formation[position]}
             onPlayerAssign={onPlayerAssign}
             getAvailableOptions={getAvailableOptions}
             currentPeriodNumber={currentPeriodNumber}
+            t={t}
           />
         );
       })}
@@ -96,6 +112,7 @@ export function PeriodSetupScreen({
   resumeFormationData = null
 }) {
   const { currentTeam, loadTeamPreferences } = useTeam();
+  const { t } = useTranslation('configuration');
 
   // Unified recommendation state
   const [recommendationState, setRecommendationState] = useState({
@@ -431,9 +448,9 @@ export function PeriodSetupScreen({
         setRecommendationState(prev => ({
           ...prev,
           subPercentages: {},
-          subError: error.message || 'Failed to calculate substitute recommendations',
+          subError: error.message || t('periodSetup.substituteRecommendations.error'),
           positionData: null,
-          positionError: error.message || 'Failed to calculate position recommendations'
+          positionError: error.message || t('positionRecommendations.error')
         }));
       }
     };
@@ -452,7 +469,8 @@ export function PeriodSetupScreen({
     formation,
     teamConfig,
     modeDefinition,
-    loadTeamPreferences
+    loadTeamPreferences,
+    t
   ]);
 
   const handleDismissSubRecommendations = useCallback(() => {
@@ -775,7 +793,7 @@ export function PeriodSetupScreen({
 
     if (playerId && otherAssignments.includes(playerId)) {
       const duplicatePlayerName = getPlayerDisplayNameByIdUtil(allPlayers, playerId);
-      alert(`${duplicatePlayerName} is already assigned. Choose a different player.`);
+      alert(t('periodSetup.alerts.alreadyAssigned', { playerName: duplicatePlayerName }));
       return;
     }
 
@@ -951,25 +969,25 @@ export function PeriodSetupScreen({
 
   const randomizeFormation = () => {
     if (!formation.goalie) {
-      alert('Please select a goalie first before randomizing the formation.');
+      alert(t('periodSetup.alerts.selectGoalieFirst'));
       return;
     }
 
     // Get players available for positioning (excluding goalie)
     const availablePlayers = availableForAssignment;
-    
+
     if (availablePlayers.length === 0) {
-      alert('No players available for positioning.');
+      alert(t('periodSetup.alerts.noPlayersAvailable'));
       return;
     }
 
     // Generate random formation based on team config (includes formation info)
     const randomFormation = randomizeFormationPositions(availablePlayers, teamConfig);
-    
+
     // Validate that we got a valid formation
     const formationKeys = Object.keys(randomFormation);
     if (formationKeys.length === 0) {
-      alert('Failed to generate random formation.');
+      alert(t('periodSetup.alerts.randomizeFailed'));
       return;
     }
     
@@ -989,21 +1007,21 @@ export function PeriodSetupScreen({
       return;
     }
 
-    setSavePeriodConfigStatus({ loading: true, message: 'Saving period configuration...', error: null });
+    setSavePeriodConfigStatus({ loading: true, message: t('periodSetup.saveStatus.saving'), error: null });
 
     try {
       const result = await handleSavePeriodConfiguration();
-      
+
       if (result.success) {
         setSavePeriodConfigStatus({
           loading: false,
-          message: `✅ ${result.message || 'Period configuration saved successfully'}`,
+          message: t('periodSetup.saveStatus.success', { message: result.message || t('periodSetup.saveStatus.defaultSuccess') }),
           error: null
         });
-        
+
         // Scroll to top to show success banner
         scrollToTopSmooth();
-        
+
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSavePeriodConfigStatus(prev => ({ ...prev, message: '' }));
@@ -1012,7 +1030,7 @@ export function PeriodSetupScreen({
         setSavePeriodConfigStatus({
           loading: false,
           message: '',
-          error: result.error || 'Failed to save period configuration'
+          error: result.error || t('periodSetup.saveStatus.defaultError')
         });
       }
     } catch (error) {
@@ -1020,7 +1038,7 @@ export function PeriodSetupScreen({
       setSavePeriodConfigStatus({
         loading: false,
         message: '',
-        error: 'Failed to save period configuration: ' + error.message
+        error: t('periodSetup.saveStatus.defaultError') + ': ' + error.message
       });
     }
   };
@@ -1028,12 +1046,12 @@ export function PeriodSetupScreen({
   return (
     <div className="space-y-3">
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
-        <Users className="mr-2 h-6 w-6" />Period {currentPeriodNumber} Team Selection
+        <Users className="mr-2 h-6 w-6" />{t('periodSetup.header.title', { period: currentPeriodNumber })}
       </h2>
       
       {/* Current Score Display */}
       <div className="p-2 bg-slate-700 rounded-lg text-center">
-        <h3 className="text-sm font-medium text-sky-200 mb-2">Current Score</h3>
+        <h3 className="text-sm font-medium text-sky-200 mb-2">{t('periodSetup.score.title')}</h3>
         <div className="flex items-center justify-center space-x-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-sky-400">{ownScore}</div>
@@ -1042,7 +1060,7 @@ export function PeriodSetupScreen({
           <div className="text-xl font-mono font-bold text-slate-400">-</div>
           <div className="text-center">
             <div className="text-2xl font-bold text-slate-400">{opponentScore}</div>
-            <div className="text-xs text-slate-300 font-semibold">{opponentTeam || 'Opponent'}</div>
+            <div className="text-xs text-slate-300 font-semibold">{opponentTeam || t('periodSetup.score.opponent')}</div>
           </div>
         </div>
       </div>
@@ -1053,17 +1071,17 @@ export function PeriodSetupScreen({
           className="p-2 bg-slate-700 rounded-lg space-y-2"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-sky-200">Recommended Substitutes</h3>
-            <span className="text-xs text-slate-300">Last 6 months</span>
+            <h3 className="text-sm font-medium text-sky-200">{t('periodSetup.substituteRecommendations.title')}</h3>
+            <span className="text-xs text-slate-300">{t('periodSetup.substituteRecommendations.timeframe')}</span>
           </div>
           {statsLoading ? (
-            <p className="text-xs text-slate-300">Loading substitute recommendations...</p>
+            <p className="text-xs text-slate-300">{t('periodSetup.substituteRecommendations.loading')}</p>
           ) : recommendationState.subError ? (
-            <p className="text-xs text-rose-300">Unable to load substitute recommendations right now.</p>
+            <p className="text-xs text-rose-300">{t('periodSetup.substituteRecommendations.error')}</p>
           ) : displayedSubstituteRecommendations.length > 0 ? (
             <>
               <p className="text-xs text-slate-300">
-                Players who have rarely started as substitutes recently. Consider giving them a substitute start.
+                {t('periodSetup.substituteRecommendations.description')}
               </p>
               <ul className="space-y-1" data-testid="substitute-recommendations-list">
                 {displayedSubstituteRecommendations.map(player => (
@@ -1080,21 +1098,21 @@ export function PeriodSetupScreen({
               </ul>
             </>
           ) : (
-            <p className="text-xs text-slate-300">No eligible substitutes to recommend.</p>
+            <p className="text-xs text-slate-300">{t('periodSetup.substituteRecommendations.noEligible')}</p>
           )}
           <div className="flex items-center justify-end space-x-2 pt-1">
             <Button
               variant="secondary"
               onClick={handleDismissSubRecommendations}
             >
-              Dismiss
+              {t('periodSetup.substituteRecommendations.dismiss')}
             </Button>
             <Button
               variant="accent"
               onClick={handleAcceptSubRecommendations}
               disabled={statsLoading || displayedSubstituteRecommendations.length === 0}
             >
-              Accept
+              {t('periodSetup.substituteRecommendations.accept')}
             </Button>
           </div>
         </div>
@@ -1120,7 +1138,7 @@ export function PeriodSetupScreen({
 
       {savePeriodConfigStatus.error && (
         <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
-          <p className="text-rose-200 text-sm">❌ {savePeriodConfigStatus.error}</p>
+          <p className="text-rose-200 text-sm">{t('periodSetup.saveStatus.error', { message: savePeriodConfigStatus.error })}</p>
         </div>
       )}
 
@@ -1132,6 +1150,7 @@ export function PeriodSetupScreen({
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}
           currentPeriodNumber={currentPeriodNumber}
+          t={t}
         />
       )}
 
@@ -1140,12 +1159,14 @@ export function PeriodSetupScreen({
         const isGoalieInactive = formation.goalie && isPlayerInactive(formation.goalie);
         const sectionBgColor = isGoalieInactive ? 'bg-amber-700 border border-amber-500' : 'bg-emerald-700';
         const headerColor = isGoalieInactive ? 'text-amber-200' : 'text-emerald-100';
-        const warningText = isGoalieInactive ? ' (Inactive - needs activation)' : '';
-        
+
         return (
           <div className={`p-2 ${sectionBgColor} rounded-md`}>
             <h3 className={`text-sm font-medium ${headerColor} mb-1`}>
-              Goalie for Period {currentPeriodNumber}{warningText}
+              {isGoalieInactive
+                ? t('periodSetup.goalie.headerInactive', { period: currentPeriodNumber })
+                : t('periodSetup.goalie.header', { period: currentPeriodNumber })
+              }
             </h3>
             <Select
               value={formation.goalie || ""}
@@ -1157,7 +1178,7 @@ export function PeriodSetupScreen({
                 if (!aInactive && bInactive) return -1;
                 return 0;
               }).map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-              placeholder="Select Goalie for this Period"
+              placeholder={t('periodSetup.goalie.placeholder')}
             />
           </div>
         );
@@ -1171,6 +1192,7 @@ export function PeriodSetupScreen({
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}
           currentPeriodNumber={currentPeriodNumber}
+          t={t}
         />
       )}
 
@@ -1182,29 +1204,29 @@ export function PeriodSetupScreen({
           variant="secondary"
           Icon={Save}
         >
-          {savePeriodConfigStatus.loading ? 'Saving...' : 'Save Configuration'}
+          {savePeriodConfigStatus.loading ? t('periodSetup.buttons.saving') : t('periodSetup.buttons.saveConfig')}
         </Button>
       )}
 
       <Button onClick={handleStartGame} disabled={!isFormationComplete()} Icon={Play}>
-        Enter Game
+        {t('periodSetup.buttons.enterGame')}
       </Button>
 
       {/* Debug Mode Randomize Formation Button - Only for first period */}
       {debugMode && currentPeriodNumber === 1 && (
-        <Button 
-          onClick={randomizeFormation} 
+        <Button
+          onClick={randomizeFormation}
           variant="accent"
           Icon={Shuffle}
           className="bg-amber-600 hover:bg-amber-700 text-white"
         >
-          🎲 Randomize Formation (Debug)
+          {t('periodSetup.buttons.randomize')}
         </Button>
       )}
-      
+
       {currentPeriodNumber === 1 && (
         <Button onClick={onNavigateBack} Icon={ArrowLeft}>
-          Back to Configuration
+          {t('periodSetup.buttons.backToConfig')}
         </Button>
       )}
 
@@ -1214,26 +1236,29 @@ export function PeriodSetupScreen({
         onConfirm={activatePlayerAndAssign}
         onCancel={cancelInactivePlayerAssignment}
         title={
-          confirmationModal.type === 'inactive-goalie' ? 'Inactive Goalie Detected' :
-          confirmationModal.type === 'recommendation-rerun' ? 'Re-run Formation Recommendations?' :
-          'Activate Player'
+          confirmationModal.type === 'inactive-goalie' ? t('periodSetup.modals.inactiveGoalie.title') :
+          confirmationModal.type === 'recommendation-rerun' ? t('periodSetup.modals.recommendationRerun.title') :
+          t('periodSetup.modals.activatePlayer.title')
         }
         message={
           confirmationModal.type === 'inactive-goalie'
-            ? `${confirmationModal.playerName} is currently inactive but selected as goalie for next period. Do you want to continue with ${confirmationModal.playerName} as goalie?`
+            ? t('periodSetup.modals.inactiveGoalie.message', { playerName: confirmationModal.playerName })
             : confirmationModal.type === 'recommendation-rerun'
-            ? `You've changed the goalie from ${getPlayerDisplayNameByIdUtil(allPlayers, confirmationModal.formerGoalieId) || 'Unknown'} to ${confirmationModal.playerName}. Would you like to re-run the formation recommendations with the new goalie?`
-            : `Put ${confirmationModal.playerName} back into rotation?`
+            ? t('periodSetup.modals.recommendationRerun.message', {
+                formerGoalie: getPlayerDisplayNameByIdUtil(allPlayers, confirmationModal.formerGoalieId) || t('periodSetup.fallbacks.unknownPlayer'),
+                newGoalie: confirmationModal.playerName
+              })
+            : t('periodSetup.modals.activatePlayer.message', { playerName: confirmationModal.playerName })
         }
         confirmText={
-          confirmationModal.type === 'inactive-goalie' ? 'Activate & Continue' :
-          confirmationModal.type === 'recommendation-rerun' ? 'Yes, Re-run Recommendations' :
-          'Activate'
+          confirmationModal.type === 'inactive-goalie' ? t('periodSetup.modals.inactiveGoalie.confirm') :
+          confirmationModal.type === 'recommendation-rerun' ? t('periodSetup.modals.recommendationRerun.confirm') :
+          t('periodSetup.modals.activatePlayer.confirm')
         }
         cancelText={
-          confirmationModal.type === 'inactive-goalie' ? 'Choose Different Goalie' :
-          confirmationModal.type === 'recommendation-rerun' ? 'No, Keep Current Formation' :
-          'Cancel'
+          confirmationModal.type === 'inactive-goalie' ? t('periodSetup.modals.inactiveGoalie.cancel') :
+          confirmationModal.type === 'recommendation-rerun' ? t('periodSetup.modals.recommendationRerun.cancel') :
+          t('periodSetup.modals.activatePlayer.cancel')
         }
         variant="accent"
       />
@@ -1241,7 +1266,7 @@ export function PeriodSetupScreen({
   );
 }
 
-export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, currentPeriodNumber }) {
+export function IndividualPositionCard({ title, position, playerId, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
   const availableOptions = getAvailableOptions(position);
 
   // Use same colors as GameScreen: sky for on-field, slate for substitutes
@@ -1256,7 +1281,7 @@ export function IndividualPositionCard({ title, position, playerId, onPlayerAssi
         value={playerId || ""}
         onChange={value => onPlayerAssign(position, value)}
         options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-        placeholder={`Select ${title}`}
+        placeholder={t('periodSetup.fallbacks.selectPosition', { title })}
       />
     </div>
   );

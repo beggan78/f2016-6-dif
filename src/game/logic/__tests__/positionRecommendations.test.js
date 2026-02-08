@@ -421,11 +421,13 @@ describe('Position Recommendations', () => {
         ['p5']
       );
 
-      // Check that reasons are included
-      expect(result.recommendations.leftDefender.reason).toContain('defender time');
-      expect(result.recommendations.rightDefender.reason).toContain('defender time');
-      expect(result.recommendations.leftAttacker.reason).toContain('attacker time');
-      expect(result.recommendations.rightAttacker.reason).toContain('attacker time');
+      // Check that reason keys are included
+      expect(result.recommendations.leftDefender.reasonKey).toBe('roleTimePercentage');
+      expect(result.recommendations.leftDefender.reasonParams.role).toBe('defender');
+      expect(result.recommendations.rightDefender.reasonKey).toBe('roleTimePercentage');
+      expect(result.recommendations.leftAttacker.reasonKey).toBe('roleTimePercentage');
+      expect(result.recommendations.leftAttacker.reasonParams.role).toBe('attacker');
+      expect(result.recommendations.rightAttacker.reasonKey).toBe('roleTimePercentage');
     });
 
     test('should handle new players with "No match history" reason', () => {
@@ -453,7 +455,7 @@ describe('Position Recommendations', () => {
       );
 
       if (p1Position) {
-        expect(p1Position[1].reason).toBe('No match history');
+        expect(p1Position[1].reasonKey).toBe('noMatchHistory');
       }
     });
 

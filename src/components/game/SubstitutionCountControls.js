@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 import { Minus, Plus } from 'lucide-react';
 
 const clampValue = (value, min, max) => {
@@ -40,6 +41,8 @@ export function SubstitutionCountStepper({
   variant = 'default',
   className = ''
 }) {
+  const { t } = useTranslation('game');
+
   const sizeConfig = React.useMemo(() => {
     if (variant === 'compact') {
       return {
@@ -74,7 +77,7 @@ export function SubstitutionCountStepper({
       <StepperButton
         onClick={() => handleAdjust(-1)}
         disabled={disabled || value <= min}
-        ariaLabel="Decrease number of players to substitute"
+        ariaLabel={t('substitution.decreaseCount')}
         className={sizeConfig.button}
       >
         <Minus className="h-4 w-4" />
@@ -83,7 +86,7 @@ export function SubstitutionCountStepper({
       <StepperButton
         onClick={() => handleAdjust(1)}
         disabled={disabled || value >= max}
-        ariaLabel="Increase number of players to substitute"
+        ariaLabel={t('substitution.increaseCount')}
         className={sizeConfig.button}
       >
         <Plus className="h-4 w-4" />

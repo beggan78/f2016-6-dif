@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ListChecks, PlusCircle, FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -50,6 +51,7 @@ export function GameFinishedScreen({
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
   matchType = null
 }) {
+  const { t } = useTranslation('game');
   const [saveError, setSaveError] = useState(null);
   const [savingFairPlayAward, setSavingFairPlayAward] = useState(false);
   const [fairPlayAwardPlayerId, setFairPlayAwardPlayerId] = useState(null);
@@ -264,12 +266,12 @@ export function GameFinishedScreen({
     }
 
     if (!currentMatchId) {
-      setSaveError('No match ID found. Please restart the match to enable saving.');
+      setSaveError(t('stats.errors.noMatchId'));
       return;
     }
 
     if (!isAuthenticated) {
-      setSaveError('Please sign in to save match updates.');
+      setSaveError(t('stats.errors.signInRequired'));
       return;
     }
 
@@ -293,20 +295,20 @@ export function GameFinishedScreen({
       }
 
       if (result.success) {
-        showSuccessMessage('Match saved to history');
+        showSuccessMessage(t('stats.matchSaved'));
       } else {
-        setSaveError(result.error || 'Failed to save match updates');
+        setSaveError(result.error || t('stats.errors.saveFailed'));
       }
     } catch (error) {
       if (saveRequestIdRef.current === requestId) {
-        setSaveError(error.message || 'Failed to save match updates');
+        setSaveError(error.message || t('stats.errors.saveFailed'));
       }
     } finally {
       if (saveRequestIdRef.current === requestId) {
         setSavingFairPlayAward(false);
       }
     }
-  }, [currentMatchId, getSelectedPlayerName, isAuthenticated, setAllPlayers, shouldShowFairPlayAward, showSuccessMessage, squadForStats]);
+  }, [currentMatchId, getSelectedPlayerName, isAuthenticated, setAllPlayers, shouldShowFairPlayAward, showSuccessMessage, squadForStats, t]);
 
   const handleFairPlayAwardChange = useCallback((event) => {
     const selectedPlayerId = event.target.value || null;
@@ -360,7 +362,7 @@ export function GameFinishedScreen({
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-sky-300 flex items-center">
           <ListChecks className="mr-2 h-6 w-6" />
-          Game Finished - Statistics
+          {t('stats.title')}
         </h2>
       </div>
 
@@ -368,7 +370,7 @@ export function GameFinishedScreen({
       <div className="p-4 bg-slate-700 rounded-lg">
         <MatchSummaryHeader
           ownTeamName={ownTeamName}
-          opponentTeam={opponentTeam || 'Opponent'}
+          opponentTeam={opponentTeam || t('stats.opponent')}
           ownScore={ownScore}
           opponentScore={opponentScore}
           matchStartTime={matchStartTime}
@@ -383,7 +385,7 @@ export function GameFinishedScreen({
         <div className={FAIR_PLAY_AWARD_STYLES.container} data-testid="fair-play-award-section">
           <div className="flex items-center justify-between mb-3">
             <h3 className={FAIR_PLAY_AWARD_STYLES.header}>
-              🏆 Fair Play Award
+              {t('stats.fairPlayAward')}
             </h3>
           </div>
 
@@ -394,7 +396,7 @@ export function GameFinishedScreen({
               className={FAIR_PLAY_AWARD_STYLES.dropdown}
               data-testid="fair-play-award-dropdown"
             >
-              <option value="" className="bg-slate-800">Not awarded</option>
+              <option value="" className="bg-slate-800">{t('stats.notAwarded')}</option>
               {fairPlayDropdownOptions.map(option => (
                 <option key={option.id} value={option.id} className="bg-slate-800">
                   {option.label}
@@ -415,13 +417,13 @@ export function GameFinishedScreen({
                 <span className={FAIR_PLAY_AWARD_STYLES.confirmationText}>
                   ✨ {getSelectedPlayerName(fairPlayAwardPlayerId, squadForStats)}
                 </span>
-                <span className={FAIR_PLAY_AWARD_STYLES.confirmationBadge}>FAIR PLAY WINNER</span>
+                <span className={FAIR_PLAY_AWARD_STYLES.confirmationBadge}>{t('stats.fairPlayWinner')}</span>
               </div>
             </div>
           )}
 
           <div className="mt-3 text-xs text-slate-300">
-            {savingFairPlayAward ? 'Saving selection...' : 'Selection saves automatically'}
+            {savingFairPlayAward ? t('stats.savingSelection') : t('stats.selectionSavesAutomatically')}
           </div>
 
           {saveError && (
@@ -441,11 +443,11 @@ export function GameFinishedScreen({
       />
 
       <Button onClick={handleViewLiveMatch} Icon={FileText} variant="primary">
-        View Match Report
+        {t('stats.viewMatchReport')}
       </Button>
 
       <Button onClick={handleNewGame} Icon={PlusCircle}>
-        Start New Game
+        {t('stats.startNewGame')}
       </Button>
 
     </div>

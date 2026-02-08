@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { Search, History } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '../shared/UI';
 import { useTypeaheadDropdown } from '../../hooks/useTypeaheadDropdown';
 import { useOpponentNameSuggestions } from '../../hooks/useOpponentNameSuggestions';
@@ -10,10 +11,11 @@ export function OpponentNameAutocomplete({
   value,
   onChange,
   onSelect,
-  placeholder = 'Enter opponent team name (optional)',
+  placeholder,
   disabled = false,
   inputId
 }) {
+  const { t } = useTranslation('configuration');
   const { names, loading, error } = useOpponentNameSuggestions(teamId);
 
   const {
@@ -133,7 +135,7 @@ export function OpponentNameAutocomplete({
           onFocus={handleInputFocus}
           onBlur={handleBlur}
           onKeyDown={handleInputKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder || t('matchDetails.opponentPlaceholder')}
           maxLength={50}
           disabled={disabled}
           aria-autocomplete="list"
@@ -160,7 +162,7 @@ export function OpponentNameAutocomplete({
         <div
           className="absolute z-10 mt-1 w-full bg-slate-700 border border-slate-500 rounded-md shadow-lg max-h-56 overflow-auto"
           role="listbox"
-          aria-label="Previous opponent suggestions"
+          aria-label={t('matchDetails.opponentSuggestions.ariaLabel')}
         >
           {filteredSuggestions.map((name, index) => {
             const isHighlighted = index === highlightedIndex;
@@ -189,7 +191,7 @@ export function OpponentNameAutocomplete({
 
       {showEmptyState && (
         <div className="absolute z-10 mt-1 w-full bg-slate-700 border border-slate-500 rounded-md shadow-lg p-3 text-slate-300 text-sm">
-          No previous opponents match "{query}"
+          {t('matchDetails.opponentSuggestions.noMatches', { query })}
         </div>
       )}
     </div>

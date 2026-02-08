@@ -135,7 +135,7 @@ describe('InvitationWelcome', () => {
     it('should show password requirements text', () => {
       render(<InvitationWelcome {...defaultProps} />);
 
-      expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument();
+      expect(screen.getByText('Must be at least 8 characters with letters and at least one number')).toBeInTheDocument();
     });
 
     it('should show ready to process state when user can accept invitation', () => {

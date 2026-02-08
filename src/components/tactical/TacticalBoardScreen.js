@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TacticalBoard } from './TacticalBoard';
 import { createPersistenceManager } from '../../utils/persistenceManager';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 
 export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, removeFromNavigationStack, fromView }) {
+  const { t } = useTranslation('tactical');
   // Memoize the persistence manager to prevent re-creation on every render
   const persistenceManager = useMemo(() => createPersistenceManager(STORAGE_KEYS.TACTICAL_PREFERENCES, {
     pitchMode: 'full',
@@ -190,7 +192,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
   }, [interactionMode, persistenceManager]);
 
   const canUndoDrawing = interactionMode === 'draw' && drawings.length > 0;
-  const clearButtonLabel = interactionMode === 'draw' ? 'Clear' : 'Clear All';
+  const clearButtonLabel = interactionMode === 'draw' ? t('controls.clear') : t('controls.clearAll');
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-2 sm:p-4">
@@ -202,7 +204,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
               onClick={handleBackPress}
               className="bg-sky-600 hover:bg-sky-500 text-white rounded-lg px-3 py-1 text-sm font-medium transition-colors duration-200 shadow-md"
             >
-              Back
+              {t('controls.back')}
             </button>
           </div>
 
@@ -217,7 +219,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
                     : 'bg-slate-700/60 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                Undo
+                {t('controls.undo')}
               </button>
             )}
           </div>
@@ -243,7 +245,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Drag
+              {t('controls.drag')}
             </button>
             <button
               onClick={() => handleInteractionModeChange('draw')}
@@ -253,7 +255,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Draw
+              {t('controls.draw')}
             </button>
           </div>
 
@@ -267,7 +269,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Full
+              {t('controls.full')}
             </button>
             <button
               onClick={() => handlePitchModeToggle('half')}
@@ -277,7 +279,7 @@ export function TacticalBoardScreen({ onNavigateBack, pushNavigationState, remov
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Half
+              {t('controls.half')}
             </button>
           </div>
         </div>

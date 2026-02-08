@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { AlertTriangle, X, Unplug } from 'lucide-react';
 import { getProviderById } from '../../constants/connectorProviders';
 
 export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }) {
+  const { t } = useTranslation('connectors');
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,7 +22,7 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
       // Modal will be closed by parent component after successful disconnect
     } catch (err) {
       console.error('Error disconnecting:', err);
-      setError(err.message || 'Failed to disconnect provider');
+      setError(err.message || t('disconnect.errorFallback'));
       setIsDisconnecting(false);
     }
   };
@@ -35,9 +37,9 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
               <AlertTriangle className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-100">Disconnect {providerName}?</h2>
+              <h2 className="text-lg font-semibold text-slate-100">{t('disconnect.title', { provider: providerName })}</h2>
               <p className="text-sm text-slate-400">
-                This will stop automatic synchronization
+                {t('disconnect.subtitle')}
               </p>
             </div>
           </div>
@@ -58,11 +60,11 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
               <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
               <div className="space-y-2">
                 <p className="text-rose-200 font-medium">
-                  Are you sure you want to disconnect {providerName}?
+                  {t('disconnect.confirmMessage', { provider: providerName })}
                 </p>
                 <ul className="text-rose-300 text-sm space-y-1">
-                  <li>• Automatic data synchronization will stop</li>
-                  <li>• Stored credentials will be removed</li>
+                  <li>&bull; {t('disconnect.warningAutoSync')}</li>
+                  <li>&bull; {t('disconnect.warningCredentials')}</li>
                 </ul>
               </div>
             </div>
@@ -71,8 +73,8 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
           {/* Reassurance */}
           <div className="bg-slate-700 border border-slate-600 rounded-lg p-4 mb-6">
             <ul className="text-slate-200 text-sm space-y-1">
-              <li>• Existing attendance and match data will be preserved</li>
-              <li>• You can reconnect at any time</li>
+              <li>&bull; {t('disconnect.reassureData')}</li>
+              <li>&bull; {t('disconnect.reassureReconnect')}</li>
             </ul>
           </div>
 
@@ -92,7 +94,7 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
               Icon={Unplug}
               disabled={isDisconnecting}
             >
-              {isDisconnecting ? 'Disconnecting...' : 'Disconnect'}
+              {isDisconnecting ? t('disconnect.disconnecting') : t('disconnect.disconnect')}
             </Button>
             <Button
               onClick={onClose}
@@ -100,7 +102,7 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
               className="flex-1"
               disabled={isDisconnecting}
             >
-              Cancel
+              {t('disconnect.cancel')}
             </Button>
           </div>
         </div>

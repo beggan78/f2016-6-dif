@@ -2,9 +2,10 @@ import React, { useMemo, useRef } from 'react';
 import { Button } from '../../shared/UI';
 import { Portal } from '../../shared';
 import { PlayerSelector } from './PlayerSelector';
-import { PRACTICES_TOOLTIP } from '../../../constants/planMatchesConstants';
+
 import { useListDragAndDrop } from '../../../hooks/useListDragAndDrop';
 import { DraggablePlayerCard } from './DraggablePlayerCard';
+import { useTranslation } from 'react-i18next';
 
 export function MatchCard({
   match,
@@ -23,6 +24,7 @@ export function MatchCard({
   isPlayerInMultipleMatches,
   onReorderSelectedPlayers
 }) {
+  const { t } = useTranslation('team');
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
   const displayRoster = useMemo(() => {
     return [
@@ -82,7 +84,7 @@ export function MatchCard({
             disabled={isPlanning || isPlanned || !canPlan}
             className="px-2"
           >
-            {isPlanning ? 'Saving...' : isPlanned ? 'Saved' : 'Save'}
+            {isPlanning ? t('planMatches.matchCard.saving') : isPlanned ? t('planMatches.matchCard.saved') : t('planMatches.matchCard.save')}
           </Button>
         </div>
 
@@ -97,7 +99,7 @@ export function MatchCard({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Roster</span>
+            <span>{t('planMatches.matchCard.roster')}</span>
             <span>{roster?.length || 0}</span>
           </div>
           <PlayerSelector
@@ -108,13 +110,13 @@ export function MatchCard({
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}
             isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere}
-            practicesTooltip={PRACTICES_TOOLTIP}
+
           />
         </div>
 
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Selected</span>
+            <span>{t('planMatches.matchCard.selected')}</span>
             <span>{selectedIds.length}</span>
           </div>
           <div ref={listContainerRef} className="space-y-1 pr-1">
@@ -138,7 +140,7 @@ export function MatchCard({
             ))}
             {selectedPlayers.length === 0 && (
               <div className="rounded border border-slate-700 bg-slate-900/30 px-2 py-2 text-xs text-slate-400">
-                Empty.
+                {t('planMatches.matchCard.empty')}
               </div>
             )}
             {isDragging && ghostPosition && ghostPlayer && (
