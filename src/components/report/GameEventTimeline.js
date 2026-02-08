@@ -95,6 +95,8 @@ const timelinePrefsManager = createPersistenceManager(STORAGE_KEYS.TIMELINE_PREF
  * @param {Array} props.availablePlayers - Array of available players for the filter dropdown
  * @param {Function} props.onPlayerFilterChange - Callback when player filter selection changes
  * @param {boolean} props.debugMode - Whether debug mode is active (shows SUBSTITUTION_UNDONE events)
+ * @param {string} props.initialSortOrder - Optional initial sort order ('asc' or 'desc'), overrides localStorage default
+ * @param {Function} props.onSortOrderChange - Optional callback when sort order changes, lifts persistence to parent
  */
 export function GameEventTimeline({
   events = [],
@@ -110,21 +112,28 @@ export function GameEventTimeline({
   selectedPlayerId = null,
   availablePlayers = [],
   onPlayerFilterChange,
-  debugMode = false
+  debugMode = false,
+  initialSortOrder,
+  onSortOrderChange
 }) {
   const { t } = useTranslation('reports');
 
-  // Load sort preference using PersistenceManager, default to 'asc' (oldest first)
+  // Load sort preference: use initialSortOrder prop if provided, otherwise fall back to localStorage
   const [sortOrder, setSortOrder] = useState(() => {
+    if (initialSortOrder) return initialSortOrder;
     const preferences = timelinePrefsManager.loadState();
     return preferences.sortOrder;
   });
   const [expandedEvents, setExpandedEvents] = useState(new Set());
 
-  // Save sort preference using PersistenceManager when it changes
+  // Save sort preference when it changes
   useEffect(() => {
-    timelinePrefsManager.saveState({ sortOrder });
-  }, [sortOrder]);
+    if (onSortOrderChange) {
+      onSortOrderChange(sortOrder);
+    } else {
+      timelinePrefsManager.saveState({ sortOrder });
+    }
+  }, [sortOrder, onSortOrderChange]);
 
   // Filter and sort events
   const filteredAndSortedEvents = useMemo(() => {

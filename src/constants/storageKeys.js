@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
   PREFERENCES: 'sport-wizard-preferences',
   TACTICAL_PREFERENCES: 'sport-wizard-tactical-preferences',
   TIMELINE_PREFERENCES: 'sport-wizard-timeline-preferences',
+  TIMELINE_PREFERENCES_LIVE: 'sport-wizard-timeline-preferences-live',
 
   // UI state
   NAVIGATION_HISTORY: 'sport-wizard-navigation-history',
@@ -85,6 +86,7 @@ export const DEPRECATED_KEYS = {
  */
 export const PRESERVED_STORAGE_KEYS = [
   STORAGE_KEYS.TIMELINE_PREFERENCES,
+  STORAGE_KEYS.TIMELINE_PREFERENCES_LIVE,
   STORAGE_KEYS.PREFERENCES,
   STORAGE_KEYS.TACTICAL_PREFERENCES,
   STORAGE_KEYS.AUTH_USER_PREFERENCES,

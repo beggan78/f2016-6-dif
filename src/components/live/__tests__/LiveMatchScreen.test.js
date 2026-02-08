@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {
   LiveMatchScreen,
@@ -11,6 +11,7 @@ import {
 import { STORAGE_KEYS } from '../../../constants/storageKeys';
 import { useMatchEvents } from '../../../hooks/useMatchEvents';
 import { useTeam } from '../../../contexts/TeamContext';
+import { findUpcomingMatchByOpponent } from '../../../services/matchIntegrationService';
 
 const mockTimelineRender = jest.fn();
 
@@ -263,6 +264,190 @@ describe('LiveMatchScreen polling configuration', () => {
         pollingEnabled: false,
         refreshIntervalMs: 60000
       });
+    });
+  });
+});
+
+describe('LiveMatchScreen timeline sort order defaults', () => {
+  const mockUseMatchEvents = useMatchEvents;
+  const mockUseTeam = useTeam;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    mockTimelineRender.mockClear();
+
+    mockUseTeam.mockReturnValue({ currentTeam: { id: 'team-123' } });
+  });
+
+  it('defaults to desc (newest first) for a live match', async () => {
+    const liveEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1, data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' } }),
+      buildLiveEvent('goal_scored', 2000, { ordinal: 2, player_id: 'p1' })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events: liveEvents,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(lastCall.initialSortOrder).toBe('desc');
+    });
+  });
+
+  it('defaults to asc (oldest first) for a finished match', async () => {
+    const finishedEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1, data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' } }),
+      buildLiveEvent('match_ended', 2000, { ordinal: 2 })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events: finishedEvents,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(lastCall.initialSortOrder).toBe('asc');
+    });
+  });
+
+  it('defaults to desc for a pending (not yet started) match', async () => {
+    findUpcomingMatchByOpponent.mockResolvedValue(null);
+
+    // No match_started event means match hasn't started yet
+    mockUseMatchEvents.mockReturnValue({
+      events: [buildLiveEvent('match_created', 0, { ordinal: 1, data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' } })],
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    // Pending match: matchHasStarted=false, isLive=false -> not finished -> uses live prefs (desc)
+    await waitFor(() => {
+      const calls = mockTimelineRender.mock.calls;
+      if (calls.length > 0) {
+        const lastCall = calls[calls.length - 1][0];
+        expect(lastCall.initialSortOrder).toBe('desc');
+      }
+    });
+  });
+
+  it('does not change sort order when match transitions from live to finished', async () => {
+    const liveEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1, data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' } }),
+      buildLiveEvent('goal_scored', 2000, { ordinal: 2, player_id: 'p1' })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events: liveEvents,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    const { rerender } = render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(lastCall.initialSortOrder).toBe('desc');
+    });
+
+    // Match ends
+    const finishedEvents = [
+      ...liveEvents,
+      buildLiveEvent('match_ended', 4000, { ordinal: 3 })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events: finishedEvents,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    rerender(<LiveMatchScreen matchId="match-123" />);
+
+    // Sort order should still be desc (locked to live status at first load)
+    await waitFor(() => {
+      const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(lastCall.initialSortOrder).toBe('desc');
+    });
+  });
+
+  it('persists sort order to the live preference key for live matches', async () => {
+    const liveEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1, data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' } }),
+      buildLiveEvent('goal_scored', 2000, { ordinal: 2, player_id: 'p1' })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events: liveEvents,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(lastCall.onSortOrderChange).toBeDefined();
+    });
+
+    // Simulate sort order change via callback
+    const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+    act(() => {
+      lastCall.onSortOrderChange('asc');
+    });
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.TIMELINE_PREFERENCES_LIVE));
+      expect(stored.sortOrder).toBe('asc');
+    });
+  });
+
+  it('persists sort order to the finished preference key for finished matches', async () => {
+    const finishedEvents = [
+      buildLiveEvent('match_started', 0, { ordinal: 1, data: { ownTeamName: 'Team A', opponentTeamName: 'Team B' } }),
+      buildLiveEvent('match_ended', 2000, { ordinal: 2 })
+    ];
+
+    mockUseMatchEvents.mockReturnValue({
+      events: finishedEvents,
+      isLoading: false,
+      error: null,
+      lastUpdateTime: new Date(baseTime)
+    });
+
+    render(<LiveMatchScreen matchId="match-123" />);
+
+    await waitFor(() => {
+      const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+      expect(lastCall.onSortOrderChange).toBeDefined();
+    });
+
+    // Simulate sort order change via callback
+    const lastCall = mockTimelineRender.mock.calls[mockTimelineRender.mock.calls.length - 1][0];
+    act(() => {
+      lastCall.onSortOrderChange('desc');
+    });
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.TIMELINE_PREFERENCES));
+      expect(stored.sortOrder).toBe('desc');
     });
   });
 });

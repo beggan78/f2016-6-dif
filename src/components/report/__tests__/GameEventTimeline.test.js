@@ -1617,6 +1617,81 @@ describe('GameEventTimeline', () => {
     });
   });
 
+  describe('initialSortOrder and onSortOrderChange props', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it('uses initialSortOrder prop when provided', () => {
+      render(
+        <GameEventTimeline
+          events={sampleEvents}
+          getPlayerName={mockGetPlayerName}
+          goalScorers={mockGoalScorers}
+          initialSortOrder="desc"
+        />
+      );
+
+      // Should show "Newest first" since initialSortOrder is 'desc'
+      expect(screen.getByText('Newest first')).toBeInTheDocument();
+    });
+
+    it('falls back to localStorage when initialSortOrder not provided', () => {
+      // Set localStorage to desc
+      localStorage.setItem('sport-wizard-timeline-preferences', JSON.stringify({ sortOrder: 'desc' }));
+
+      render(
+        <GameEventTimeline
+          events={sampleEvents}
+          getPlayerName={mockGetPlayerName}
+          goalScorers={mockGoalScorers}
+        />
+      );
+
+      expect(screen.getByText('Newest first')).toBeInTheDocument();
+    });
+
+    it('calls onSortOrderChange when sort order is toggled', () => {
+      const mockOnSortOrderChange = jest.fn();
+
+      render(
+        <GameEventTimeline
+          events={sampleEvents}
+          getPlayerName={mockGetPlayerName}
+          goalScorers={mockGoalScorers}
+          initialSortOrder="asc"
+          onSortOrderChange={mockOnSortOrderChange}
+        />
+      );
+
+      // Toggle sort order
+      fireEvent.click(screen.getByText('Oldest first'));
+
+      expect(mockOnSortOrderChange).toHaveBeenCalledWith('desc');
+    });
+
+    it('does not write to localStorage when onSortOrderChange is provided', () => {
+      const mockOnSortOrderChange = jest.fn();
+
+      render(
+        <GameEventTimeline
+          events={sampleEvents}
+          getPlayerName={mockGetPlayerName}
+          goalScorers={mockGoalScorers}
+          initialSortOrder="asc"
+          onSortOrderChange={mockOnSortOrderChange}
+        />
+      );
+
+      // Toggle sort order
+      fireEvent.click(screen.getByText('Oldest first'));
+
+      // localStorage should not have been updated (onSortOrderChange handles persistence)
+      const stored = localStorage.getItem('sport-wizard-timeline-preferences');
+      expect(stored).toBeNull();
+    });
+  });
+
   describe('Display fallbacks', () => {
     it('shows goalie assignment using display_name fallback', () => {
       const events = [
