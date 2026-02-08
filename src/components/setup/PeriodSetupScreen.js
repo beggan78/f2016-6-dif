@@ -72,9 +72,7 @@ function GroupedPositionCards({ fieldGroups, substitutePositions, formation, onP
 
               return (
                 <div key={position} className="flex items-center gap-2">
-                  {positions.length > 1 && (
-                    <span className="text-xs text-sky-300 w-28 shrink-0">{displayTitle}</span>
-                  )}
+                  <span className="text-xs text-sky-300 w-16 shrink-0">{displayTitle}</span>
                   <div className="flex-1">
                     <Select
                       value={formation[position] || ""}
