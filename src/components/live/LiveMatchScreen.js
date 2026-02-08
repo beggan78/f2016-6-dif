@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Radio, Clock, AlertCircle } from 'lucide-react';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
@@ -135,10 +135,16 @@ export function calculateEffectiveMatchDurationSeconds(events = [], isLive = fal
   return Math.max(0, Math.floor(totalMs / 1000));
 }
 
-// Shared preferences with report-driven screens for timeline display
-const liveTimelinePrefsManager = createPersistenceManager(
+// Preference store for finished matches (oldest first by default)
+const finishedTimelinePrefsManager = createPersistenceManager(
   STORAGE_KEYS.TIMELINE_PREFERENCES,
   { sortOrder: 'asc', showSubstitutions: true }
+);
+
+// Preference store for live/pending matches (newest first by default)
+const liveTimelinePrefsManager = createPersistenceManager(
+  STORAGE_KEYS.TIMELINE_PREFERENCES_LIVE,
+  { sortOrder: 'desc', showSubstitutions: true }
 );
 
 /**
@@ -156,10 +162,22 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
   const { currentTeam } = useTeam();
   const [upcomingMatch, setUpcomingMatch] = useState(null);
   const [pollingConfig, setPollingConfig] = useState({ enabled: false, intervalMs: 60000 });
+
+  // Lock match status at first meaningful data load so sort order never flips mid-session
+  const isFinishedRef = useRef(null); // null = not yet determined
+
+  // Pick the correct preference manager based on locked match status
+  const getPrefsManager = useCallback(() => {
+    return isFinishedRef.current ? finishedTimelinePrefsManager : liveTimelinePrefsManager;
+  }, []);
+
   const [showSubstitutionEvents, setShowSubstitutionEvents] = useState(() => {
+    // Before we know match status, default to live prefs (will be corrected once status is determined)
     const preferences = liveTimelinePrefsManager.loadState();
     return preferences.showSubstitutions ?? true;  // Default ON
   });
+
+  const [timelineSortOrder, setTimelineSortOrder] = useState(null); // null until match status determined
 
   const {
     events,
@@ -186,6 +204,34 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
   const matchMetadata = useMemo(() => extractMatchMetadata(events), [events]);
   const matchHasFinished = Boolean(matchMetadata?.matchHasStarted && !matchMetadata?.isLive);
 
+  // Lock match status once we have first meaningful data, then load correct sort preference
+  useEffect(() => {
+    if (isFinishedRef.current !== null) return; // already locked
+    if (!matchMetadata) return; // no data yet
+
+    // Lock: finished if match has started and is no longer live
+    isFinishedRef.current = Boolean(matchMetadata.matchHasStarted && !matchMetadata.isLive);
+
+    // Load sort order from the correct preference store
+    const prefs = isFinishedRef.current
+      ? finishedTimelinePrefsManager.loadState()
+      : liveTimelinePrefsManager.loadState();
+    setTimelineSortOrder(prefs.sortOrder);
+
+    // Also reload showSubstitutions from correct store
+    setShowSubstitutionEvents(prefs.showSubstitutions ?? true);
+  }, [matchMetadata]);
+
+  // Handle sort order changes from the timeline component
+  const handleSortOrderChange = useCallback((newSortOrder) => {
+    setTimelineSortOrder(newSortOrder);
+    const manager = getPrefsManager();
+    manager.saveState({
+      ...manager.loadState(),
+      sortOrder: newSortOrder
+    });
+  }, [getPrefsManager]);
+
   useEffect(() => {
     const isLive = Boolean(matchMetadata?.isLive);
     const nextIntervalMs = isLive ? 30000 : (matchHasFinished ? 300000 : 60000);
@@ -203,11 +249,12 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
   }, [matchMetadata?.isLive, matchHasFinished]);
 
   useEffect(() => {
-    liveTimelinePrefsManager.saveState({
-      ...liveTimelinePrefsManager.loadState(),
+    const manager = getPrefsManager();
+    manager.saveState({
+      ...manager.loadState(),
       showSubstitutions: showSubstitutionEvents
     });
-  }, [showSubstitutionEvents]);
+  }, [showSubstitutionEvents, getPrefsManager]);
 
   const effectiveMatchDurationSeconds = useMemo(() => {
     return calculateEffectiveMatchDurationSeconds(events, matchMetadata?.isLive);
@@ -592,6 +639,8 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
               availablePlayers={[]}
               onPlayerFilterChange={null}
               debugMode={false}
+              initialSortOrder={timelineSortOrder}
+              onSortOrderChange={handleSortOrderChange}
             />
           </ReportSection>
         </div>
