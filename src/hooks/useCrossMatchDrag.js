@@ -214,15 +214,19 @@ export function useCrossMatchDrag({
         slideInTimeoutRef.current = setTimeout(() => {
           slideInTimeoutRef.current = null;
 
-          // Re-capture displaced card's rect (accounts for displacement transform + scroll)
-          let recapturedRect = fromRect;
+          // Re-capture displaced card's rect (accounts for displacement transform + scroll).
+          // Falls back to pre-animation rect if element was removed or hidden during the delay.
+          let recapturedRect = slideData.targetRect;
           const container = containerRefs.current.get(slideData.targetMatchId);
           if (container?.current) {
             const displacedCard = container.current.querySelector(
               `[data-drag-item-id="${slideData.targetPlayerId}"]`
             );
             if (displacedCard) {
-              recapturedRect = displacedCard.getBoundingClientRect();
+              const rect = displacedCard.getBoundingClientRect();
+              if (rect.width > 0 && rect.height > 0) {
+                recapturedRect = rect;
+              }
             }
           }
 

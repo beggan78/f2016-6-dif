@@ -670,6 +670,127 @@ describe('useCrossMatchDrag', () => {
       expect(result.current.swapAnimation).toBeNull();
     });
 
+    it('should use slide-in animation when clientX/clientY are provided', () => {
+      const { result } = renderHook(() => useCrossMatchDrag(defaultProps));
+
+      const containerB = createMockContainer('match-2', ['p4'], {
+        top: 0, left: 250, right: 450, bottom: 100, width: 200, height: 100
+      });
+
+      act(() => {
+        result.current.registerContainer('match-2', containerB);
+      });
+
+      act(() => {
+        result.current.handleDragMove(
+          { itemId: 'p1', clientX: 300, clientY: 20 },
+          'match-1'
+        );
+      });
+
+      act(() => {
+        result.current.handleDragEnd(
+          { cancelled: false, clientX: 300, clientY: 20 },
+          'match-1'
+        );
+      });
+
+      // Slide-in animation should be active, swap not yet executed
+      expect(result.current.slideInAnimation).not.toBeNull();
+      expect(mockOnSwapPlayers).not.toHaveBeenCalled();
+
+      // After slide-in completes, swap executes and FLIP animation starts
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      expect(result.current.slideInAnimation).toBeNull();
+      expect(mockOnSwapPlayers).toHaveBeenCalledWith('match-1', 'p1', 'match-2', 'p4');
+      expect(result.current.swapAnimation).not.toBeNull();
+    });
+
+    it('should fall back to pre-animation rect when displaced card has zero dimensions', () => {
+      const { result } = renderHook(() => useCrossMatchDrag(defaultProps));
+
+      const containerB = createMockContainer('match-2', ['p4'], {
+        top: 0, left: 250, right: 450, bottom: 100, width: 200, height: 100
+      });
+
+      act(() => {
+        result.current.registerContainer('match-2', containerB);
+      });
+
+      act(() => {
+        result.current.handleDragMove(
+          { itemId: 'p1', clientX: 300, clientY: 20 },
+          'match-1'
+        );
+      });
+
+      act(() => {
+        result.current.handleDragEnd(
+          { cancelled: false, clientX: 300, clientY: 20 },
+          'match-1'
+        );
+      });
+
+      // After initial rect is captured, make card return zero-dimension rect
+      // (simulates element hidden by CSS during the slide-in animation)
+      const card = containerB.current.querySelector('[data-drag-item-id="p4"]');
+      card.getBoundingClientRect = jest.fn(() => ({
+        top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0
+      }));
+
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      // Should use the pre-animation rect (stored in slideData.targetRect), not the zero rect
+      expect(result.current.swapAnimation.fromRect).toEqual(
+        expect.objectContaining({ top: 0, left: 250, height: 40 })
+      );
+    });
+
+    it('should fall back to pre-animation rect when displaced card is removed during animation', () => {
+      const { result } = renderHook(() => useCrossMatchDrag(defaultProps));
+
+      const containerB = createMockContainer('match-2', ['p4'], {
+        top: 0, left: 250, right: 450, bottom: 100, width: 200, height: 100
+      });
+
+      act(() => {
+        result.current.registerContainer('match-2', containerB);
+      });
+
+      act(() => {
+        result.current.handleDragMove(
+          { itemId: 'p1', clientX: 300, clientY: 20 },
+          'match-1'
+        );
+      });
+
+      act(() => {
+        result.current.handleDragEnd(
+          { cancelled: false, clientX: 300, clientY: 20 },
+          'match-1'
+        );
+      });
+
+      // Remove the card during the slide-in animation
+      const card = containerB.current.querySelector('[data-drag-item-id="p4"]');
+      card.remove();
+
+      act(() => {
+        jest.advanceTimersByTime(500);
+      });
+
+      // Swap should still execute with fallback rect
+      expect(mockOnSwapPlayers).toHaveBeenCalledWith('match-1', 'p1', 'match-2', 'p4');
+      expect(result.current.swapAnimation.fromRect).toEqual(
+        expect.objectContaining({ top: 0, left: 250 })
+      );
+    });
+
     it('should be null for ineligible swaps', () => {
       const props = {
         ...defaultProps,
