@@ -478,7 +478,7 @@ describe('GameFinishedScreen', () => {
     it('surfaces an error message when saving fails', async () => {
       updateFinishedMatchMetadata.mockResolvedValueOnce({
         success: false,
-        error: 'Match must be finished before updates can be applied.'
+        error: 'errors.matchNotFinished'
       });
 
       render(<GameFinishedScreen {...defaultProps} />);
@@ -488,7 +488,7 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
 
       await waitFor(() => {
-        expect(screen.getByText('❌ Match must be finished before updates can be applied.')).toBeInTheDocument();
+        expect(screen.getByText('❌ errors.matchNotFinished')).toBeInTheDocument();
       });
     });
 

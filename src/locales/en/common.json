@@ -15,6 +15,27 @@
     "invalidMatchId": "Invalid match ID",
     "unknownView": "Unknown view",
     "unknownPlayer": "Unknown Player",
-    "supabaseConfigMissing": "Supabase configuration missing. Please check environment variables."
+    "supabaseConfigMissing": "Supabase configuration missing. Please check environment variables.",
+    "failedToLoadPlayerStats": "Failed to load player stats",
+    "failedToLoadMatchDefaults": "Failed to load match defaults.",
+    "failedToLoadOpponentNames": "Unable to load previous opponent names.",
+    "matchCreationFailed": "Failed to create match: Missing match identifier from database response.",
+    "playerStatsUpdateFailed": "Failed to update player match stats",
+    "matchUpdateFailed": "Match update failed: Match not in running state or not found",
+    "matchNotFinished": "Match must be finished before updates can be applied.",
+    "fairPlayAwardFailed": "Unable to assign fair play award for this match.",
+    "fairPlayNoStats": "No player statistics were updated with the fair play award. Ensure the player participated in this match.",
+    "matchNotFound": "Match not found",
+    "configRequired": "Initial configuration is required",
+    "matchNotFoundOrDeleted": "Match not found or already deleted",
+    "invalidPlayerStats": "Player stats must be an array",
+    "noValidPlayerStats": "No valid player stats to update",
+    "loanPlayerRequired": "At least one player is required",
+    "loanTeamNameRequired": "Receiving team name is required",
+    "loanTeamNameTooLong": "Receiving team name must be 200 characters or less",
+    "loanDateRequired": "Loan date is required",
+    "loanRecordFailed": "Failed to record player loans",
+    "noTeamSelected": "No current team selected. Please create or select a team first.",
+    "matchSavedSuccess": "Match saved to your history successfully!"
   }
 }

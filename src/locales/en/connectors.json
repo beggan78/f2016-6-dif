@@ -122,5 +122,42 @@
       "syncing": "Syncing...",
       "disconnect": "Disconnect"
     }
+  },
+  "providers": {
+    "sportadmin": {
+      "description": "Swedish team management platform",
+      "features": {
+        "practiceAttendance": "Practice Attendance",
+        "upcomingMatches": "Upcoming Matches"
+      }
+    },
+    "svenska_lag": {
+      "description": "Swedish team management platform",
+      "features": {
+        "comingSoon": "Coming Soon"
+      }
+    },
+    "myclub": {
+      "description": "Team management platform",
+      "features": {
+        "comingSoon": "Coming Soon"
+      }
+    }
+  },
+  "statusLabels": {
+    "connected": "Connected",
+    "verifying": "Verifying",
+    "error": "Error",
+    "disconnected": "Disconnected",
+    "unknown": "Unknown"
+  },
+  "syncStatusLabels": {
+    "completed": "Completed",
+    "running": "Running",
+    "waiting": "Waiting",
+    "retrying": "Retrying",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "unknown": "Unknown"
   }
 }

@@ -4,7 +4,7 @@ import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock,
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
-import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { getMatchTypeOptions, DEFAULT_MATCH_TYPE } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
 import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome, deleteFinishedMatch } from '../../services/matchStateManager';
 
@@ -256,7 +256,7 @@ export function MatchDetailsView({
       goalsScored: 0,
       goalsConceded: 0,
       venueType: 'home',
-      type: MATCH_TYPE_OPTIONS[0]?.value || 'league',
+      type: DEFAULT_MATCH_TYPE,
       format: DEFAULT_FORMAT,
       formation: defaultFormation,
       periods: DEFAULT_PERIODS,
@@ -836,7 +836,8 @@ export function MatchDetailsView({
   });
 
   const getMatchTypeLabel = (type) => {
-    const option = MATCH_TYPE_OPTIONS.find(matchType => matchType.value === type);
+    const options = getMatchTypeOptions(t);
+    const option = options.find(matchType => matchType.value === type);
     if (option) {
       return option.label;
     }
@@ -1143,7 +1144,7 @@ export function MatchDetailsView({
                   <Select
                     value={editData.type}
                     onChange={(value) => updateMatchDetail('type', value)}
-                    options={MATCH_TYPE_OPTIONS.map(option => ({
+                    options={getMatchTypeOptions(t).map(option => ({
                       value: option.value,
                       label: option.label
                     }))}

@@ -61,11 +61,11 @@ describe('playerLoanService', () => {
     it('validates required parameters', async () => {
       const result1 = await recordPlayerLoans([], { teamId, receivingTeamName, loanDate });
       expect(result1.success).toBe(false);
-      expect(result1.error).toBe('At least one player is required');
+      expect(result1.error).toBe('errors.loanPlayerRequired');
 
       const result2 = await recordPlayerLoans(null, { teamId, receivingTeamName, loanDate });
       expect(result2.success).toBe(false);
-      expect(result2.error).toBe('At least one player is required');
+      expect(result2.error).toBe('errors.loanPlayerRequired');
 
       const result3 = await recordPlayerLoans(playerIds, { teamId: null, receivingTeamName, loanDate });
       expect(result3.success).toBe(false);
@@ -73,11 +73,11 @@ describe('playerLoanService', () => {
 
       const result4 = await recordPlayerLoans(playerIds, { teamId, receivingTeamName: '', loanDate });
       expect(result4.success).toBe(false);
-      expect(result4.error).toBe('Receiving team name is required');
+      expect(result4.error).toBe('errors.loanTeamNameRequired');
 
       const result5 = await recordPlayerLoans(playerIds, { teamId, receivingTeamName, loanDate: null });
       expect(result5.success).toBe(false);
-      expect(result5.error).toBe('Loan date is required');
+      expect(result5.error).toBe('errors.loanDateRequired');
     });
 
     it('validates receiving team name length', async () => {
@@ -85,7 +85,7 @@ describe('playerLoanService', () => {
       const result = await recordPlayerLoans(playerIds, { teamId, receivingTeamName: longName, loanDate });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Receiving team name must be 200 characters or less');
+      expect(result.error).toBe('errors.loanTeamNameTooLong');
     });
 
     it('creates loan records for multiple players', async () => {
@@ -160,7 +160,7 @@ describe('playerLoanService', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Loan date is required');
+      expect(result.error).toBe('errors.loanDateRequired');
     });
 
     it('trims and normalizes team name', async () => {
@@ -323,7 +323,7 @@ describe('playerLoanService', () => {
       const result = await updatePlayerLoan(loanId, { receivingTeamName: longName });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Receiving team name must be 200 characters or less');
+      expect(result.error).toBe('errors.loanTeamNameTooLong');
     });
 
     it('handles database errors', async () => {
@@ -354,11 +354,11 @@ describe('playerLoanService', () => {
 
       const result2 = await updateMatchLoans({ ...matchKey, receivingTeamName: '' }, { loanDate: '2025-02-01' });
       expect(result2.success).toBe(false);
-      expect(result2.error).toBe('Receiving team name is required');
+      expect(result2.error).toBe('errors.loanTeamNameRequired');
 
       const result3 = await updateMatchLoans({ ...matchKey, loanDate: null }, { receivingTeamName: 'New' });
       expect(result3.success).toBe(false);
-      expect(result3.error).toBe('Loan date is required');
+      expect(result3.error).toBe('errors.loanDateRequired');
     });
 
     it('validates updates provided', async () => {
@@ -471,11 +471,11 @@ describe('playerLoanService', () => {
 
       const result2 = await deleteMatchLoans({ ...matchKey, receivingTeamName: '' });
       expect(result2.success).toBe(false);
-      expect(result2.error).toBe('Receiving team name is required');
+      expect(result2.error).toBe('errors.loanTeamNameRequired');
 
       const result3 = await deleteMatchLoans({ ...matchKey, loanDate: null });
       expect(result3.success).toBe(false);
-      expect(result3.error).toBe('Loan date is required');
+      expect(result3.error).toBe('errors.loanDateRequired');
     });
 
     it('deletes all loans matching criteria', async () => {

@@ -122,5 +122,42 @@
       "syncing": "Synkroniserar...",
       "disconnect": "Koppla Bort"
     }
+  },
+  "providers": {
+    "sportadmin": {
+      "description": "Svensk laghanteringsplattform",
+      "features": {
+        "practiceAttendance": "Närvarohantering",
+        "upcomingMatches": "Kommande matcher"
+      }
+    },
+    "svenska_lag": {
+      "description": "Svensk laghanteringsplattform",
+      "features": {
+        "comingSoon": "Kommer snart"
+      }
+    },
+    "myclub": {
+      "description": "Laghanteringsplattform",
+      "features": {
+        "comingSoon": "Kommer snart"
+      }
+    }
+  },
+  "statusLabels": {
+    "connected": "Ansluten",
+    "verifying": "Verifierar",
+    "error": "Fel",
+    "disconnected": "Frånkopplad",
+    "unknown": "Okänd"
+  },
+  "syncStatusLabels": {
+    "completed": "Klar",
+    "running": "Körs",
+    "waiting": "Väntar",
+    "retrying": "Försöker igen",
+    "failed": "Misslyckades",
+    "cancelled": "Avbruten",
+    "unknown": "Okänd"
   }
 }

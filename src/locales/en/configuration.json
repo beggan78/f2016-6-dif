@@ -159,7 +159,11 @@
     "noRecommendations": "No position recommendations available.",
     "unknown": "Unknown",
     "dismiss": "Dismiss",
-    "acceptAll": "Accept All"
+    "acceptAll": "Accept All",
+    "reasons": {
+      "noMatchHistory": "No match history",
+      "roleTimePercentage": "{{percentage}}% {{role}} time"
+    }
   },
   "formationVoting": {
     "description": "Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.",

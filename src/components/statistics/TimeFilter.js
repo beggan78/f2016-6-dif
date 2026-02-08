@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, ChevronDown, Check } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
-import { TIME_PRESETS } from '../../constants/timePresets';
+import { TIME_PRESETS, getTimePresets } from '../../constants/timePresets';
 
 const formatDateForInput = (date) => {
   if (!date) return '';
@@ -17,6 +17,7 @@ export function TimeFilter({
   className = ''
 }) {
   const { t, i18n } = useTranslation('statistics');
+  const translatedPresets = useMemo(() => getTimePresets(t), [t]);
 
   const formatDateForDisplay = useCallback((date) => {
     if (!date) return '';
@@ -67,8 +68,9 @@ export function TimeFilter({
     if (selectedPreset === 'custom') {
       return t('timeFilter.custom');
     }
-    return t(`timeFilter.presets.${selectedPreset}`, { defaultValue: t('timeFilter.allTime') });
-  }, [selectedPreset, t]);
+    const preset = translatedPresets.find(p => p.id === selectedPreset);
+    return preset ? preset.label : t('timeFilter.allTime');
+  }, [selectedPreset, t, translatedPresets]);
 
   const displayLabel = useMemo(() => {
     if (currentPresetLabel && selectedPreset !== 'custom') {
@@ -229,7 +231,7 @@ export function TimeFilter({
 
             {/* Preset Options */}
             <div className="space-y-1 mb-4">
-              {TIME_PRESETS.map((preset) => (
+              {translatedPresets.map((preset) => (
                 <button
                   key={preset.id}
                   onClick={() => handlePresetSelect(preset.id)}
@@ -239,7 +241,7 @@ export function TimeFilter({
                       : 'text-slate-300 hover:bg-slate-700 hover:text-slate-200'
                   }`}
                 >
-                  <span>{t(`timeFilter.presets.${preset.id}`, { defaultValue: preset.label })}</span>
+                  <span>{preset.label}</span>
                   {selectedPreset === preset.id && (
                     <Check className="h-4 w-4" />
                   )}

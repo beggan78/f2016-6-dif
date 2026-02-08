@@ -33,7 +33,7 @@ export const getDefaultLoanMatchWeight = () => DEFAULT_LOAN_MATCH_WEIGHT;
 export async function recordPlayerLoans(playerIds, { teamId, receivingTeamName, loanDate }) {
   try {
     if (!Array.isArray(playerIds) || playerIds.length === 0) {
-      return { success: false, error: 'At least one player is required' };
+      return { success: false, error: 'errors.loanPlayerRequired' };
     }
     if (!teamId) {
       return { success: false, error: 'Team ID is required' };
@@ -41,15 +41,15 @@ export async function recordPlayerLoans(playerIds, { teamId, receivingTeamName, 
 
     const normalizedTeamName = normalizeTeamName(receivingTeamName);
     if (!normalizedTeamName) {
-      return { success: false, error: 'Receiving team name is required' };
+      return { success: false, error: 'errors.loanTeamNameRequired' };
     }
     if (normalizedTeamName.length > 200) {
-      return { success: false, error: 'Receiving team name must be 200 characters or less' };
+      return { success: false, error: 'errors.loanTeamNameTooLong' };
     }
 
     const normalizedLoanDate = normalizeDateValue(loanDate);
     if (!normalizedLoanDate) {
-      return { success: false, error: 'Loan date is required' };
+      return { success: false, error: 'errors.loanDateRequired' };
     }
 
     const loanRecords = playerIds.map(playerId => ({
@@ -66,13 +66,13 @@ export async function recordPlayerLoans(playerIds, { teamId, receivingTeamName, 
 
     if (error) {
       console.error('Error recording player loans:', error);
-      return { success: false, error: error.message || 'Failed to record player loans' };
+      return { success: false, error: error.message || 'errors.loanRecordFailed' };
     }
 
     return { success: true, loans: data || [] };
   } catch (error) {
     console.error('Exception recording player loans:', error);
-    return { success: false, error: error.message || 'Failed to record player loans' };
+    return { success: false, error: error.message || 'errors.loanRecordFailed' };
   }
 }
 
@@ -84,15 +84,15 @@ export async function recordPlayerLoan(playerId, { teamId, receivingTeamName, lo
 
     const normalizedTeamName = normalizeTeamName(receivingTeamName);
     if (!normalizedTeamName) {
-      return { success: false, error: 'Receiving team name is required' };
+      return { success: false, error: 'errors.loanTeamNameRequired' };
     }
     if (normalizedTeamName.length > 200) {
-      return { success: false, error: 'Receiving team name must be 200 characters or less' };
+      return { success: false, error: 'errors.loanTeamNameTooLong' };
     }
 
     const normalizedLoanDate = normalizeDateValue(loanDate);
     if (!normalizedLoanDate) {
-      return { success: false, error: 'Loan date is required' };
+      return { success: false, error: 'errors.loanDateRequired' };
     }
 
     const { data, error } = await supabase
@@ -128,10 +128,10 @@ export async function updatePlayerLoan(loanId, updates = {}) {
     if (updates.receivingTeamName !== undefined) {
       const normalizedTeamName = normalizeTeamName(updates.receivingTeamName);
       if (!normalizedTeamName) {
-        return { success: false, error: 'Receiving team name is required' };
+        return { success: false, error: 'errors.loanTeamNameRequired' };
       }
       if (normalizedTeamName.length > 200) {
-        return { success: false, error: 'Receiving team name must be 200 characters or less' };
+        return { success: false, error: 'errors.loanTeamNameTooLong' };
       }
       payload.receiving_team_name = normalizedTeamName;
     }
@@ -139,7 +139,7 @@ export async function updatePlayerLoan(loanId, updates = {}) {
     if (updates.loanDate !== undefined) {
       const normalizedLoanDate = normalizeDateValue(updates.loanDate);
       if (!normalizedLoanDate) {
-        return { success: false, error: 'Loan date is required' };
+        return { success: false, error: 'errors.loanDateRequired' };
       }
       payload.loan_date = normalizedLoanDate;
     }
@@ -176,20 +176,20 @@ export async function updateMatchLoans(matchKey = {}, updates = {}) {
       return { success: false, error: 'Team ID is required' };
     }
     if (!normalizedTeamNameKey) {
-      return { success: false, error: 'Receiving team name is required' };
+      return { success: false, error: 'errors.loanTeamNameRequired' };
     }
     if (!normalizedLoanDateKey) {
-      return { success: false, error: 'Loan date is required' };
+      return { success: false, error: 'errors.loanDateRequired' };
     }
 
     const payload = {};
     if (updates.receivingTeamName !== undefined) {
       const normalizedTeamName = normalizeTeamName(updates.receivingTeamName);
       if (!normalizedTeamName) {
-        return { success: false, error: 'Receiving team name is required' };
+        return { success: false, error: 'errors.loanTeamNameRequired' };
       }
       if (normalizedTeamName.length > 200) {
-        return { success: false, error: 'Receiving team name must be 200 characters or less' };
+        return { success: false, error: 'errors.loanTeamNameTooLong' };
       }
       payload.receiving_team_name = normalizedTeamName;
     }
@@ -197,7 +197,7 @@ export async function updateMatchLoans(matchKey = {}, updates = {}) {
     if (updates.loanDate !== undefined) {
       const normalizedLoanDate = normalizeDateValue(updates.loanDate);
       if (!normalizedLoanDate) {
-        return { success: false, error: 'Loan date is required' };
+        return { success: false, error: 'errors.loanDateRequired' };
       }
       payload.loan_date = normalizedLoanDate;
     }
@@ -257,12 +257,12 @@ export async function deleteMatchLoans({ teamId, receivingTeamName, loanDate } =
 
     const normalizedTeamName = normalizeTeamName(receivingTeamName);
     if (!normalizedTeamName) {
-      return { success: false, error: 'Receiving team name is required' };
+      return { success: false, error: 'errors.loanTeamNameRequired' };
     }
 
     const normalizedLoanDate = normalizeDateValue(loanDate);
     if (!normalizedLoanDate) {
-      return { success: false, error: 'Loan date is required' };
+      return { success: false, error: 'errors.loanDateRequired' };
     }
 
     const { data, error } = await supabase

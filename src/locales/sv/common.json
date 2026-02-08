@@ -15,6 +15,27 @@
     "invalidMatchId": "Ogiltigt match-ID",
     "unknownView": "Okänd vy",
     "unknownPlayer": "Okänd Spelare",
-    "supabaseConfigMissing": "Supabase-konfiguration saknas. Kontrollera miljövariablerna."
+    "supabaseConfigMissing": "Supabase-konfiguration saknas. Kontrollera miljövariablerna.",
+    "failedToLoadPlayerStats": "Kunde inte ladda spelarstatistik",
+    "failedToLoadMatchDefaults": "Kunde inte ladda matchinställningar.",
+    "failedToLoadOpponentNames": "Kunde inte ladda tidigare motståndarnamn.",
+    "matchCreationFailed": "Kunde inte skapa match: Saknar matchidentifierare från databassvaret.",
+    "playerStatsUpdateFailed": "Kunde inte uppdatera spelarstatistik",
+    "matchUpdateFailed": "Matchuppdatering misslyckades: Matchen är inte aktiv eller hittades inte",
+    "matchNotFinished": "Matchen måste vara avslutad innan uppdateringar kan tillämpas.",
+    "fairPlayAwardFailed": "Kunde inte tilldela fair play-utmärkelse för denna match.",
+    "fairPlayNoStats": "Ingen spelarstatistik uppdaterades med fair play-utmärkelsen. Säkerställ att spelaren deltog i matchen.",
+    "matchNotFound": "Match hittades inte",
+    "configRequired": "Startkonfiguration krävs",
+    "matchNotFoundOrDeleted": "Match hittades inte eller är redan borttagen",
+    "invalidPlayerStats": "Spelarstatistik måste vara en lista",
+    "noValidPlayerStats": "Ingen giltig spelarstatistik att uppdatera",
+    "loanPlayerRequired": "Minst en spelare krävs",
+    "loanTeamNameRequired": "Mottagande lagnamn krävs",
+    "loanTeamNameTooLong": "Mottagande lagnamn får vara max 200 tecken",
+    "loanDateRequired": "Utlåningsdatum krävs",
+    "loanRecordFailed": "Kunde inte registrera spelarutlåning",
+    "noTeamSelected": "Inget lag valt. Skapa eller välj ett lag först.",
+    "matchSavedSuccess": "Matchen sparades i din historik!"
   }
 }

@@ -41,8 +41,8 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
   const [isSyncing, setIsSyncing] = useState(false);
 
   const provider = getProviderById(connector.provider);
-  const statusStyle = getStatusBadgeStyle(connector.status);
-  const syncJobStyle = latestSyncJob ? getSyncJobStatusStyle(latestSyncJob.status) : null;
+  const statusStyle = getStatusBadgeStyle(connector.status, t);
+  const syncJobStyle = latestSyncJob ? getSyncJobStatusStyle(latestSyncJob.status, t) : null;
   const statusIcon = STATUS_ICON_MAP[connector.status] || XCircle;
   const syncJobIcon = latestSyncJob ? SYNC_JOB_ICON_MAP[latestSyncJob.status] : null;
 

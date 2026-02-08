@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getOpponentNameHistory } from '../services/opponentNameService';
 
 const DEFAULT_LIMIT = 100;
@@ -18,6 +19,7 @@ const DEFAULT_LIMIT = 100;
  * }}
  */
 export function useOpponentNameSuggestions(teamId, options = {}) {
+  const { t } = useTranslation('common');
   const limit = typeof options.limit === 'number' && options.limit > 0 ? options.limit : DEFAULT_LIMIT;
 
   const [names, setNames] = useState([]);
@@ -49,12 +51,12 @@ export function useOpponentNameSuggestions(teamId, options = {}) {
     if (result.success) {
       setNames(result.names);
     } else {
-      setError(result.error || 'Unable to load previous opponent names.');
+      setError(result.error || t('errors.failedToLoadOpponentNames'));
       setNames([]);
     }
 
     setLoading(false);
-  }, [limit]);
+  }, [limit, t]);
 
   useEffect(() => {
     if (teamId === lastTeamIdRef.current) {
