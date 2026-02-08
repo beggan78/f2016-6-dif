@@ -15,7 +15,7 @@ import { updatePlayerTimeStats } from '../time/stintManager';
 import { createRotationQueue } from '../queue/rotationQueue';
 import { createPlayerLookupFunction } from '../../utils/playerUtils';
 import { getPositionRole } from './positionUtils';
-import { getValidPositions, supportsInactiveUsers, supportsNextNextIndicators, getBottomSubstitutePosition } from '../../constants/gameModes';
+import { getValidPositions, supportsInactiveUsers, hasMultipleSubstitutes, getBottomSubstitutePosition } from '../../constants/gameModes';
 import { getFormationDefinition } from '../../utils/formationConfigUtils';
 import { handleError, ERROR_CATEGORIES } from '../../utils/errorHandler';
 
@@ -71,7 +71,6 @@ export const calculateSubstitution = (gameState) => {
       allPlayers: result.updatedPlayers,
       rotationQueue: result.newRotationQueue || gameState.rotationQueue,
       nextPlayerIdToSubOut: result.newNextPlayerIdToSubOut !== undefined ? result.newNextPlayerIdToSubOut : gameState.nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut: result.newNextNextPlayerIdToSubOut !== undefined ? result.newNextNextPlayerIdToSubOut : gameState.nextNextPlayerIdToSubOut,
       nextPlayerToSubOut: result.newNextPlayerToSubOut || gameState.nextPlayerToSubOut,
       playersToHighlight: result.playersComingOnIds || [],
       lastSubstitutionTimestamp: currentTimeEpoch,
@@ -172,8 +171,7 @@ export const calculatePositionSwitch = (gameState, player1Id, player2Id) => {
  * Calculate the result of switching goalies
  */
 export const calculateGoalieSwitch = (gameState, newGoalieId) => {
-  const { allPlayers, formation, teamConfig, isSubTimerPaused = false } = gameState;
-  
+  const { allPlayers, formation, isSubTimerPaused = false } = gameState;
 
   if (!newGoalieId || newGoalieId === formation.goalie) {
     return gameState;
@@ -276,25 +274,11 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
 
   // Recalculate next player tracking if the new goalie was next to come off
   let newNextPlayerIdToSubOut = gameState.nextPlayerIdToSubOut;
-  let newNextNextPlayerIdToSubOut = gameState.nextNextPlayerIdToSubOut;
-  
+
   if (newGoalieId === gameState.nextPlayerIdToSubOut) {
     // New goalie was next to come off, so update tracking to next player in queue
     const updatedQueue = queueManager.toArray();
     newNextPlayerIdToSubOut = updatedQueue[0] || null;
-    
-    // For modes with next-next tracking, also update next-next tracking
-    if (supportsNextNextIndicators(teamConfig) && updatedQueue.length >= 2) {
-      newNextNextPlayerIdToSubOut = updatedQueue[1];
-    }
-  } else if (newGoalieId === gameState.nextNextPlayerIdToSubOut && supportsNextNextIndicators(teamConfig)) {
-    // New goalie was next-next to come off in 7-player mode
-    const updatedQueue = queueManager.toArray();
-    if (updatedQueue.length >= 2) {
-      newNextNextPlayerIdToSubOut = updatedQueue[1];
-    } else {
-      newNextNextPlayerIdToSubOut = null;
-    }
   }
 
   return {
@@ -303,7 +287,6 @@ export const calculateGoalieSwitch = (gameState, newGoalieId) => {
     allPlayers: newAllPlayers,
     rotationQueue: queueManager.toArray(),
     nextPlayerIdToSubOut: newNextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut: newNextNextPlayerIdToSubOut,
     playersToHighlight: [formation.goalie, newGoalieId]
   };
 };
@@ -323,7 +306,6 @@ export const calculateUndo = (gameState, lastSubstitution) => {
   const newFormation = lastSubstitution.beforeFormation;
   const newNextPlayerToSubOut = lastSubstitution.beforeNextPlayer;
   const newNextPlayerIdToSubOut = lastSubstitution.beforeNextPlayerId;
-  const newNextNextPlayerIdToSubOut = lastSubstitution.beforeNextNextPlayerId;
 
   // Calculate and restore player stats with time adjustments
   const newAllPlayers = gameState.allPlayers.map(player => {
@@ -377,7 +359,6 @@ export const calculateUndo = (gameState, lastSubstitution) => {
     formation: newFormation,
     nextPlayerToSubOut: newNextPlayerToSubOut,
     nextPlayerIdToSubOut: newNextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut: newNextNextPlayerIdToSubOut,
     allPlayers: newAllPlayers,
     playersToHighlight: lastSubstitution.playersGoingOffIds, // Highlight players going back on field
     lastSubstitutionTimestamp: null // Clear the undo data
@@ -459,7 +440,7 @@ const createReactivationCascade = (reactivatedPlayerId, substitutePositions, for
  * Calculate the result of toggling a player's inactive status (all individual modes)
  */
 export const calculatePlayerToggleInactive = (gameState, playerId) => {
-  const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, teamConfig, selectedFormation } = gameState;
+  const { allPlayers, formation, rotationQueue, nextPlayerIdToSubOut, teamConfig, selectedFormation } = gameState;
 
   if (!supportsInactiveUsers(teamConfig)) {
     return gameState;
@@ -490,7 +471,6 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
   let newFormation = { ...formation };
   let newRotationQueue = [...rotationQueue];
   let newNextPlayerIdToSubOut = nextPlayerIdToSubOut;
-  let newNextNextPlayerIdToSubOut = nextNextPlayerIdToSubOut;
 
   // Update player stats and manage positions
   let newAllPlayers = allPlayers.map(p => {
@@ -547,13 +527,6 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       // Keep the original value if queue is empty (shouldn't happen)
       newNextPlayerIdToSubOut = nextPlayerIdToSubOut;
     }
-    
-    if (supportsNextNextIndicators(teamConfig)) {
-      const nextActivePlayers = queueManager.getNextActivePlayer(2);
-      if (nextActivePlayers.length >= 2) {
-        newNextNextPlayerIdToSubOut = nextActivePlayers[1];
-      }
-    }
   } else {
     // Player is being inactivated - move to bottom substitute position if possible
     const queueManager = createRotationQueue(rotationQueue, createPlayerLookupFunction(allPlayers));
@@ -566,14 +539,6 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
       const nextActivePlayers = queueManager.getNextActivePlayer(2);
       if (nextActivePlayers.length > 0) {
         newNextPlayerIdToSubOut = nextActivePlayers[0];
-        if (supportsNextNextIndicators(teamConfig) && nextActivePlayers.length >= 2) {
-          newNextNextPlayerIdToSubOut = nextActivePlayers[1];
-        }
-      }
-    } else if (supportsNextNextIndicators(teamConfig) && playerId === nextNextPlayerIdToSubOut) {
-      const nextActivePlayers = queueManager.getNextActivePlayer(2);
-      if (nextActivePlayers.length >= 2) {
-        newNextNextPlayerIdToSubOut = nextActivePlayers[1];
       }
     }
     
@@ -621,59 +586,9 @@ export const calculatePlayerToggleInactive = (gameState, playerId) => {
     allPlayers: newAllPlayers,
     rotationQueue: newRotationQueue,
     nextPlayerIdToSubOut: newNextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut: newNextNextPlayerIdToSubOut,
     playersToHighlight: [] // No special highlighting for activation/deactivation
   };
 };
-
-/**
- * Calculate the result of swapping any two substitute positions
- */
-export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPosition) => {
-  const { allPlayers, formation, teamConfig, selectedFormation } = gameState;
-  
-  if (!supportsNextNextIndicators(teamConfig)) {
-    return gameState;
-  }
-  
-  const definition = getDefinitionForGameLogic(teamConfig, selectedFormation);
-  if (!definition || !definition.substitutePositions.includes(fromPosition) || !definition.substitutePositions.includes(toPosition)) {
-    return gameState;
-  }
-  
-  const fromPlayerId = formation[fromPosition];
-  const toPlayerId = formation[toPosition];
-  
-  if (!fromPlayerId || !toPlayerId) {
-    return gameState;
-  }
-  
-  // Create new formation with swapped substitute positions
-  const newFormation = {
-    ...formation,
-    [fromPosition]: toPlayerId,
-    [toPosition]: fromPlayerId
-  };
-  
-  // Update player positions in their stats
-  const newAllPlayers = allPlayers.map(p => {
-    if (p.id === fromPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPositionKey: toPosition } };
-    }
-    if (p.id === toPlayerId) {
-      return { ...p, stats: { ...p.stats, currentPositionKey: fromPosition } };
-    }
-    return p;
-  });
-  
-  return {
-    ...gameState,
-    formation: newFormation,
-    allPlayers: newAllPlayers,
-    playersToHighlight: [fromPlayerId, toPlayerId]
-  };
-};
-
 
 /**
  * Calculate the result of reordering substitutes when setting a player as next to go in
@@ -682,7 +597,7 @@ export const calculateGeneralSubstituteSwap = (gameState, fromPosition, toPositi
 export const calculateSubstituteReorder = (gameState, targetPosition, substitutionCount = 1) => {
   const { allPlayers, formation, teamConfig, selectedFormation } = gameState;
 
-  if (!supportsNextNextIndicators(teamConfig)) {
+  if (!hasMultipleSubstitutes(teamConfig)) {
     return gameState;
   }
 

@@ -43,7 +43,7 @@ Core fields in `gameState`:
 - `allPlayers`: Player data with stats (time tracking, roles, status)
 - `rotationQueue`: Substitution order (array of player IDs)
 - `teamConfig`: Configuration object
-- `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
+- `nextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: For glow effects
 
 ## Module Structure
@@ -128,7 +128,7 @@ export const createHandlers = (gameStateFactory, stateUpdaters, animationHooks, 
 ## Key Functions Reference
 
 ### Logic (`/logic/`)
-- `calculateSubstitution()`, `calculatePositionSwitch()`, `calculateGoalieSwitch()`, `calculateUndo()`, `calculatePlayerToggleInactive()`, `calculateGeneralSubstituteSwap()`
+- `calculateSubstitution()`, `calculatePositionSwitch()`, `calculateGoalieSwitch()`, `calculateUndo()`, `calculatePlayerToggleInactive()`, `calculateSubstituteReorder()`
 
 ### Animation (`/animation/`)
 - `animateStateChange()` (main entry), `captureAllPlayerPositions()`, `calculateAllPlayerAnimations()`, `getPlayerAnimationProps()`

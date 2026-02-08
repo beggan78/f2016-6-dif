@@ -46,7 +46,6 @@ export const createSubstitutionHandlers = (
     setAllPlayers,
     setNextPlayerToSubOut,
     setNextPlayerIdToSubOut,
-    setNextNextPlayerIdToSubOut,
     setRotationQueue,
     setShouldSubstituteNow,
     setSubstitutionOverride = () => {},
@@ -225,6 +224,37 @@ export const createSubstitutionHandlers = (
             (newGameState) => {
               setRotationQueue(newGameState.rotationQueue);
               setAllPlayers(newGameState.allPlayers);
+            },
+            setAnimationState,
+            setHideNextOffIndicator,
+            setRecentlySubstitutedPlayers
+          );
+        }
+      } else {
+        // Single-sub mode: revert to queue-based next player
+        const gameState = gameStateFactory();
+        const playerId = fieldPlayerModal.sourcePlayerId;
+
+        if (playerId) {
+          animateStateChange(
+            gameState,
+            (state) => calculateRemovePlayerFromNextToGoOff(state, playerId, 1),
+            (newGameState) => {
+              setRotationQueue(newGameState.rotationQueue);
+              setAllPlayers(newGameState.allPlayers);
+              // Update next player to the new queue leader
+              const newNextPlayerId = newGameState.rotationQueue[0];
+              if (newNextPlayerId) {
+                setNextPlayerIdToSubOut(newNextPlayerId);
+                const definition = getDefinition(teamConfig);
+                const fieldPositions = definition?.fieldPositions || [];
+                const nextPosition = fieldPositions.find(
+                  pos => newGameState.formation[pos] === newNextPlayerId
+                );
+                if (nextPosition) {
+                  setNextPlayerToSubOut(nextPosition, true);
+                }
+              }
             },
             setAnimationState,
             setHideNextOffIndicator,
@@ -426,7 +456,7 @@ export const createSubstitutionHandlers = (
       
       // Get team mode configuration
       const definition = getDefinition(teamConfig);
-      if (!definition || !definition.supportsNextNextIndicators) {
+      if (!definition || !definition.hasMultipleSubstitutes) {
         closeSubstituteModal();
         return;
       }
@@ -478,7 +508,6 @@ export const createSubstitutionHandlers = (
         setFormation(newGameState.formation);
         setAllPlayers(newGameState.allPlayers);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-        setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
         if (newGameState.rotationQueue) {
           setRotationQueue(newGameState.rotationQueue);
         }
@@ -505,7 +534,6 @@ export const createSubstitutionHandlers = (
             setFormation(newGameState.formation);
             setAllPlayers(newGameState.allPlayers);
             setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-            setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
             if (newGameState.rotationQueue) {
               setRotationQueue(newGameState.rotationQueue);
             }
@@ -551,7 +579,6 @@ export const createSubstitutionHandlers = (
           setFormation(newGameState.formation);
           setAllPlayers(newGameState.allPlayers);
           setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-          setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
           if (newGameState.rotationQueue) {
             setRotationQueue(newGameState.rotationQueue);
           }
@@ -604,7 +631,6 @@ export const createSubstitutionHandlers = (
     const beforeFormation = { ...gameState.formation };
     const beforeNextPlayer = gameState.nextPlayerToSubOut;
     const beforeNextPlayerId = gameState.nextPlayerIdToSubOut;
-    const beforeNextNextPlayerId = gameState.nextNextPlayerIdToSubOut;
     const subTimerSecondsAtSubstitution = gameState.subTimerSeconds;
     
     // Use the new animation system for substitution
@@ -618,7 +644,6 @@ export const createSubstitutionHandlers = (
         setAllPlayers(newGameState.allPlayers);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-        setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
         if (newGameState.rotationQueue) {
           setRotationQueue(newGameState.rotationQueue);
         }
@@ -651,7 +676,6 @@ export const createSubstitutionHandlers = (
           beforeFormation,
           beforeNextPlayer,
           beforeNextPlayerId,
-          beforeNextNextPlayerId,
           playersComingOnOriginalStats,
           playersComingOnIds,
           playersGoingOffIds,
@@ -813,7 +837,6 @@ export const createSubstitutionHandlers = (
         setFormation(newGameState.formation);
         setNextPlayerToSubOut(newGameState.nextPlayerToSubOut);
         setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-        setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
         setAllPlayers(newGameState.allPlayers);
         if (newGameState.rotationQueue) {
           setRotationQueue(newGameState.rotationQueue);

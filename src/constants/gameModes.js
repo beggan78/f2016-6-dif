@@ -232,7 +232,7 @@ const buildIndividualModeDefinition = (teamConfig, formationLayout, substitutePo
     fieldPositions: formationLayout.fieldPositions,
     substitutePositions,
     supportsInactiveUsers: substitutePositions.length > 0,
-    supportsNextNextIndicators: substitutePositions.length >= 2,
+    hasMultipleSubstitutes: substitutePositions.length >= 2,
     substituteRotationPattern,
     initialFormationTemplate: generateInitialFormationTemplate(formationLayout, substitutePositions),
     validationMessage: `Please complete the team formation with 1 goalie and ${squadSize - 1} unique outfield players.`
@@ -354,13 +354,14 @@ export function supportsInactiveUsers(teamConfig) {
 }
 
 /**
- * Check if team configuration supports next-next indicators
+ * Check if team configuration has multiple substitutes (2+)
+ * Used to gate features like substitute reorder/set-as-next-to-go-in
  * @param {Object} teamConfig - Team configuration object
- * @returns {boolean} True if next-next indicators are supported
+ * @returns {boolean} True if multiple substitutes are available
  */
-export function supportsNextNextIndicators(teamConfig) {
+export function hasMultipleSubstitutes(teamConfig) {
   const definition = getModeDefinition(teamConfig);
-  return definition ? definition.supportsNextNextIndicators : false;
+  return definition ? definition.hasMultipleSubstitutes : false;
 }
 
 /**

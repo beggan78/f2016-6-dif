@@ -3,7 +3,7 @@ import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
 import { generateIndividualFormationRecommendation } from '../utils/formationGenerator';
-import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, supportsNextNextIndicators, getModeDefinition } from '../constants/gameModes';
+import { getInitialFormationTemplate, initializePlayerRoleAndStatus, getValidPositions, getModeDefinition } from '../constants/gameModes';
 import { createSubstitutionManager, handleRoleChange } from '../game/logic/substitutionManager';
 import { updatePlayerTimeStats } from '../game/time/stintManager';
 import { createMatch, formatMatchDataFromGameState, updateMatchToFinished, updateMatchToRunning, formatFinalStatsFromGameState, updateExistingMatch, upsertPlayerMatchStats, saveInitialMatchConfig, validateFinalStats } from '../services/matchStateManager';
@@ -27,22 +27,6 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 const persistenceManager = createGamePersistenceManager(STORAGE_KEYS.GAME_STATE);
 
 // Migration utilities no longer needed - working exclusively with teamConfig objects
-
-/**
- * Unified utility function for handling nextNext player logic
- * Consolidates scattered nextNext conditionals into a single reusable pattern
- * @param {Object} teamConfig - The current team configuration
- * @param {Array} playerList - Array of players (rotation queue or other player array)
- * @param {Function} setNextNextPlayerIdToSubOut - Setter function for nextNext player
- * @param {number} targetIndex - Index to use for nextNext player (defaults to 1)
- */
-const updateNextNextPlayerIfSupported = (teamConfig, playerList, setNextNextPlayerIdToSubOut, targetIndex = 1) => {
-  if (supportsNextNextIndicators(teamConfig) && playerList.length >= (targetIndex + 1)) {
-    setNextNextPlayerIdToSubOut(playerList[targetIndex]);
-  } else {
-    setNextNextPlayerIdToSubOut(null);
-  }
-};
 
 /**
  * Check if a formation object has meaningful player assignments (non-null player IDs)
@@ -200,7 +184,6 @@ export function useGameState(navigateToView = null) {
   const [formation, setFormation] = useState(initialState.formation);
   const [nextPlayerToSubOut, setNextPlayerToSubOut] = useState(initialState.nextPlayerToSubOut);
   const [nextPlayerIdToSubOut, setNextPlayerIdToSubOut] = useState(initialState.nextPlayerIdToSubOut);
-  const [nextNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut] = useState(initialState.nextNextPlayerIdToSubOut);
   const [rotationQueue, setRotationQueue] = useState(initialState.rotationQueue);
   const [gameLog, setGameLog] = useState(initialState.gameLog);
   const [opponentTeam, setOpponentTeam] = useState(initialState.opponentTeam || '');
@@ -333,7 +316,6 @@ export function useGameState(navigateToView = null) {
         formation,
         nextPlayerToSubOut,
         nextPlayerIdToSubOut,
-        nextNextPlayerIdToSubOut,
         rotationQueue,
         gameLog,
         opponentTeam,
@@ -359,7 +341,7 @@ export function useGameState(navigateToView = null) {
 
     // Cleanup timeout on dependency change or unmount
     return () => clearTimeout(timeoutId);
-  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPlayerToSubOut, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration, trackGoalScorer]);
+  }, [playerStateHook, view, numPeriods, periodDurationMinutes, periodGoalieIds, teamConfigHook, alertMinutes, currentPeriodNumber, formation, nextPlayerToSubOut, nextPlayerIdToSubOut, rotationQueue, gameLog, opponentTeam, matchType, venueType, lastSubstitutionTimestamp, matchEventsHook, timerPauseStartTime, totalMatchPausedDuration, captainId, currentMatchId, matchCreated, matchState, hasActiveConfiguration, trackGoalScorer]);
 
 
 
@@ -404,9 +386,6 @@ export function useGameState(navigateToView = null) {
 
       // Set rotation queue
       setRotationQueue(result.rotationQueue);
-
-      // Set next-next player using unified logic
-      updateNextNextPlayerIfSupported(teamConfig, result.rotationQueue, setNextNextPlayerIdToSubOut);
     } else {
       // For P1, or if recommendations fail, reset formation (user fills manually)
       setFormation(getInitialFormationTemplate(teamConfig, currentGoalieId));
@@ -620,7 +599,6 @@ export function useGameState(navigateToView = null) {
           setNextPlayerToSubOut(nextPlayerPosition);
         }
 
-        updateNextNextPlayerIfSupported(teamConfig, initialQueue, setNextNextPlayerIdToSubOut);
       } else {
         console.warn('🔧 [handleStartGame] Could not initialize rotation queue - incomplete formation');
       }
@@ -739,9 +717,6 @@ export function useGameState(navigateToView = null) {
       }
       if (result.newNextPlayerIdToSubOut !== undefined) {
         setNextPlayerIdToSubOut(result.newNextPlayerIdToSubOut);
-      }
-      if (result.newNextNextPlayerIdToSubOut !== undefined) {
-        setNextNextPlayerIdToSubOut(result.newNextNextPlayerIdToSubOut);
       }
       if (result.newNextPlayerToSubOut) {
         setNextPlayerToSubOut(result.newNextPlayerToSubOut);
@@ -1072,8 +1047,8 @@ export function useGameState(navigateToView = null) {
       
       setNextPlayerIdToSubOut(selectedPlayerId);
       
-      // For modes that support next-next indicators, update rotation queue and next-next tracking
-      if (supportsNextNextIndicators(teamConfig) && selectedPlayerId !== currentNextPlayerId) {
+      // Update rotation queue to reflect manual player selection
+      if (selectedPlayerId !== currentNextPlayerId) {
         // Update rotation queue to put selected player first
         setRotationQueue(prev => {
           const queueManager = createRotationQueue(prev, createPlayerLookup(allPlayers));
@@ -1083,16 +1058,11 @@ export function useGameState(navigateToView = null) {
           queueManager.removePlayer(selectedPlayerId);
           queueManager.addPlayer(selectedPlayerId, 0); // Add to front
           
-          const updatedQueue = queueManager.toArray();
-          
-          // Update next-next tracking to reflect new queue order using unified logic
-          updateNextNextPlayerIfSupported(teamConfig, updatedQueue, setNextNextPlayerIdToSubOut);
-          
-          return updatedQueue;
+          return queueManager.toArray();
         });
       }
     }
-  }, [formation, teamConfig, nextPlayerIdToSubOut, allPlayers]);
+  }, [formation, nextPlayerIdToSubOut, allPlayers]);
 
 
   // Helper function to get inactive players for animation purposes
@@ -1628,8 +1598,6 @@ export function useGameState(navigateToView = null) {
     setNextPlayerToSubOut: setNextPlayerToSubOutWithRotation,
     nextPlayerIdToSubOut,
     setNextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut,
-    setNextNextPlayerIdToSubOut,
     rotationQueue,
     setRotationQueue,
     gameLog,

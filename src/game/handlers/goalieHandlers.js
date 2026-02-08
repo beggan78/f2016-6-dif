@@ -16,8 +16,7 @@ export const createGoalieHandlers = (
     setFormation,
     setAllPlayers,
     setRotationQueue,
-    setNextPlayerIdToSubOut,
-    setNextNextPlayerIdToSubOut
+    setNextPlayerIdToSubOut
   } = stateUpdaters;
 
   const {
@@ -84,9 +83,6 @@ export const createGoalieHandlers = (
         // Apply next player tracking updates if they changed
         if (newGameState.nextPlayerIdToSubOut !== undefined) {
           setNextPlayerIdToSubOut(newGameState.nextPlayerIdToSubOut);
-        }
-        if (newGameState.nextNextPlayerIdToSubOut !== undefined) {
-          setNextNextPlayerIdToSubOut(newGameState.nextNextPlayerIdToSubOut);
         }
 
         // Log goalie assignment event

@@ -58,7 +58,6 @@ jest.mock('../formations/FormationRenderer', () => ({
     recentlySubstitutedPlayers,
     hideNextOffIndicator,
     nextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut,
     getPlayerNameById,
     getPlayerTimeStats,
     renderSection = 'all',

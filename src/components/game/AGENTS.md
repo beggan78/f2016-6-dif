@@ -78,7 +78,7 @@ GameScreen renders FormationRenderer twice (field section, then SUB NOW button, 
 - `formation` - current position assignments `{goalie: id, leftDefender: id, ...}`
 - `allPlayers` - player array with stats
 - `matchTimerSeconds`, `subTimerSeconds`, `isSubTimerPaused` - timer state
-- `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut` - rotation queue
+- `nextPlayerIdToSubOut` - rotation queue
 - `teamConfig` - configuration `{format, squadSize, formation}`
 - `ownScore`, `opponentScore` - current score
 - Score/goal handlers, setters, match events
@@ -101,7 +101,7 @@ GameScreen renders FormationRenderer twice (field section, then SUB NOW button, 
 - `animationState` - active animations
 - `recentlySubstitutedPlayers` - Set of recently subbed player IDs
 - `hideNextOffIndicator` - hide next-off indicators
-- `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut` - for indicators
+- `nextPlayerIdToSubOut` - for indicators
 - `substitutionCount`, `rotationQueue` - for multi-sub indicators
 
 ## User Interaction Flow

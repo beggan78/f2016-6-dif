@@ -29,7 +29,6 @@ const createDefaultProps = (overrides = {}) => {
     getPlayerNameById: (id) => `Player ${id}`,
     getPlayerTimeStats: () => ({ totalOutfieldTime: 0, attackDefenderDiff: 0 }),
     nextPlayerIdToSubOut: overrides.nextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut: overrides.nextNextPlayerIdToSubOut,
     substitutionCount: overrides.substitutionCount || 1,
     rotationQueue: defaultRotationQueue,
     renderSection: 'substitutes',

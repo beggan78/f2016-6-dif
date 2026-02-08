@@ -405,9 +405,9 @@ The UI module contains focused utilities for game screen rendering, separated fr
 **Responsibilities**:
 - `getPositionIcon()`: Returns appropriate icon (Shield/Sword/RotateCcw) for positions
 - `getPositionDisplayName()`: Position names with inactive player support
-- `getIndicatorProps()`: Next/nextNext indicator logic for different team modes
+- `getIndicatorProps()`: Next-off/next-on indicator logic for different team modes
 - `getPositionEvents()`: Extracts long press event handlers from position key
-- `supportsInactiveUsers()` / `supportsNextNextIndicators()`: Formation capability checks
+- `supportsInactiveUsers()` / `hasMultipleSubstitutes()`: Formation capability checks
 
 **Key features**:
 - Formation-aware UI logic (handles differences between team modes)
@@ -419,7 +419,7 @@ The UI module contains focused utilities for game screen rendering, separated fr
 **Responsibilities**:
 - `getPlayerStyling()`: Calculates background, text, border colors and glow effects
 - Handles field vs substitute vs inactive player appearance
-- Next/nextNext indicator styling with formation support
+- Next-off/next-on indicator styling with formation support
 - Recently substituted player glow effects
 
 **Styling logic**:
@@ -514,7 +514,7 @@ The central `gameState` object contains:
 - `allPlayers`: Complete player data with stats and status
 - `rotationQueue`: Order of players for substitutions
 - `teamConfig`: Team configuration object with format, squadSize, and formation
-- `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`: Rotation tracking
+- `nextPlayerIdToSubOut`: Rotation tracking
 - `playersToHighlight`: Players to show glow effects
 - Various timing and metadata fields
 

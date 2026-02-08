@@ -30,11 +30,11 @@ Position rendering and indicator logic:
 
 - **`getPositionIcon(position, substitutePositions)`**: Returns Lucide React icon component based on role (Shield, Sword, ArrowDownUp, Hand, RotateCcw)
 - **`getPositionDisplayName(position, player, teamConfig, substitutePositions)`**: Returns display name with inactive status handling
-- **`getIndicatorProps(player, position, teamConfig, nextPlayerIdToSubOut, nextNextPlayerIdToSubOut, substitutePositions, substitutionCount, rotationQueue)`**: Calculates next-off and next-on indicators based on rotation queue
+- **`getIndicatorProps(player, position, teamConfig, nextPlayerIdToSubOut, substitutePositions, substitutionCount, rotationQueue)`**: Calculates next-off and next-on indicators based on rotation queue
 - **`getSubstituteTargetPositions(rotationQueue, formation, fieldPositions, substitutePositions, substitutionCount)`**: Maps substitute positions to their target field positions
 - **`getPositionEvents(quickTapHandlers, position)`**: Extracts long-press event handlers for positions
 
-**Critical**: Next-next indicators removed (always false); only next-off and next-on are active
+**Note**: Only next-off and next-on indicators are supported
 
 ## Integration Points
 

@@ -8,7 +8,7 @@ import {
   getFormationPositions,
   getOutfieldPositions,
   supportsInactiveUsers,
-  supportsNextNextIndicators,
+  hasMultipleSubstitutes,
   getPlayerCountForMode
 } from '../gameModes';
 
