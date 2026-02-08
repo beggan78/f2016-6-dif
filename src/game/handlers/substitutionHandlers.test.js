@@ -200,6 +200,34 @@ describe('createSubstitutionHandlers', () => {
       expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith('leftDefender', false);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
+
+    it('should call setNextPlayerToSubOut with manual flag for single-sub 7v7 config', () => {
+      const mockPlayers7v7 = createMockPlayers(8, TEAM_CONFIGS.INDIVIDUAL_7V7_231_8);
+      const mockGameState7v7 = createMockGameState(TEAM_CONFIGS.INDIVIDUAL_7V7_231_8);
+      mockGameState7v7.allPlayers = mockPlayers7v7;
+      const mockFactory7v7 = jest.fn(() => mockGameState7v7);
+
+      const handlers = createSubstitutionHandlers(
+        mockFactory7v7,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7V7_231_8,
+        () => 1
+      );
+
+      // Find a field position from the 7v7 formation
+      const fieldPosition = Object.keys(mockGameState7v7.formation).find(
+        key => key !== 'goalie' && !key.startsWith('substitute')
+      );
+
+      const fieldPlayerModal = { type: 'player', target: fieldPosition };
+      handlers.handleSetNextSubstitution(fieldPlayerModal);
+
+      // Single-sub mode should use existing logic with manual flag
+      expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith(fieldPosition, false);
+      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
+    });
   });
 
   describe('handleSubstituteNow', () => {
@@ -217,6 +245,36 @@ describe('createSubstitutionHandlers', () => {
 
       // Should open substitute selection modal instead of direct substitution
       expect(mockDependencies.modalHandlers.openSubstituteSelectionModal).toHaveBeenCalled();
+      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
+    });
+
+    it('should trigger immediate substitution with 1 active substitute in single-sub 7v7 config', () => {
+      const mockPlayers7v7 = createMockPlayers(8, TEAM_CONFIGS.INDIVIDUAL_7V7_231_8);
+      const mockGameState7v7 = createMockGameState(TEAM_CONFIGS.INDIVIDUAL_7V7_231_8);
+      mockGameState7v7.allPlayers = mockPlayers7v7;
+      const mockFactory7v7 = jest.fn(() => mockGameState7v7);
+
+      const handlers = createSubstitutionHandlers(
+        mockFactory7v7,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7V7_231_8,
+        () => 1
+      );
+
+      // Find a field position from the formation
+      const fieldPosition = Object.keys(mockGameState7v7.formation).find(
+        key => key !== 'goalie' && !key.startsWith('substitute')
+      );
+      const fieldPlayerId = mockGameState7v7.formation[fieldPosition];
+
+      const fieldPlayerModal = { type: 'player', target: fieldPosition, sourcePlayerId: fieldPlayerId, playerName: 'Player 1' };
+      handlers.handleSubstituteNow(fieldPlayerModal);
+
+      // With only 1 active substitute, should trigger immediate substitution (not open selection modal)
+      expect(mockDependencies.stateUpdaters.setShouldSubstituteNow).toHaveBeenCalledWith(true);
+      expect(mockDependencies.stateUpdaters.setSubstitutionCountOverride).toHaveBeenCalledWith(1);
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
 

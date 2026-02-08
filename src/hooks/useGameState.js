@@ -1072,8 +1072,8 @@ export function useGameState(navigateToView = null) {
       
       setNextPlayerIdToSubOut(selectedPlayerId);
       
-      // For modes that support next-next indicators, update rotation queue and next-next tracking
-      if (supportsNextNextIndicators(teamConfig) && selectedPlayerId !== currentNextPlayerId) {
+      // Update rotation queue to reflect manual player selection
+      if (selectedPlayerId !== currentNextPlayerId) {
         // Update rotation queue to put selected player first
         setRotationQueue(prev => {
           const queueManager = createRotationQueue(prev, createPlayerLookup(allPlayers));

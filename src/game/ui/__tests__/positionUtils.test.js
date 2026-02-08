@@ -184,9 +184,25 @@ describe('UI positionUtils', () => {
     test('should disable next-next indicators for non-INDIVIDUAL_7 formations', () => {
       const mockPlayer = { id: '2' };
       const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_CONFIGS.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
-      
+
       expect(props.isNextNextOff).toBe(false);
       expect(props.isNextNextOn).toBe(false);
+    });
+
+    test('should show isNextOff based on rotation queue position for single-sub 7v7 config', () => {
+      const mockSubstitutePositions7v7_1sub = [POSITION_KEYS.SUBSTITUTE_1];
+      // Player '3' is first in rotation queue - should be next off
+      const player3 = { id: '3' };
+      const rotationQueue = ['3', '1', '2', '4', '5', '6', '7'];
+      const props = getIndicatorProps(player3, 'leftMidfielder', TEAM_CONFIGS.INDIVIDUAL_7V7_231_8, '3', null, mockSubstitutePositions7v7_1sub, 1, rotationQueue);
+
+      expect(props.isNextOff).toBe(true);
+
+      // Player '1' is NOT first - should not be next off
+      const player1 = { id: '1' };
+      const props2 = getIndicatorProps(player1, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_7V7_231_8, '3', null, mockSubstitutePositions7v7_1sub, 1, rotationQueue);
+
+      expect(props2.isNextOff).toBe(false);
     });
   });
 

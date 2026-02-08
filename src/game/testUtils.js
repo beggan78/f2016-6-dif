@@ -54,6 +54,11 @@ export const TEAM_CONFIGS = {
     format: '7v7',
     squadSize: 10,
     formation: '2-3-1'
+  },
+  INDIVIDUAL_7V7_231_8: {
+    format: '7v7',
+    squadSize: 8,
+    formation: '2-3-1'
   }
 };
 
