@@ -43,7 +43,7 @@
     "typeLabel": "Typ:",
     "formatLabel": "Format:",
     "periodsFormat": "{{periods}} \u00d7 {{duration}} min perioder",
-    "squadLabel": "Trupp:",
+    "squadLabel": "Truppen:",
     "squadInfo": "{{size}} spelare, {{formation}} formation",
     "resuming": "Återupptar...",
     "resumeSetup": "Återuppta Konfiguration",

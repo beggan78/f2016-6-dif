@@ -34,6 +34,7 @@ describe('Statistics Routing', () => {
       openSignup: jest.fn()
     });
     window.history.replaceState({}, '', '/');
+    sessionStorage.clear();
   });
 
   it('navigates to statistics on /stats URL', async () => {
@@ -102,6 +103,31 @@ describe('Statistics Routing', () => {
     expect(
       screen.getByText('You need a team membership before you can view statistics. Ask a coach or admin to add you to the team.')
     ).toBeInTheDocument();
+  });
+
+  it('navigates via sessionStorage fallback when pathname is / but redirect is /stats', async () => {
+    const navigateToView = jest.fn();
+    sessionStorage.setItem('redirect', '/stats');
+    window.history.replaceState({}, '', '/');
+
+    renderHook(() => useStatisticsRouting(VIEWS.CONFIG, navigateToView));
+
+    await waitFor(() => {
+      expect(navigateToView).toHaveBeenCalledWith(VIEWS.STATISTICS);
+    });
+    expect(sessionStorage.getItem('redirect')).toBeNull();
+  });
+
+  it('does not consume non-stats sessionStorage redirects', async () => {
+    const navigateToView = jest.fn();
+    const liveMatchId = 'ad125c2d-46b9-4940-9664-cac9ff24e1f4';
+    sessionStorage.setItem('redirect', `/live/${liveMatchId}`);
+    window.history.replaceState({}, '', '/');
+
+    renderHook(() => useStatisticsRouting(VIEWS.CONFIG, navigateToView));
+
+    expect(navigateToView).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('redirect')).toBe(`/live/${liveMatchId}`);
   });
 
   it('does not override live match URLs', async () => {

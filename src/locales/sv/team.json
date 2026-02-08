@@ -3,7 +3,7 @@
     "title": "Laghantering",
     "tabs": {
       "overview": "Översikt",
-      "roster": "Trupp",
+      "roster": "Truppen",
       "loans": "Lån",
       "access": "Åtkomsthantering",
       "connectors": "Kopplingar",
@@ -423,7 +423,7 @@
         "description": "Laginformation och medlemmar"
       },
       "roster": {
-        "label": "Trupp",
+        "label": "Truppen",
         "description": "Hantera lagspelare"
       },
       "loans": {
@@ -436,7 +436,7 @@
       },
       "connectors": {
         "label": "Kopplingar",
-        "description": "Hantera externa leverantörer"
+        "description": "Hantera externa plattformar"
       },
       "preferences": {
         "label": "Inställningar",
@@ -445,9 +445,9 @@
     },
     "teamHeader": {
       "noClub": "Ingen klubb",
-      "roleAdmin": "Lag Administratör",
+      "roleAdmin": "Administratör",
       "roleCoach": "Tränare",
-      "roleUser": "Laganvändare",
+      "roleUser": "Användare",
       "users": "användare",
       "usersPlural": "användare"
     },
@@ -477,7 +477,7 @@
       "manageRoles": "Hantera Roller"
     },
     "roster": {
-      "title": "Trupphantering",
+      "title": "Spelarhantering",
       "playersCount": "{{count}} spelare",
       "addPlayer": "Lägg Till Spelare",
       "loadingRoster": "Laddar trupp...",
@@ -507,7 +507,7 @@
         "removeTitle": "Ta bort spelare"
       },
       "connection": {
-        "connectedProviders": "Anslutna Leverantörer:",
+        "connectedProviders": "Anslutna Plattformar:",
         "matchedAs": "Matchad som:",
         "needsMatching": "Behöver Matchning",
         "notMatched": "Denna spelare är inte matchad till någon leverantörsdata än.",
@@ -708,9 +708,9 @@
     "rosterPlayer": "Truppspelare",
     "selectProvider": "Välj en spelare från leverantör...",
     "selectProviderLabel": "Matcha till Leverantörsspelare *",
-    "selectProviderHelp": "Välj vilken spelare från de anslutna leverantörerna som matchar denna truppspelare.",
+    "selectProviderHelp": "Välj vilken spelare från de anslutna plattformarna som matchar denna truppspelare.",
     "errors": {
-      "selectPlayer": "Välj en spelare från leverantören",
+      "selectPlayer": "Välj en spelare från plattformen",
       "matchFailed": "Misslyckades matcha spelare"
     },
     "buttons": {
@@ -860,7 +860,7 @@
       "saving": "Sparar...",
       "saved": "Sparad",
       "save": "Spara",
-      "roster": "Trupp",
+      "roster": "Truppen",
       "selected": "Valda",
       "empty": "Tom."
     },

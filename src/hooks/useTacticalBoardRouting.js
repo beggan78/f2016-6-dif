@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { VIEWS } from '../constants/viewConstants';
 
-export function useStatisticsRouting(view, navigateToView) {
+export function useTacticalBoardRouting(view, navigateToView) {
   const initialPathRef = useRef(null);
   const initialRouteHandledRef = useRef(false);
 
@@ -18,13 +18,13 @@ export function useStatisticsRouting(view, navigateToView) {
       if (normalizedPath === '/') {
         try {
           const redirect = sessionStorage.getItem('redirect');
-          if (redirect === '/stats') {
-            normalizedPath = '/stats';
+          if (redirect === '/tactics') {
+            normalizedPath = '/tactics';
             sessionStorage.removeItem('redirect');
-            console.log('[useStatisticsRouting] Reading from sessionStorage redirect:', normalizedPath);
+            console.log('[useTacticalBoardRouting] Reading from sessionStorage redirect:', normalizedPath);
           }
         } catch (e) {
-          console.warn('[useStatisticsRouting] Could not read sessionStorage:', e);
+          console.warn('[useTacticalBoardRouting] Could not read sessionStorage:', e);
         }
       }
 
@@ -35,8 +35,8 @@ export function useStatisticsRouting(view, navigateToView) {
       return;
     }
 
-    if (initialPathRef.current === '/stats') {
-      navigateToView?.(VIEWS.STATISTICS);
+    if (initialPathRef.current === '/tactics') {
+      navigateToView?.(VIEWS.TACTICAL_BOARD);
     }
 
     initialRouteHandledRef.current = true;
@@ -49,12 +49,12 @@ export function useStatisticsRouting(view, navigateToView) {
 
     const normalizedPath = (window.location.pathname || '').replace(/\/+$/, '') || '/';
 
-    // Only manage /stats URLs — don't touch other routes
+    // Only manage /tactics URLs — don't touch other routes
     let targetPath = null;
-    if (view === VIEWS.STATISTICS) {
-      targetPath = '/stats';
-    } else if (normalizedPath === '/stats') {
-      // Leaving statistics view while URL still shows /stats — clean up to /
+    if (view === VIEWS.TACTICAL_BOARD) {
+      targetPath = '/tactics';
+    } else if (normalizedPath === '/tactics') {
+      // Leaving tactical board view while URL still shows /tactics — clean up to /
       targetPath = '/';
     }
 

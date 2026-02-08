@@ -103,22 +103,25 @@ export function useLiveMatchRouting(view, navigateToView, setLiveMatchId, active
       return;
     }
 
-    // Calculate target path based on view (mirrors useStatisticsRouting pattern)
-    let targetPath = '/';
+    // Calculate target path based on view — only manage /live/ URLs
     const resolvedMatchId = currentMatchIdRef.current || activeMatchId;
+    let targetPath = null;
     if (view === VIEWS.LIVE_MATCH && resolvedMatchId) {
       targetPath = `/live/${resolvedMatchId}`;
+    } else if (isLivePath) {
+      // Leaving live match view while URL still shows /live/ — clean up to /
+      targetPath = '/';
     }
 
     console.log('[useLiveMatchRouting] URL sync:', {
       view,
       currentPath: normalizedPath,
       targetPath,
-      willUpdate: normalizedPath !== targetPath
+      willUpdate: targetPath !== null && normalizedPath !== targetPath
     });
 
-    // Sync URL with target path
-    if (normalizedPath !== targetPath) {
+    // Sync URL with target path (only when we have a target to set)
+    if (targetPath !== null && normalizedPath !== targetPath) {
       const search = window.location.search || '';
       const hash = window.location.hash || '';
       const newUrl = `${targetPath}${search}${hash}`;
