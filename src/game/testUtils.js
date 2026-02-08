@@ -212,7 +212,6 @@ export const createMockGameState = (teamConfig = TEAM_CONFIGS.INDIVIDUAL_7, over
     rotationQueue,
     nextPlayerToSubOut: firstFieldPosition,
     nextPlayerIdToSubOut: '1',
-    nextNextPlayerIdToSubOut: '2',
     selectedSquadPlayers: allPlayers,
     playersToHighlight: [],
     isSubTimerPaused: false,

@@ -66,7 +66,6 @@ export function getIndicatorProps(
   position,
   teamConfig,
   nextPlayerIdToSubOut,
-  nextNextPlayerIdToSubOut,
   substitutePositions,
   substitutionCount = 1,
   rotationQueue = []
@@ -82,9 +81,7 @@ export function getIndicatorProps(
 
   const indicators = {
     isNextOff: nextNToSubOut.includes(playerId),
-    isNextOn: isSubstitutePosition && nextNSubstitutePositions.includes(position),
-    isNextNextOff: false, // Removed: no next-next indicators
-    isNextNextOn: false   // Removed: no next-next indicators
+    isNextOn: isSubstitutePosition && nextNSubstitutePositions.includes(position)
   };
 
   return indicators;

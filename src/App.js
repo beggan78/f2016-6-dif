@@ -776,7 +776,6 @@ function AppContent() {
       gameState.setRotationQueue([]);
       gameState.setNextPlayerToSubOut(null, true);
       gameState.setNextPlayerIdToSubOut(null);
-      gameState.setNextNextPlayerIdToSubOut(null);
       gameState.setLastSubstitutionTimestamp(null);
       gameState.setTimerPauseStartTime(null);
       gameState.setTotalMatchPausedDuration(0);
@@ -1153,8 +1152,6 @@ function AppContent() {
             handleEndPeriod={handleEndPeriod}
             nextPlayerToSubOut={gameState.nextPlayerToSubOut}
             nextPlayerIdToSubOut={gameState.nextPlayerIdToSubOut}
-            nextNextPlayerIdToSubOut={gameState.nextNextPlayerIdToSubOut}
-            setNextNextPlayerIdToSubOut={gameState.setNextNextPlayerIdToSubOut}
             selectedSquadPlayers={selectedSquadPlayers}
             setNextPlayerToSubOut={gameState.setNextPlayerToSubOut}
             setNextPlayerIdToSubOut={gameState.setNextPlayerIdToSubOut}

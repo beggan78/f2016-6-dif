@@ -374,11 +374,6 @@ export class SubstitutionManager {
       playersGoingOffIds: playersGoingOffIds
     };
 
-    // Add next-next tracking for modes that support it
-    if (substituteRotationPattern === 'carousel' || substituteRotationPattern === 'advanced_carousel') {
-      result.newNextNextPlayerIdToSubOut = newRotationQueue[1] || null;
-    }
-
     return result;
   }
 

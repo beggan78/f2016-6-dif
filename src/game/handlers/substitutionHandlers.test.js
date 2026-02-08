@@ -1,12 +1,12 @@
 import { createSubstitutionHandlers } from './substitutionHandlers';
 import { animateStateChange } from '../animation/animationSupport';
-import { 
-  calculateSubstitution, 
+import {
+  calculateSubstitution,
   calculatePositionSwitch,
   calculatePlayerToggleInactive,
-  calculateGeneralSubstituteSwap,
   calculateUndo,
-  calculateSubstituteReorder
+  calculateSubstituteReorder,
+  calculateRemovePlayerFromNextToGoOff
 } from '../logic/gameStateLogic';
 import { findPlayerById, getOutfieldPlayers, hasActiveSubstitutes } from '../../utils/playerUtils';
 import { 
@@ -49,7 +49,6 @@ describe('createSubstitutionHandlers', () => {
       beforeFormation: mockGameState.formation,
       beforeNextPlayer: 'leftDefender',
       beforeNextPlayerId: '1',
-      beforeNextNextPlayerId: '2',
       playersComingOnOriginalStats: [],
       playersComingOnIds: ['5'],
       playersGoingOffIds: ['1'],
@@ -105,7 +104,6 @@ describe('createSubstitutionHandlers', () => {
 
     calculatePositionSwitch.mockImplementation((gameState) => gameState);
     calculatePlayerToggleInactive.mockImplementation((gameState) => gameState);
-    calculateGeneralSubstituteSwap.mockImplementation((gameState) => gameState);
     calculateSubstituteReorder.mockImplementation((gameState) => gameState);
     calculateUndo.mockImplementation((gameState) => gameState);
   });
@@ -226,6 +224,35 @@ describe('createSubstitutionHandlers', () => {
 
       // Single-sub mode should use existing logic with manual flag
       expect(mockDependencies.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith(fieldPosition, false);
+      expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
+    });
+  });
+
+  describe('handleRemoveFromNextSubstitution', () => {
+    it('should update queue and next player in single-sub mode', () => {
+      const handlers = createSubstitutionHandlers(
+        mockGameStateFactory,
+        mockDependencies.stateUpdaters,
+        mockDependencies.animationHooks,
+        mockDependencies.modalHandlers,
+        TEAM_CONFIGS.INDIVIDUAL_7,
+        () => 1
+      );
+
+      // Player '1' is at position 0 in queue, removing them should make '2' the new next
+      const newQueue = ['2', '1', '3', '4', '5', '6'];
+      calculateRemovePlayerFromNextToGoOff.mockImplementation((state) => ({
+        ...state,
+        rotationQueue: newQueue,
+        playersToHighlight: ['1']
+      }));
+
+      const fieldPlayerModal = { type: 'player', target: 'leftDefender', sourcePlayerId: '1' };
+      handlers.handleRemoveFromNextSubstitution(fieldPlayerModal);
+
+      expect(animateStateChange).toHaveBeenCalled();
+      expect(mockDependencies.stateUpdaters.setRotationQueue).toHaveBeenCalledWith(newQueue);
+      expect(mockDependencies.stateUpdaters.setNextPlayerIdToSubOut).toHaveBeenCalledWith('2');
       expect(mockDependencies.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
     });
   });

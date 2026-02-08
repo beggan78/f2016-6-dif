@@ -57,8 +57,6 @@ export function GameScreen({
   handleEndPeriod,
   nextPlayerToSubOut,
   nextPlayerIdToSubOut,
-  nextNextPlayerIdToSubOut,
-  setNextNextPlayerIdToSubOut,
   selectedSquadPlayers,
   setNextPlayerToSubOut,
   setNextPlayerIdToSubOut,
@@ -158,7 +156,6 @@ export function GameScreen({
       selectedFormation,
       nextPlayerToSubOut,
       nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut,
       rotationQueue,
       selectedSquadPlayers,
       fieldPlayerModal: modalHandlers.modals.fieldPlayer,
@@ -183,7 +180,6 @@ export function GameScreen({
     selectedFormation,
     nextPlayerToSubOut,
     nextPlayerIdToSubOut,
-    nextNextPlayerIdToSubOut,
     rotationQueue,
     selectedSquadPlayers,
     modalHandlers.modals.fieldPlayer,
@@ -207,7 +203,6 @@ export function GameScreen({
     setAllPlayers,
     setNextPlayerToSubOut,
     setNextPlayerIdToSubOut,
-    setNextNextPlayerIdToSubOut,
     setRotationQueue,
     setShouldSubstituteNow: uiState.setShouldSubstituteNow,
     setSubstitutionOverride: uiState.setSubstitutionOverride,
@@ -226,7 +221,7 @@ export function GameScreen({
     setShouldResetSubTimerOnNextSub
   }), [
     setFormation, setAllPlayers,
-    setNextPlayerToSubOut, setNextPlayerIdToSubOut, setNextNextPlayerIdToSubOut,
+    setNextPlayerToSubOut, setNextPlayerIdToSubOut,
     setRotationQueue, uiState.setShouldSubstituteNow, uiState.setSubstitutionOverride,
     uiState.clearSubstitutionOverride, uiState.setLastSubstitution,
     setScore, ownScore, opponentScore, addGoalScored, addGoalConceded, resetSubTimer,
@@ -602,7 +597,7 @@ export function GameScreen({
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
           hideNextOffIndicator={uiState.hideNextOffIndicator || !canSubstitute}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
-          nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+
           substitutionCount={substitutionCount}
           rotationQueue={rotationQueue}
           quickTapHandlers={quickTapHandlers}
@@ -658,7 +653,7 @@ export function GameScreen({
           recentlySubstitutedPlayers={uiState.recentlySubstitutedPlayers}
           hideNextOffIndicator={uiState.hideNextOffIndicator || !canSubstitute}
           nextPlayerIdToSubOut={nextPlayerIdToSubOut}
-          nextNextPlayerIdToSubOut={nextNextPlayerIdToSubOut}
+
           substitutionCount={substitutionCount}
           rotationQueue={rotationQueue}
           quickTapHandlers={quickTapHandlers}
@@ -784,7 +779,7 @@ const arePropsEqual = (prevProps, nextProps) => {
   const primitiveProps = [
     'currentPeriodNumber', 'matchTimerSeconds', 'subTimerSeconds', 'isSubTimerPaused',
     'teamConfig', 'selectedFormation', 'nextPlayerToSubOut',
-    'nextPlayerIdToSubOut', 'nextNextPlayerIdToSubOut', 'ownScore', 'opponentScore',
+    'nextPlayerIdToSubOut', 'ownScore', 'opponentScore',
     'trackGoalScorer'
   ];
   

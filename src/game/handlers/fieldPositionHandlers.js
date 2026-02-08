@@ -1,5 +1,5 @@
 import { findPlayerById, getPlayerName } from '../../utils/playerUtils';
-import { supportsInactiveUsers, supportsNextNextIndicators, getModeDefinition } from '../../constants/gameModes';
+import { supportsInactiveUsers, hasMultipleSubstitutes, getModeDefinition } from '../../constants/gameModes';
 
 export const createFieldPositionHandlers = (
   teamConfig,
@@ -25,7 +25,7 @@ export const createFieldPositionHandlers = (
   };
 
   const supportsInactive = supportsInactiveUsers(teamConfig);
-  const supportsNextNext = supportsNextNextIndicators(teamConfig);
+  const supportsNextNext = hasMultipleSubstitutes(teamConfig);
 
   const getPlayerNameById = (id) => getPlayerName(allPlayers, id);
 

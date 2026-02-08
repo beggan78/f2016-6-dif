@@ -36,14 +36,14 @@ Each team configuration definition includes:
 - **fieldPositions**: Positions for players currently on field
 - **substitutePositions**: Substitute/bench positions
 - **supportsInactiveUsers**: Whether players can be temporarily deactivated
-- **supportsNextNextIndicators**: Whether next-next substitution tracking is enabled
+- **hasMultipleSubstitutes**: Whether the configuration has 2+ substitute positions (gates features like substitute reorder)
 - **substituteRotationPattern**: Carousel pattern for substitutions (`simple`, `carousel`, `advanced_carousel`)
 - **initialFormationTemplate**: Template for creating new formations
 - **validationMessage**: Mode-specific validation text
 
 #### Utility Functions (key examples)
 - **Position Queries**: `getFormationPositions()`, `getOutfieldPositions()`, `getAllPositions()`
-- **Capability Checks**: `supportsInactiveUsers()`, `supportsNextNextIndicators()`
+- **Capability Checks**: `supportsInactiveUsers()`, `hasMultipleSubstitutes()`
 - **Player Counting**: `getPlayerCountForMode()`, `getMaxInactiveCount()`
 - **Formation Helpers**: `getInitialFormationTemplate()`, `getValidationMessage()`
 - **Role Mapping**: Table-driven lookups via `POSITION_ROLE_MAP`

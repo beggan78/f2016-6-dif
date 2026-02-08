@@ -10,7 +10,7 @@ import {
   getIndicatorProps,
   getPositionEvents
 } from '../positionUtils';
-import { supportsInactiveUsers, supportsNextNextIndicators } from '../../../constants/gameModes';
+import { supportsInactiveUsers, hasMultipleSubstitutes } from '../../../constants/gameModes';
 
 import { TEAM_CONFIGS } from '../../testUtils';
 import { createTeamConfig } from '../../../constants/teamConfiguration';
@@ -122,71 +122,51 @@ describe('UI positionUtils', () => {
     test('should return next off indicator props for field player', () => {
       const mockPlayer = { id: '1' };
       const rotationQueue = ['1']; // Player '1' is in rotation queue
-      const props = getIndicatorProps(mockPlayer, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6, 1, rotationQueue);
+      const props = getIndicatorProps(mockPlayer, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_6, '1', mockSubstitutePositions6, 1, rotationQueue);
 
       expect(props.isNextOff).toBe(true);
       expect(props.isNextOn).toBe(false);
-      expect(props.isNextNextOff).toBe(false);
-      expect(props.isNextNextOn).toBe(false);
     });
 
     test('should return next on indicator props for first substitute', () => {
       const mockPlayer = { id: '5' };
-      const props = getIndicatorProps(mockPlayer, 'substitute_1', TEAM_CONFIGS.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
-      
+      const props = getIndicatorProps(mockPlayer, 'substitute_1', TEAM_CONFIGS.INDIVIDUAL_6, '1', mockSubstitutePositions6);
+
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(true); // First substitute position
-      expect(props.isNextNextOff).toBe(false);
-      expect(props.isNextNextOn).toBe(false);
     });
 
-    test('should return next-next indicators for INDIVIDUAL_7', () => {
+    test('should return indicators for INDIVIDUAL_7', () => {
       const mockPlayer = { id: '2' };
       const rotationQueue = ['1', '2']; // Player '2' is second in queue
-      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_CONFIGS.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7, 1, rotationQueue);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_CONFIGS.INDIVIDUAL_7, '1', mockSubstitutePositions7, 1, rotationQueue);
 
       expect(props.isNextOff).toBe(false); // Not first in queue
       expect(props.isNextOn).toBe(false);
-      expect(props.isNextNextOff).toBe(false); // Next-next indicators removed
-      expect(props.isNextNextOn).toBe(false);
     });
 
-    test('should return next-next on for second substitute in INDIVIDUAL_7', () => {
+    test('should return indicators for second substitute in INDIVIDUAL_7', () => {
       const mockPlayer = { id: '6' };
       const rotationQueue = ['1']; // Only player '1' in rotation queue
-      const props = getIndicatorProps(mockPlayer, 'substitute_2', TEAM_CONFIGS.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7, 1, rotationQueue);
+      const props = getIndicatorProps(mockPlayer, 'substitute_2', TEAM_CONFIGS.INDIVIDUAL_7, '1', mockSubstitutePositions7, 1, rotationQueue);
 
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false); // substitute_2 is not in first N substitute positions (N=1)
-      expect(props.isNextNextOff).toBe(false);
-      expect(props.isNextNextOn).toBe(false); // Next-next indicators removed
     });
 
     test('should handle no indicators when player is not next', () => {
       const mockPlayer = { id: '3' };
-      const props = getIndicatorProps(mockPlayer, 'leftAttacker', TEAM_CONFIGS.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
-      
+      const props = getIndicatorProps(mockPlayer, 'leftAttacker', TEAM_CONFIGS.INDIVIDUAL_6, '1', mockSubstitutePositions6);
+
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
-      expect(props.isNextNextOff).toBe(false);
-      expect(props.isNextNextOn).toBe(false);
     });
 
     test('should handle null/undefined inputs', () => {
-      const props = getIndicatorProps(null, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
-      
+      const props = getIndicatorProps(null, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_6, '1', mockSubstitutePositions6);
+
       expect(props.isNextOff).toBe(false);
       expect(props.isNextOn).toBe(false);
-      expect(props.isNextNextOff).toBe(false);
-      expect(props.isNextNextOn).toBe(false);
-    });
-
-    test('should disable next-next indicators for non-INDIVIDUAL_7 formations', () => {
-      const mockPlayer = { id: '2' };
-      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_CONFIGS.INDIVIDUAL_6, '1', '2', mockSubstitutePositions6);
-
-      expect(props.isNextNextOff).toBe(false);
-      expect(props.isNextNextOn).toBe(false);
     });
 
     test('should show isNextOff based on rotation queue position for single-sub 7v7 config', () => {
@@ -194,13 +174,13 @@ describe('UI positionUtils', () => {
       // Player '3' is first in rotation queue - should be next off
       const player3 = { id: '3' };
       const rotationQueue = ['3', '1', '2', '4', '5', '6', '7'];
-      const props = getIndicatorProps(player3, 'leftMidfielder', TEAM_CONFIGS.INDIVIDUAL_7V7_231_8, '3', null, mockSubstitutePositions7v7_1sub, 1, rotationQueue);
+      const props = getIndicatorProps(player3, 'leftMidfielder', TEAM_CONFIGS.INDIVIDUAL_7V7_231_8, '3', mockSubstitutePositions7v7_1sub, 1, rotationQueue);
 
       expect(props.isNextOff).toBe(true);
 
       // Player '1' is NOT first - should not be next off
       const player1 = { id: '1' };
-      const props2 = getIndicatorProps(player1, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_7V7_231_8, '3', null, mockSubstitutePositions7v7_1sub, 1, rotationQueue);
+      const props2 = getIndicatorProps(player1, 'leftDefender', TEAM_CONFIGS.INDIVIDUAL_7V7_231_8, '3', mockSubstitutePositions7v7_1sub, 1, rotationQueue);
 
       expect(props2.isNextOff).toBe(false);
     });
@@ -263,10 +243,10 @@ describe('UI positionUtils', () => {
       });
     });
 
-    describe('supportsNextNextIndicators', () => {
-      test('should return true only for INDIVIDUAL_7', () => {
-        expect(supportsNextNextIndicators(TEAM_CONFIGS.INDIVIDUAL_7)).toBe(true);
-        expect(supportsNextNextIndicators(TEAM_CONFIGS.INDIVIDUAL_6)).toBe(false);
+    describe('hasMultipleSubstitutes', () => {
+      test('should return true only for configs with 2+ substitutes', () => {
+        expect(hasMultipleSubstitutes(TEAM_CONFIGS.INDIVIDUAL_7)).toBe(true);
+        expect(hasMultipleSubstitutes(TEAM_CONFIGS.INDIVIDUAL_6)).toBe(false);
       });
 
     });
@@ -282,18 +262,18 @@ describe('UI positionUtils', () => {
       teamConfigs.forEach(teamConfig => {
         // Team mode support checks should be consistent
         const supportsInactive = supportsInactiveUsers(teamConfig);
-        const supportsNextNext = supportsNextNextIndicators(teamConfig);
+        const multiSubs = hasMultipleSubstitutes(teamConfig);
 
         expect(typeof supportsInactive).toBe('boolean');
-        expect(typeof supportsNextNext).toBe('boolean');
+        expect(typeof multiSubs).toBe('boolean');
 
         // Check expected values for each mode
         if (teamConfig === TEAM_CONFIGS.INDIVIDUAL_7) {
           expect(supportsInactive).toBe(true); // 7-player individual mode supports inactive players
-          expect(supportsNextNext).toBe(true);
+          expect(multiSubs).toBe(true);
         } else if (teamConfig === TEAM_CONFIGS.INDIVIDUAL_6) {
           expect(supportsInactive).toBe(true); // 6-player individual mode also supports inactive players
-          expect(supportsNextNext).toBe(false);
+          expect(multiSubs).toBe(false);
         }
       });
     });
@@ -307,29 +287,22 @@ describe('UI positionUtils', () => {
       teamConfigs.forEach(({ type: teamConfig, subs: substitutePositions }) => {
         const mockPlayer = { id: '1' };
         const rotationQueue = ['1', '2']; // Player '1' is first in rotation queue
-        const props = getIndicatorProps(mockPlayer, 'leftDefender', teamConfig, '1', '2', substitutePositions, 1, rotationQueue);
+        const props = getIndicatorProps(mockPlayer, 'leftDefender', teamConfig, '1', substitutePositions, 1, rotationQueue);
 
         expect(typeof props.isNextOff).toBe('boolean');
         expect(typeof props.isNextOn).toBe('boolean');
-        expect(typeof props.isNextNextOff).toBe('boolean');
-        expect(typeof props.isNextNextOn).toBe('boolean');
 
         // Should always show nextOff when player is first in rotation queue
         expect(props.isNextOff).toBe(true);
-
-        // Next-next indicators are always false (removed feature)
-        expect(props.isNextNextOff).toBe(false);
-        expect(props.isNextNextOn).toBe(false);
       });
     });
 
-    test('should show next-next indicators correctly for INDIVIDUAL_7', () => {
+    test('should handle indicators correctly for INDIVIDUAL_7', () => {
       const mockPlayer = { id: '2' };
       const rotationQueue = ['1', '2']; // Player '2' is second in rotation queue
-      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_CONFIGS.INDIVIDUAL_7, '1', '2', mockSubstitutePositions7, 1, rotationQueue);
+      const props = getIndicatorProps(mockPlayer, 'rightDefender', TEAM_CONFIGS.INDIVIDUAL_7, '1', mockSubstitutePositions7, 1, rotationQueue);
 
       expect(props.isNextOff).toBe(false); // Not in first position of rotation queue (substitutionCount=1)
-      expect(props.isNextNextOff).toBe(false); // Next-next indicators removed
     });
   });
 });

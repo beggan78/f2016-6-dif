@@ -43,8 +43,6 @@ export const createMockGameScreenProps = (overrides = {}) => {
     handleEndPeriod: jest.fn(),
     nextPlayerToSubOut: 'leftDefender',
     nextPlayerIdToSubOut: '1',
-    nextNextPlayerIdToSubOut: '2',
-    setNextNextPlayerIdToSubOut: jest.fn(),
     selectedSquadPlayers: allPlayers,
     setNextPlayerToSubOut: jest.fn(),
     setNextPlayerIdToSubOut: jest.fn(),

@@ -45,7 +45,6 @@ describe('FormationRenderer', () => {
       recentlySubstitutedPlayers: new Set(),
       hideNextOffIndicator: false,
       nextPlayerIdToSubOut: '1',
-      nextNextPlayerIdToSubOut: '2',
       quickTapHandlers: {
         handleFieldPlayerClick: jest.fn(),
         handleFieldPlayerQuickTap: jest.fn()

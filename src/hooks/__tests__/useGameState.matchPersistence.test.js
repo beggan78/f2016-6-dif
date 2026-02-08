@@ -191,7 +191,6 @@ const buildInitialState = (overrides = {}) => ({
   selectedSquadIds: basePlayers.map(player => player.id),
   nextPlayerToSubOut: null,
   nextPlayerIdToSubOut: null,
-  nextNextPlayerIdToSubOut: null,
   rotationQueue: [],
   gameLog: [],
   opponentTeam: 'Rivals',

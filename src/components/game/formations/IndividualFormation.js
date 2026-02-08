@@ -31,7 +31,6 @@ export function IndividualFormation({
   getPlayerNameById,
   getPlayerTimeStats,
   nextPlayerIdToSubOut,
-  nextNextPlayerIdToSubOut,
   substitutionCount = 1,
   rotationQueue = [],
   renderSection = 'all',
@@ -138,7 +137,6 @@ export function IndividualFormation({
       position,
       formationAwareTeamConfig,
       nextPlayerIdToSubOut,
-      nextNextPlayerIdToSubOut,
       substitutePositions,
       substitutionCount,
       rotationQueue

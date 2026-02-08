@@ -51,9 +51,7 @@ export const ICON_STYLES = {
   // Indicator colors
   indicators: {
     nextOff: 'text-rose-400',
-    nextOn: 'text-emerald-400',
-    nextNextOff: 'text-rose-200 opacity-40',
-    nextNextOn: 'text-emerald-200 opacity-40'
+    nextOn: 'text-emerald-400'
   }
 };
 

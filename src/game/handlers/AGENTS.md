@@ -204,7 +204,7 @@ Handlers are instantiated in parent components (e.g., `TacticalBoard`):
 ### State Application
 - ALWAYS call state setters for ALL fields returned by logic functions
 - Missing updates cause UI desync that's hard to debug
-- Check `rotationQueue`, `nextPlayerIdToSubOut`, `nextNextPlayerIdToSubOut`, etc.
+- Check `rotationQueue`, `nextPlayerIdToSubOut`, etc.
 
 ### Animation Coordination
 - Use `animateStateChange()` for all position changes
