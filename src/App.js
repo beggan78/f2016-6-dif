@@ -51,6 +51,10 @@ import { useInvitationProcessing } from './hooks/useInvitationProcessing';
 import { useInvitationNotifications } from './hooks/useInvitationNotifications';
 import { useStatisticsRouting } from './hooks/useStatisticsRouting';
 import { useLiveMatchRouting } from './hooks/useLiveMatchRouting';
+import { useTeamManagementRouting } from './hooks/useTeamManagementRouting';
+import { useTacticalBoardRouting } from './hooks/useTacticalBoardRouting';
+import { usePlanMatchesRouting } from './hooks/usePlanMatchesRouting';
+import { useProfileRouting } from './hooks/useProfileRouting';
 import { initializeEventPersistence } from './services/initializeServices';
 import { createMatch, formatMatchDataFromGameState } from './services/matchStateManager';
 import { createPersistenceManager } from './utils/persistenceManager';
@@ -188,6 +192,10 @@ function AppContent() {
 
   useStatisticsRouting(gameState.view, navigateToView);
   useLiveMatchRouting(gameState.view, navigateToView, setLiveMatchId, liveMatchId);
+  useTeamManagementRouting(gameState.view, navigateToView);
+  useTacticalBoardRouting(gameState.view, navigateToView);
+  usePlanMatchesRouting(gameState.view, navigateToView);
+  useProfileRouting(gameState.view, navigateToView);
 
   const { setView: setGameView } = gameState;
 

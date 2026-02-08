@@ -128,6 +128,26 @@ describe('useLiveMatchRouting', () => {
     expect(window.location.pathname).toBe('/');
   });
 
+  it('does not clobber non-live URLs when view changes', async () => {
+    const navigateToView = jest.fn();
+    const setLiveMatchId = jest.fn();
+
+    // Start at /stats (set by useStatisticsRouting)
+    window.history.replaceState({}, '', '/stats');
+
+    const { rerender } = renderHook(
+      ({ view, activeMatchId }) => useLiveMatchRouting(view, navigateToView, setLiveMatchId, activeMatchId),
+      { initialProps: { view: VIEWS.STATISTICS, activeMatchId: null } }
+    );
+
+    // URL should remain /stats — useLiveMatchRouting should not touch it
+    expect(window.location.pathname).toBe('/stats');
+
+    // Change view to CONFIG — URL should still not be touched by this hook
+    rerender({ view: VIEWS.CONFIG, activeMatchId: null });
+    expect(window.location.pathname).toBe('/stats');
+  });
+
   it('does not set a live URL when activeMatchId is null', async () => {
     const navigateToView = jest.fn();
     const setLiveMatchId = jest.fn();
