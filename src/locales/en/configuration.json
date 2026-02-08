@@ -167,7 +167,7 @@
     }
   },
   "formationVoting": {
-    "description": "Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.",
+    "description": "By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.",
     "errors": {
       "loginRequired": "You must be logged in to vote for formations",
       "submitFailed": "Failed to submit vote. Please try again.",

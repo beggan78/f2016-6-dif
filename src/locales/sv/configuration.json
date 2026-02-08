@@ -167,7 +167,7 @@
     }
   },
   "formationVoting": {
-    "description": "Endast 2-2 och 1-2-1 formationerna är för närvarande implementerade. Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare per formation räknas.",
+    "description": "Genom att rösta hjälper du oss att prioritera vilka formationer vi ska bygga härnäst. Endast en röst per användare och formation räknas.",
     "errors": {
       "loginRequired": "Du måste vara inloggad för att rösta på formationer",
       "submitFailed": "Misslyckades skicka röst. Försök igen.",
