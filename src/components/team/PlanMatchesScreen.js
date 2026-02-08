@@ -27,7 +27,7 @@ export function PlanMatchesScreen({
   const [autoSelectMatchId, setAutoSelectMatchId] = useState(null);
 
   const { unavailablePlayersByMatch, setUnavailablePlayersByMatch } = useUnavailablePlayersByMatch(currentTeam?.id);
-  const { autoSelectSettings, targetCounts, setAutoSelectSettings, setTargetCounts } = useAutoSelectPreferences(
+  const { autoSelectSettings, targetCounts, lastSquadSize, setAutoSelectSettings, setTargetCounts, setLastSquadSize } = useAutoSelectPreferences(
     currentTeam?.id
   );
   const {
@@ -117,7 +117,11 @@ export function PlanMatchesScreen({
 
     const minimumPlayers = Math.max(0, getMinimumPlayersForFormat(defaults.format));
     const rosterCount = rosterPlayers.length;
-    const defaultTarget = rosterCount > 0 ? Math.min(rosterCount, minimumPlayers) : 0;
+    const defaultTarget = rosterCount > 0
+      ? (typeof lastSquadSize === 'number' && lastSquadSize > 0
+        ? Math.min(rosterCount, lastSquadSize)
+        : Math.min(rosterCount, minimumPlayers + 2))
+      : 0;
 
     if (DEBUG_ENABLED) {
       console.debug('[PlanMatchesScreen] ensure targetCounts', {
@@ -138,7 +142,7 @@ export function PlanMatchesScreen({
       });
       return didChange ? next : prev;
     });
-  }, [defaults, matches, rosterPlayers.length, setTargetCounts]);
+  }, [defaults, matches, rosterPlayers.length, lastSquadSize, setTargetCounts]);
 
   const statsByPlayerId = useMemo(() => {
     const map = new Map();
@@ -246,6 +250,7 @@ export function PlanMatchesScreen({
       ...prev,
       [matchId]: capped
     }));
+    setLastSquadSize(capped);
   };
 
   const runAutoSelectSingleMatch = useCallback((matchId, metric) => {
