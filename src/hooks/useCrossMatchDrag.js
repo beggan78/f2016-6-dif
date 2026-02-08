@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// Slide-in: 100ms delay + 400ms CSS transition in MatchCard.js
+const SLIDE_IN_DURATION_MS = 500;
+// Swap landing: 300ms CSS pulse × 2 iterations (App.css) + 100ms buffer
+const SWAP_ANIMATION_DURATION_MS = 700;
+
 const INITIAL_STATE = {
   active: false,
   sourceMatchId: null,
@@ -227,8 +232,8 @@ export function useCrossMatchDrag({
           swapAnimationTimeoutRef.current = setTimeout(() => {
             setSwapAnimation(null);
             swapAnimationTimeoutRef.current = null;
-          }, 700);
-        }, 500);
+          }, SWAP_ANIMATION_DURATION_MS);
+        }, SLIDE_IN_DURATION_MS);
       } else {
         // Fallback: immediate swap (no slide animation)
         onSwapPlayersRef.current(sourceMatchId, state.sourcePlayerId, state.targetMatchId, state.hoveredPlayerId);
@@ -247,7 +252,7 @@ export function useCrossMatchDrag({
           swapAnimationTimeoutRef.current = setTimeout(() => {
             setSwapAnimation(null);
             swapAnimationTimeoutRef.current = null;
-          }, 700);
+          }, SWAP_ANIMATION_DURATION_MS);
         }
       }
     }
