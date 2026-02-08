@@ -1,17 +1,16 @@
 /**
  * useFormationVotes Hook Tests
- * 
+ *
  * Comprehensive testing suite for the useFormationVotes hook - manages
  * formation voting functionality including submission and state management.
- * 
- * Test Coverage: 25+ tests covering:
+ *
+ * Test Coverage:
  * - Authentication state handling (logged in/out)
  * - Vote submission success scenarios
- * - Error handling (duplicate votes, network errors, server errors)
+ * - Error handling (duplicate votes, RPC errors, validation errors)
  * - Loading state management
  * - Success/error message handling
- * - API integration (fetch calls, headers, body)
- * - Session validation and auth headers
+ * - RPC integration (supabase.rpc calls)
  * - Edge cases and boundary conditions
  */
 
@@ -33,56 +32,22 @@ jest.mock('../../contexts/AuthContext', () => ({
 }));
 
 // Mock supabase
-const mockSession = {
-  data: {
-    session: {
-      access_token: 'mock-access-token'
-    }
-  }
-};
-
-const mockSupabase = {
-  auth: {
-    getSession: jest.fn(() => Promise.resolve(mockSession))
-  }
-};
-
 jest.mock('../../lib/supabase', () => ({
   supabase: {
-    auth: {
-      getSession: jest.fn(() => Promise.resolve({
-        data: {
-          session: {
-            access_token: 'mock-access-token'
-          }
-        }
-      }))
-    }
+    rpc: jest.fn()
   }
 }));
-
-// Mock fetch
-global.fetch = jest.fn();
-
-// Set up environment variable before any imports
-process.env.REACT_APP_SUPABASE_URL = 'https://test.supabase.co';
 
 // Import the hook
 import { useFormationVotes } from '../useFormationVotes';
 
 describe('useFormationVotes', () => {
   beforeEach(() => {
-    // Reset all mocks
     jest.clearAllMocks();
-    global.fetch.mockClear();
-    
+
     // Reset auth context to default
     require('../../contexts/AuthContext').useAuth.mockReturnValue(mockAuthContext);
-    
-    // Reset supabase session mock
-    const { supabase } = require('../../lib/supabase');
-    supabase.auth.getSession.mockResolvedValue(mockSession);
-    
+
     // Clear console.error mock if it exists
     if (console.error.mockClear) {
       console.error.mockClear();
@@ -92,7 +57,7 @@ describe('useFormationVotes', () => {
   describe('Hook Initialization', () => {
     it('should initialize with correct default state', () => {
       const { result } = renderHook(() => useFormationVotes());
-      
+
       expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
       expect(result.current.successMessage).toBe('');
@@ -109,7 +74,7 @@ describe('useFormationVotes', () => {
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       expect(result.current.isAuthenticated).toBe(false);
     });
   });
@@ -122,35 +87,20 @@ describe('useFormationVotes', () => {
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       let voteResult;
       await act(async () => {
         voteResult = await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(voteResult).toEqual({
         success: false,
         error: 'Authentication required'
       });
       expect(result.current.error).toBe('You must be logged in to vote for formations');
-      expect(global.fetch).not.toHaveBeenCalled();
-    });
 
-    it('should handle missing session gracefully', async () => {
       const { supabase } = require('../../lib/supabase');
-      supabase.auth.getSession.mockResolvedValue({
-        data: { session: null }
-      });
-
-      const { result } = renderHook(() => useFormationVotes());
-      
-      let voteResult;
-      await act(async () => {
-        voteResult = await result.current.submitVote('1-2-1', '5v5');
-      });
-      
-      expect(voteResult.success).toBe(false);
-      expect(result.current.error).toContain('No valid session found');
+      expect(supabase.rpc).not.toHaveBeenCalled();
     });
   });
 
@@ -161,18 +111,16 @@ describe('useFormationVotes', () => {
         message: 'Your vote for the 1-2-1 formation in 5v5 format has been recorded!'
       };
 
-      global.fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse)
-      });
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({ data: mockResponse, error: null });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       let voteResult;
       await act(async () => {
         voteResult = await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(voteResult).toEqual({
         success: true,
         message: mockResponse.message
@@ -182,33 +130,23 @@ describe('useFormationVotes', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    it('should make correct API call with proper headers and body', async () => {
-      global.fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ success: true, message: 'Vote recorded!' })
+    it('should make correct RPC call with proper parameters', async () => {
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, message: 'Vote recorded!' },
+        error: null
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       await act(async () => {
         await result.current.submitVote('2-2', '5v5');
       });
-      
-      // Check that fetch was called with correct method, headers and body
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/functions/v1/submit-formation-vote'),
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer mock-access-token'
-          },
-          body: JSON.stringify({
-            formation: '2-2',
-            format: '5v5'
-          })
-        }
-      );
+
+      expect(supabase.rpc).toHaveBeenCalledWith('submit_formation_vote', {
+        p_formation: '2-2',
+        p_format: '5v5'
+      });
     });
 
     it('should handle loading state correctly during submission', async () => {
@@ -218,260 +156,218 @@ describe('useFormationVotes', () => {
         resolvePromise = resolve;
       });
 
-      global.fetch.mockReturnValue(pendingPromise);
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockReturnValue(pendingPromise);
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       // Start the submission
       let submitPromise;
       act(() => {
         submitPromise = result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       // Check loading state is true
       expect(result.current.loading).toBe(true);
-      
-      // Resolve the fetch
+
+      // Resolve the RPC call
       act(() => {
         resolvePromise({
-          ok: true,
-          json: () => Promise.resolve({ success: true, message: 'Success!' })
+          data: { success: true, message: 'Success!' },
+          error: null
         });
       });
-      
+
       await act(() => submitPromise);
-      
+
       // Check loading state is false after completion
       expect(result.current.loading).toBe(false);
     });
   });
 
   describe('Duplicate Vote Handling', () => {
-    it('should handle duplicate vote as info message (409)', async () => {
-      const mockErrorResponse = {
+    it('should handle duplicate vote as info message', async () => {
+      const mockResult = {
         success: false,
         error: 'duplicate_vote',
         message: 'You have already voted for the 1-2-1 formation in 5v5 format.'
       };
 
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 409,
-        json: () => Promise.resolve(mockErrorResponse)
-      });
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({ data: mockResult, error: null });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       let voteResult;
       await act(async () => {
         voteResult = await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(voteResult).toEqual({
         success: false,
         error: 'duplicate_vote',
-        message: mockErrorResponse.message
+        message: mockResult.message
       });
-      expect(result.current.infoMessage).toBe(mockErrorResponse.message);
+      expect(result.current.infoMessage).toBe(mockResult.message);
       expect(result.current.error).toBeNull();
       expect(result.current.successMessage).toBe('');
     });
 
     it('should provide fallback message for duplicate vote without message', async () => {
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 409,
-        json: () => Promise.resolve({ 
-          success: false, 
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({
+        data: {
+          success: false,
           error: 'duplicate_vote'
-        })
+        },
+        error: null
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       await act(async () => {
         await result.current.submitVote('2-2', '7v7');
       });
-      
+
       expect(result.current.infoMessage).toBe("You've already voted for the 2-2 formation in 7v7 format.");
       expect(result.current.error).toBeNull();
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle network errors', async () => {
-      global.fetch.mockRejectedValue(new Error('Network error'));
-      
-      // Mock console.error to avoid error output in tests
+    it('should handle RPC errors', async () => {
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: { message: 'Database connection error' }
+      });
+
       console.error = jest.fn();
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       let voteResult;
       await act(async () => {
         voteResult = await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(voteResult.success).toBe(false);
-      expect(result.current.error).toBe('Network error');
+      expect(result.current.error).toBe('Database connection error');
       expect(console.error).toHaveBeenCalledWith(
-        'Formation vote submission error:', 
+        'Formation vote submission error:',
         expect.any(Error)
       );
     });
 
-    it('should handle server errors (500)', async () => {
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        json: () => Promise.resolve({ error: 'Server error' })
+    it('should handle RPC error without message', async () => {
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({
+        data: null,
+        error: {}
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       await act(async () => {
         await result.current.submitVote('1-2-1', '5v5');
       });
-      
-      expect(result.current.error).toBe('Server error');
+
+      expect(result.current.error).toBe('Failed to submit vote. Please try again.');
     });
 
-    it('should handle authentication errors (401)', async () => {
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized',
-        json: () => Promise.resolve({ error: 'Authentication required' })
-      });
-
-      const { result } = renderHook(() => useFormationVotes());
-      
-      await act(async () => {
-        await result.current.submitVote('1-2-1', '5v5');
-      });
-      
-      expect(result.current.error).toBe('Authentication required');
-    });
-
-    it('should handle malformed response body', async () => {
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        json: () => Promise.resolve({}) // Empty response
-      });
-
-      const { result } = renderHook(() => useFormationVotes());
-      
-      await act(async () => {
-        await result.current.submitVote('1-2-1', '5v5');
-      });
-      
-      expect(result.current.error).toBe('HTTP 400: Bad Request');
-    });
-
-    it('should handle response JSON parsing errors', async () => {
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.reject(new Error('Invalid JSON'))
-      });
-
-      const { result } = renderHook(() => useFormationVotes());
-      
-      await act(async () => {
-        await result.current.submitVote('1-2-1', '5v5');
-      });
-      
-      expect(result.current.error).toBe('Invalid JSON');
-    });
-
-    it('should handle successful response with success: false', async () => {
-      global.fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
+    it('should handle result with success: false and validation error', async () => {
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({
+        data: {
           success: false,
           error: 'validation_failed'
-        })
+        },
+        error: null
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       await act(async () => {
         await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(result.current.error).toBe('validation_failed');
+    });
+
+    it('should handle unexpected exceptions', async () => {
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockRejectedValue(new Error('Network error'));
+
+      console.error = jest.fn();
+
+      const { result } = renderHook(() => useFormationVotes());
+
+      let voteResult;
+      await act(async () => {
+        voteResult = await result.current.submitVote('1-2-1', '5v5');
+      });
+
+      expect(voteResult.success).toBe(false);
+      expect(result.current.error).toBe('Network error');
     });
   });
 
   describe('Message Management', () => {
     it('should clear error and success messages', async () => {
-      // First set some messages
-      global.fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          message: 'Vote submitted!'
-        })
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, message: 'Vote submitted!' },
+        error: null
       });
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       await act(async () => {
         await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(result.current.successMessage).toBe('Vote submitted!');
-      
+
       // Clear messages
       act(() => {
         result.current.clearMessages();
       });
-      
+
       expect(result.current.error).toBeNull();
       expect(result.current.successMessage).toBe('');
       expect(result.current.infoMessage).toBe('');
     });
 
     it('should clear previous messages when starting new submission', async () => {
+      const { supabase } = require('../../lib/supabase');
       const { result } = renderHook(() => useFormationVotes());
-      
-      // Set up initial error state
-      act(() => {
-        result.current.clearMessages();
-      });
-      
-      global.fetch.mockResolvedValue({
-        ok: false,
-        status: 409,
-        json: () => Promise.resolve({
+
+      // Set up initial info state via duplicate vote
+      supabase.rpc.mockResolvedValue({
+        data: {
           success: false,
           error: 'duplicate_vote',
           message: 'Already voted'
-        })
+        },
+        error: null
       });
 
       await act(async () => {
         await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(result.current.infoMessage).toBe('Already voted');
-      
+
       // Start new submission - should clear previous info message
-      global.fetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          message: 'Success!'
-        })
+      supabase.rpc.mockResolvedValue({
+        data: { success: true, message: 'Success!' },
+        error: null
       });
 
       await act(async () => {
         await result.current.submitVote('2-2', '7v7');
       });
-      
+
       expect(result.current.error).toBeNull();
       expect(result.current.successMessage).toBe('Success!');
       expect(result.current.infoMessage).toBe('');
@@ -480,47 +376,16 @@ describe('useFormationVotes', () => {
 
   describe('Edge Cases', () => {
     it('should provide fallback error message when none provided', async () => {
-      global.fetch.mockRejectedValue({});
+      const { supabase } = require('../../lib/supabase');
+      supabase.rpc.mockRejectedValue({});
 
       const { result } = renderHook(() => useFormationVotes());
-      
+
       await act(async () => {
         await result.current.submitVote('1-2-1', '5v5');
       });
-      
+
       expect(result.current.error).toBe('Failed to submit vote. Please try again.');
-    });
-
-    it('should handle missing access token gracefully', async () => {
-      const { supabase } = require('../../lib/supabase');
-      supabase.auth.getSession.mockResolvedValue({
-        data: {
-          session: {
-            // Missing access_token
-          }
-        }
-      });
-
-      const { result } = renderHook(() => useFormationVotes());
-      
-      await act(async () => {
-        await result.current.submitVote('1-2-1', '5v5');
-      });
-      
-      expect(result.current.error).toContain('No valid session found');
-    });
-
-    it('should handle supabase session error', async () => {
-      const { supabase } = require('../../lib/supabase');
-      supabase.auth.getSession.mockRejectedValue(new Error('Session error'));
-
-      const { result } = renderHook(() => useFormationVotes());
-      
-      await act(async () => {
-        await result.current.submitVote('1-2-1', '5v5');
-      });
-      
-      expect(result.current.error).toBe('Session error');
     });
   });
 });

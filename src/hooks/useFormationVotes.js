@@ -10,8 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
-
 export const useFormationVotes = () => {
   const { t } = useTranslation('configuration');
   const { user } = useAuth();
@@ -33,34 +31,18 @@ export const useFormationVotes = () => {
     setInfoMessage('');
 
     try {
-      // Get current session for authorization header
-      const session = await supabase.auth.getSession();
-      if (!session.data.session?.access_token) {
-        throw new Error('No valid session found');
-      }
-
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/submit-formation-vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.data.session.access_token}`,
-        },
-        body: JSON.stringify({
-          formation,
-          format
-        }),
+      const { data: result, error: rpcError } = await supabase.rpc('submit_formation_vote', {
+        p_formation: formation,
+        p_format: format
       });
 
-      const result = await response.json();
+      if (rpcError) {
+        throw new Error(rpcError.message || t('formationVoting.errors.submitFailed'));
+      }
 
-      if (!response.ok) {
-        // Handle different error types
-        if (response.status === 409 && result.error === 'duplicate_vote') {
-          setInfoMessage(result.message || t('formationVoting.messages.duplicateVote', { formation, format }));
-          return { success: false, error: 'duplicate_vote', message: result.message };
-        }
-        
-        throw new Error(result.error || `HTTP ${response.status}: ${response.statusText}`);
+      if (result.error === 'duplicate_vote') {
+        setInfoMessage(result.message || t('formationVoting.messages.duplicateVote', { formation, format }));
+        return { success: false, error: 'duplicate_vote', message: result.message };
       }
 
       if (!result.success) {
@@ -69,20 +51,20 @@ export const useFormationVotes = () => {
 
       // Success
       setSuccessMessage(result.message || t('formationVoting.messages.voteRecorded', { formation }));
-      
-      return { 
-        success: true, 
-        message: result.message 
+
+      return {
+        success: true,
+        message: result.message
       };
 
     } catch (err) {
       const errorMessage = err.message || t('formationVoting.errors.submitFailed');
       setError(errorMessage);
       console.error('Formation vote submission error:', err);
-      
-      return { 
-        success: false, 
-        error: errorMessage 
+
+      return {
+        success: false,
+        error: errorMessage
       };
     } finally {
       setLoading(false);
