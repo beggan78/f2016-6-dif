@@ -43,16 +43,25 @@ export function useCrossMatchDrag({
     };
   }, []);
 
-  const fastForwardSlideIn = useCallback(() => {
+  const clearAllAnimationTimeouts = useCallback(() => {
     if (slideInTimeoutRef.current) {
       clearTimeout(slideInTimeoutRef.current);
       slideInTimeoutRef.current = null;
     }
+    if (swapAnimationTimeoutRef.current) {
+      clearTimeout(swapAnimationTimeoutRef.current);
+      swapAnimationTimeoutRef.current = null;
+    }
+  }, []);
+
+  const fastForwardSlideIn = useCallback(() => {
+    clearAllAnimationTimeouts();
 
     const pending = slideInAnimationRef.current;
     if (!pending) return;
 
     setSlideInAnimation(null);
+    setSwapAnimation(null);
 
     if (onSwapPlayersRef.current) {
       onSwapPlayersRef.current(
@@ -63,7 +72,7 @@ export function useCrossMatchDrag({
       );
     }
     // Skip FLIP when fast-forwarding
-  }, []);
+  }, [clearAllAnimationTimeouts]);
 
   const handleDragMove = useCallback(({ itemId, clientX, clientY }, sourceMatchId) => {
     let targetMatchId = null;
@@ -166,10 +175,17 @@ export function useCrossMatchDrag({
     const state = crossMatchStateRef.current;
 
     if (!cancelled && state.active && state.isEligible && state.hoveredPlayerId && onSwapPlayersRef.current) {
-      // Fast-forward any pending slide-in animation
+      // Fast-forward any pending slide-in animation (also clears swap timeout)
       if (slideInTimeoutRef.current) {
         fastForwardSlideIn();
       }
+
+      // Clear any stale swap animation from a prior completed interaction
+      if (swapAnimationTimeoutRef.current) {
+        clearTimeout(swapAnimationTimeoutRef.current);
+        swapAnimationTimeoutRef.current = null;
+      }
+      setSwapAnimation(null);
 
       // Capture hovered player's position before swap
       let fromRect = null;
@@ -262,15 +278,8 @@ export function useCrossMatchDrag({
   }, [fastForwardSlideIn]);
 
   useEffect(() => {
-    return () => {
-      if (swapAnimationTimeoutRef.current) {
-        clearTimeout(swapAnimationTimeoutRef.current);
-      }
-      if (slideInTimeoutRef.current) {
-        clearTimeout(slideInTimeoutRef.current);
-      }
-    };
-  }, []);
+    return clearAllAnimationTimeouts;
+  }, [clearAllAnimationTimeouts]);
 
   return {
     registerContainer,
