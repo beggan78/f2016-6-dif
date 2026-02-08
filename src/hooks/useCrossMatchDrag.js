@@ -22,12 +22,14 @@ export function useCrossMatchDrag({
   const selectedRef = useRef(selectedPlayersByMatch);
   const unavailableRef = useRef(unavailablePlayersByMatch);
   const onSwapPlayersRef = useRef(onSwapPlayers);
+  const slideInAnimationRef = useRef(slideInAnimation);
   const swapAnimationTimeoutRef = useRef(null);
   const slideInTimeoutRef = useRef(null);
 
   selectedRef.current = selectedPlayersByMatch;
   unavailableRef.current = unavailablePlayersByMatch;
   onSwapPlayersRef.current = onSwapPlayers;
+  slideInAnimationRef.current = slideInAnimation;
 
   const registerContainer = useCallback((matchId, containerRef) => {
     containerRefs.current.set(matchId, containerRef);
@@ -42,7 +44,7 @@ export function useCrossMatchDrag({
       slideInTimeoutRef.current = null;
     }
 
-    const pending = slideInAnimation;
+    const pending = slideInAnimationRef.current;
     if (!pending) return;
 
     setSlideInAnimation(null);
@@ -56,7 +58,7 @@ export function useCrossMatchDrag({
       );
     }
     // Skip FLIP when fast-forwarding
-  }, [slideInAnimation]);
+  }, []);
 
   const handleDragMove = useCallback(({ itemId, clientX, clientY }, sourceMatchId) => {
     let targetMatchId = null;
