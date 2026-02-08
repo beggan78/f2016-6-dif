@@ -12,7 +12,8 @@ import { useTeam } from '../../contexts/TeamContext';
 import { calculatePositionRecommendations } from '../../game/logic/positionRecommendations';
 import { PositionRecommendationCard } from './PositionRecommendationCard';
 import { usePlayerRecommendationData } from '../../hooks/usePlayerRecommendationData';
-import { orderFieldPositionsForDisplay } from '../../utils/positionDisplayOrder';
+import { groupFieldPositionsByRole } from '../../utils/positionDisplayOrder';
+import { PLAYER_ROLES } from '../../constants/playerConstants';
 import { useTranslation } from 'react-i18next';
 
 const humanizePositionKey = (positionKey) => {
@@ -48,35 +49,68 @@ function getTranslatedPositionTitle(position, config, t) {
   return translated || config.title;
 }
 
-// Dynamic component for rendering individual position cards
-function IndividualPositionCards({ positions = null, teamConfig, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
-  const modeDefinition = getModeDefinition(teamConfig);
-  if (!modeDefinition) {
-    return null;
-  }
+const ROLE_GROUP_KEYS = {
+  [PLAYER_ROLES.ATTACKER]: 'offence',
+  [PLAYER_ROLES.MIDFIELDER]: 'midfield',
+  [PLAYER_ROLES.DEFENDER]: 'defence'
+};
 
-  const { fieldPositions, substitutePositions } = modeDefinition;
-  const allPositions = positions || [...fieldPositions, ...substitutePositions];
-
+function GroupedPositionCards({ fieldGroups, substitutePositions, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
   return (
     <>
-      {allPositions.map(position => {
-        const config = getPositionConfig(position);
-        const displayTitle = getTranslatedPositionTitle(position, config, t);
+      {fieldGroups.map(({ role, positions }) => {
+        const groupKey = ROLE_GROUP_KEYS[role];
+        const groupLabel = t(`periodSetup.roleGroups.${groupKey}`);
 
         return (
-          <IndividualPositionCard
-            key={position}
-            title={displayTitle}
-            position={config.position}
-            playerId={formation[position]}
-            onPlayerAssign={onPlayerAssign}
-            getAvailableOptions={getAvailableOptions}
-            currentPeriodNumber={currentPeriodNumber}
-            t={t}
-          />
+          <div key={role} className="p-2 bg-sky-700 rounded-md space-y-1.5">
+            <h3 className="text-sm font-medium text-sky-200">{groupLabel}</h3>
+            {positions.map(position => {
+              const config = getPositionConfig(position);
+              const displayTitle = getTranslatedPositionTitle(position, config, t);
+              const availableOptions = getAvailableOptions(config.position);
+
+              return (
+                <div key={position} className="flex items-center gap-2">
+                  {positions.length > 1 && (
+                    <span className="text-xs text-sky-300 w-28 shrink-0">{displayTitle}</span>
+                  )}
+                  <div className="flex-1">
+                    <Select
+                      value={formation[position] || ""}
+                      onChange={value => onPlayerAssign(config.position, value)}
+                      options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
+                      placeholder={t('periodSetup.fallbacks.selectPosition', { title: displayTitle })}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         );
       })}
+
+      {substitutePositions.length > 0 && (
+        <div className="p-2 bg-slate-700 rounded-md space-y-1.5">
+          <h3 className="text-sm font-medium text-slate-200">{t('periodSetup.roleGroups.substitutes')}</h3>
+          {substitutePositions.map(position => {
+            const config = getPositionConfig(position);
+            const displayTitle = getTranslatedPositionTitle(position, config, t);
+            const availableOptions = getAvailableOptions(config.position);
+
+            return (
+              <div key={position}>
+                <Select
+                  value={formation[position] || ""}
+                  onChange={value => onPlayerAssign(config.position, value)}
+                  options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
+                  placeholder={t('periodSetup.fallbacks.selectPosition', { title: displayTitle })}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -223,8 +257,8 @@ export function PeriodSetupScreen({
     teamConfig
   ]);
 
-  const orderedFieldPositions = useMemo(() => {
-    return orderFieldPositionsForDisplay(modeDefinition?.fieldPositions || []);
+  const fieldGroups = useMemo(() => {
+    return groupFieldPositionsByRole(modeDefinition?.fieldPositions || []);
   }, [modeDefinition]);
 
   const substitutePositions = modeDefinition?.substitutePositions || [];
@@ -1143,9 +1177,9 @@ export function PeriodSetupScreen({
       )}
 
       {formation.goalie && (
-        <IndividualPositionCards
-          positions={orderedFieldPositions}
-          teamConfig={teamConfig}
+        <GroupedPositionCards
+          fieldGroups={fieldGroups}
+          substitutePositions={[]}
           formation={formation}
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}
@@ -1185,9 +1219,9 @@ export function PeriodSetupScreen({
       })()}
 
       {formation.goalie && (
-        <IndividualPositionCards
-          positions={substitutePositions}
-          teamConfig={teamConfig}
+        <GroupedPositionCards
+          fieldGroups={[]}
+          substitutePositions={substitutePositions}
           formation={formation}
           onPlayerAssign={handleIndividualPlayerAssignment}
           getAvailableOptions={getAvailableForIndividualSelect}

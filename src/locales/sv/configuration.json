@@ -289,18 +289,24 @@
     },
     "positions": {
       "goalie": "Målvakt",
-      "leftDefender": "Vänster Back",
-      "rightDefender": "Höger Back",
-      "leftAttacker": "Vänster Forward",
-      "rightAttacker": "Höger Forward",
+      "leftDefender": "Vänster",
+      "rightDefender": "Höger",
+      "leftAttacker": "Vänster",
+      "rightAttacker": "Höger",
       "defender": "Back",
-      "left": "Vänster Mittfält",
-      "right": "Höger Mittfält",
+      "left": "Vänster",
+      "right": "Höger",
       "attacker": "Forward",
-      "leftMidfielder": "Vänster Mittfältare",
-      "rightMidfielder": "Höger Mittfältare",
-      "centerMidfielder": "Centralt Mittfält",
+      "leftMidfielder": "Vänster",
+      "rightMidfielder": "Höger",
+      "centerMidfielder": "Mitt",
       "substitute": "Avbytare"
+    },
+    "roleGroups": {
+      "offence": "Anfall",
+      "midfield": "Mittfält",
+      "defence": "Försvar",
+      "substitutes": "Avbytare"
     }
   }
 }
