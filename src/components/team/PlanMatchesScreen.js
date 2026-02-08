@@ -8,6 +8,7 @@ import { useAttendanceStats } from '../../hooks/useAttendanceStats';
 import { usePlanProgress } from '../../hooks/usePlanProgress';
 import { usePlanningDefaults } from '../../hooks/usePlanningDefaults';
 import { useUnavailablePlayersByMatch } from '../../hooks/useUnavailablePlayersByMatch';
+import { useCrossMatchDrag } from '../../hooks/useCrossMatchDrag';
 import { MatchCard } from './planMatches/MatchCard';
 import { AutoSelectModal } from './planMatches/AutoSelectModal';
 import { PlanMatchesToolbar } from './planMatches/PlanMatchesToolbar';
@@ -242,6 +243,25 @@ export function PlanMatchesScreen({
     }));
   }, [setSelectedPlayersByMatch]);
 
+  const handleSwapPlayers = useCallback((sourceMatchId, sourcePlayerId, targetMatchId, targetPlayerId) => {
+    setSelectedPlayersByMatch(prev => {
+      const sourceList = [...(prev[sourceMatchId] || [])];
+      const targetList = [...(prev[targetMatchId] || [])];
+      const si = sourceList.indexOf(sourcePlayerId);
+      const ti = targetList.indexOf(targetPlayerId);
+      if (si === -1 || ti === -1) return prev;
+      sourceList[si] = targetPlayerId;
+      targetList[ti] = sourcePlayerId;
+      return { ...prev, [sourceMatchId]: sourceList, [targetMatchId]: targetList };
+    });
+  }, [setSelectedPlayersByMatch]);
+
+  const { registerContainer, handleDragMove, handleDragEnd, crossMatchState, swapAnimation } = useCrossMatchDrag({
+    selectedPlayersByMatch,
+    unavailablePlayersByMatch,
+    onSwapPlayers: handleSwapPlayers
+  });
+
   const updateTargetCount = (matchId, value) => {
     const parsed = Number(value);
     const safeValue = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -468,6 +488,8 @@ export function PlanMatchesScreen({
             <MatchCard
               key={match.id}
               match={match}
+              matchId={match.id}
+              matchCount={matches.length}
               roster={sortedRoster}
               rosterById={rosterById}
               selectedIds={selectedIds}
@@ -482,6 +504,11 @@ export function PlanMatchesScreen({
               isSelectedAndOnlyAvailableHere={(playerId) => isPlayerSelectedAndOnlyAvailableHere(match.id, playerId)}
               isPlayerInMultipleMatches={isPlayerInMultipleMatches}
               onReorderSelectedPlayers={handleReorderSelectedPlayers}
+              registerContainer={registerContainer}
+              onCrossDragMove={handleDragMove}
+              onCrossDragEnd={handleDragEnd}
+              crossMatchState={crossMatchState}
+              swapAnimation={swapAnimation}
             />
           );
         })}

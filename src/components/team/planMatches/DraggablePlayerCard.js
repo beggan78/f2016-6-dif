@@ -10,7 +10,9 @@ const DraggablePlayerCardComponent = ({
   onClick,
   isInMultipleMatches,
   isSelectedAndOnlyAvailableHere,
-  isDragActivating
+  isDragActivating,
+  isSwapTarget,
+  isSwapLanding
 }) => {
   if (!player) {
     return null;
@@ -29,17 +31,19 @@ const DraggablePlayerCardComponent = ({
         }
       }}
       className={`player-card-draggable flex items-center justify-between gap-2 rounded px-2 py-1 text-xs ${
-        isSelectedAndOnlyAvailableHere
-          ? 'border border-orange-300/50 bg-orange-900/20 text-orange-200/80'
-          : isInMultipleMatches
-            ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
-            : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
-      } ${isDragActivating ? 'drag-activating' : ''}`}
+        isSwapTarget
+          ? 'border-2 border-sky-300 bg-sky-800/30 text-sky-100 shadow-[0_0_12px_rgba(125,211,252,0.5)] ring-2 ring-sky-300/40'
+          : isSelectedAndOnlyAvailableHere
+            ? 'border border-orange-300/50 bg-orange-900/20 text-orange-200/80'
+            : isInMultipleMatches
+              ? 'border-2 border-sky-400 bg-sky-900/20 text-sky-100 shadow-lg shadow-sky-500/60'
+              : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
+      } ${isDragActivating ? 'drag-activating' : ''} ${isSwapLanding ? 'swap-landing' : ''}`}
       style={{
         transform: shift ? `translateY(${shift}px)` : undefined,
         transition: isDragging
           ? 'none'
-          : 'transform 200ms ease-out, opacity 100ms ease-out',
+          : 'transform 200ms ease-out, opacity 100ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out',
         opacity: isDragging ? 0.3 : 1
       }}
     >
@@ -67,6 +71,8 @@ export const DraggablePlayerCard = React.memo(
     prevProps.isDragActivating === nextProps.isDragActivating &&
     prevProps.isInMultipleMatches === nextProps.isInMultipleMatches &&
     prevProps.isSelectedAndOnlyAvailableHere === nextProps.isSelectedAndOnlyAvailableHere &&
+    prevProps.isSwapTarget === nextProps.isSwapTarget &&
+    prevProps.isSwapLanding === nextProps.isSwapLanding &&
     prevProps.player?.id === nextProps.player?.id &&
     prevProps.player?.displayName === nextProps.player?.displayName &&
     prevProps.player?.jerseyNumber === nextProps.player?.jerseyNumber &&

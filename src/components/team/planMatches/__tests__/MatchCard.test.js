@@ -97,6 +97,8 @@ describe('MatchCard', () => {
 
     defaultProps = {
       match: mockMatch,
+      matchId: 'match-1',
+      matchCount: 1,
       roster: mockRoster,
       rosterById: mockRosterById,
       selectedIds: ['1', '2'],
@@ -110,7 +112,18 @@ describe('MatchCard', () => {
       onToggleUnavailable: jest.fn(),
       formatSchedule: jest.fn((date, time) => `${date} ${time}`),
       isPlayerInMultipleMatches: jest.fn(() => false),
-      onReorderSelectedPlayers: jest.fn()
+      onReorderSelectedPlayers: jest.fn(),
+      registerContainer: jest.fn(),
+      onCrossDragMove: jest.fn(),
+      onCrossDragEnd: jest.fn(),
+      crossMatchState: {
+        active: false,
+        sourceMatchId: null,
+        sourcePlayerId: null,
+        targetMatchId: null,
+        hoveredPlayerId: null,
+        isEligible: false
+      }
     };
 
     // Reset mock drag hook
@@ -375,7 +388,7 @@ describe('MatchCard', () => {
       const { container } = render(<MatchCard {...props} />);
 
       const player1Card = container.querySelector('[data-drag-item-id="1"]');
-      expect(player1Card).toHaveClass('border-orange-200/50');
+      expect(player1Card).toHaveClass('border-orange-300/50');
     });
   });
 
@@ -555,6 +568,216 @@ describe('MatchCard', () => {
         left: '150.5px',
         top: '250.75px'
       });
+    });
+  });
+
+  describe('Cross-Match Drag Integration', () => {
+    it('should register container on mount when matchCount > 1', () => {
+      const mockRegisterContainer = jest.fn(() => jest.fn());
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        registerContainer: mockRegisterContainer
+      };
+
+      render(<MatchCard {...props} />);
+
+      expect(mockRegisterContainer).toHaveBeenCalledWith('match-1', expect.objectContaining({ current: expect.any(Object) }));
+    });
+
+    it('should not register container when matchCount is 1', () => {
+      const mockRegisterContainer = jest.fn(() => jest.fn());
+      const props = {
+        ...defaultProps,
+        matchCount: 1,
+        registerContainer: mockRegisterContainer
+      };
+
+      render(<MatchCard {...props} />);
+
+      expect(mockRegisterContainer).not.toHaveBeenCalled();
+    });
+
+    it('should pass onDragMove and onDragEnd to useListDragAndDrop when matchCount > 1', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2
+      };
+
+      render(<MatchCard {...props} />);
+
+      const hookCall = useListDragAndDrop.mock.calls[0][0];
+      expect(hookCall.onDragMove).toBeInstanceOf(Function);
+      expect(hookCall.onDragEnd).toBeInstanceOf(Function);
+    });
+
+    it('should not pass onDragMove and onDragEnd when matchCount is 1', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 1
+      };
+
+      render(<MatchCard {...props} />);
+
+      const hookCall = useListDragAndDrop.mock.calls[0][0];
+      expect(hookCall.onDragMove).toBeUndefined();
+      expect(hookCall.onDragEnd).toBeUndefined();
+    });
+
+    it('should apply swap target styling when crossMatchState targets a player in this match', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        crossMatchState: {
+          active: true,
+          sourceMatchId: 'match-2',
+          sourcePlayerId: 'p5',
+          targetMatchId: 'match-1',
+          hoveredPlayerId: '1',
+          isEligible: true
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const player1Card = container.querySelector('[data-drag-item-id="1"]');
+      expect(player1Card).toHaveClass('border-sky-300');
+      expect(player1Card).toHaveClass('ring-2');
+    });
+
+    it('should apply swap-landing class when swapAnimation targets a player in this match', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        swapAnimation: {
+          playerId: '2',
+          fromRect: { top: 0, left: 0, right: 200, bottom: 40, width: 200, height: 40 },
+          toMatchId: 'match-2',
+          sourcePlayerId: '1',
+          sourceNewMatchId: 'match-1'
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const player1Card = container.querySelector('[data-drag-item-id="1"]');
+      expect(player1Card).toHaveClass('swap-landing');
+
+      const player2Card = container.querySelector('[data-drag-item-id="2"]');
+      expect(player2Card).not.toHaveClass('swap-landing');
+    });
+
+    it('should not apply swap-landing class when swapAnimation targets a different match', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        swapAnimation: {
+          playerId: '2',
+          fromRect: { top: 0, left: 0, right: 200, bottom: 40, width: 200, height: 40 },
+          toMatchId: 'match-2',
+          sourcePlayerId: '1',
+          sourceNewMatchId: 'match-99'
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const player1Card = container.querySelector('[data-drag-item-id="1"]');
+      expect(player1Card).not.toHaveClass('swap-landing');
+    });
+
+    it('should not apply swap target styling when crossMatchState targets different match', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        crossMatchState: {
+          active: true,
+          sourceMatchId: 'match-1',
+          sourcePlayerId: '1',
+          targetMatchId: 'match-3',
+          hoveredPlayerId: 'p7',
+          isEligible: true
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const player1Card = container.querySelector('[data-drag-item-id="1"]');
+      expect(player1Card).not.toHaveClass('border-sky-300');
+    });
+  });
+
+  describe('Swap Animation (FLIP)', () => {
+    it('should accept swapAnimation prop without errors', () => {
+      const props = {
+        ...defaultProps,
+        swapAnimation: null
+      };
+
+      expect(() => {
+        render(<MatchCard {...props} />);
+      }).not.toThrow();
+    });
+
+    it('should apply FLIP animation when swapAnimation targets this match', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        swapAnimation: {
+          playerId: '1',
+          fromRect: { top: 500, left: 100, right: 300, bottom: 540, width: 200, height: 40 },
+          toMatchId: 'match-1'
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id="1"]');
+      // The card should have a transition style applied by useLayoutEffect
+      expect(card.style.transition).toContain('transform');
+      expect(card.style.zIndex).toBe('50');
+    });
+
+    it('should not apply FLIP animation when swapAnimation targets a different match', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        swapAnimation: {
+          playerId: '1',
+          fromRect: { top: 500, left: 100, right: 300, bottom: 540, width: 200, height: 40 },
+          toMatchId: 'match-99'
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id="1"]');
+      expect(card.style.zIndex).toBe('');
+    });
+
+    it('should clean up inline styles after animation completes', () => {
+      const props = {
+        ...defaultProps,
+        matchCount: 2,
+        swapAnimation: {
+          playerId: '1',
+          fromRect: { top: 500, left: 100, right: 300, bottom: 540, width: 200, height: 40 },
+          toMatchId: 'match-1'
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id="1"]');
+      expect(card.style.zIndex).toBe('50');
+
+      act(() => {
+        jest.advanceTimersByTime(320);
+      });
+
+      expect(card.style.transition).toBe('');
+      expect(card.style.transform).toBe('');
+      expect(card.style.zIndex).toBe('');
     });
   });
 

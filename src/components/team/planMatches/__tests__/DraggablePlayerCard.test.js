@@ -44,7 +44,8 @@ describe('DraggablePlayerCard', () => {
       onClick: mockOnClick,
       isInMultipleMatches: false,
       isSelectedAndOnlyAvailableHere: false,
-      isDragActivating: false
+      isDragActivating: false,
+      isSwapTarget: false
     };
   });
 
@@ -140,6 +141,61 @@ describe('DraggablePlayerCard', () => {
       expect(card).toHaveClass('shadow-sky-500/60');
     });
 
+    it('should apply swap target glow styling when isSwapTarget is true', () => {
+      const props = {
+        ...defaultProps,
+        isSwapTarget: true
+      };
+      const { container } = render(<DraggablePlayerCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id]');
+      expect(card).toHaveClass('border-2');
+      expect(card).toHaveClass('border-sky-300');
+      expect(card).toHaveClass('bg-sky-800/30');
+      expect(card).toHaveClass('ring-2');
+      expect(card).toHaveClass('ring-sky-300/40');
+    });
+
+    it('should prioritize swap target styling over other border styles', () => {
+      const props = {
+        ...defaultProps,
+        isSwapTarget: true,
+        isSelectedAndOnlyAvailableHere: true,
+        isInMultipleMatches: true
+      };
+      const { container } = render(<DraggablePlayerCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id]');
+      // Swap target classes should win
+      expect(card).toHaveClass('border-sky-300');
+      expect(card).toHaveClass('ring-2');
+      // Other styling should NOT be present
+      expect(card).not.toHaveClass('border-orange-300/50');
+      expect(card).not.toHaveClass('border-sky-400');
+    });
+
+    it('should apply swap-landing class when isSwapLanding is true', () => {
+      const props = {
+        ...defaultProps,
+        isSwapLanding: true
+      };
+      const { container } = render(<DraggablePlayerCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id]');
+      expect(card).toHaveClass('swap-landing');
+    });
+
+    it('should not apply swap-landing class when isSwapLanding is false', () => {
+      const props = {
+        ...defaultProps,
+        isSwapLanding: false
+      };
+      const { container } = render(<DraggablePlayerCard {...props} />);
+
+      const card = container.querySelector('[data-drag-item-id]');
+      expect(card).not.toHaveClass('swap-landing');
+    });
+
     it('should apply drag activating class when pulse animation active', () => {
       const props = {
         ...defaultProps,
@@ -218,7 +274,7 @@ describe('DraggablePlayerCard', () => {
 
       const card = container.querySelector('[data-drag-item-id]');
       expect(card).toHaveStyle({
-        transition: 'transform 200ms ease-out, opacity 100ms ease-out'
+        transition: 'transform 200ms ease-out, opacity 100ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out'
       });
     });
   });
@@ -394,7 +450,8 @@ describe('DraggablePlayerCard', () => {
         onClick: jest.fn(),
         isInMultipleMatches: false,
         isSelectedAndOnlyAvailableHere: false,
-        isDragActivating: false
+        isDragActivating: false,
+        isSwapTarget: false
       };
 
       const { rerender, container } = render(<DraggablePlayerCard {...props} />);
@@ -476,6 +533,41 @@ describe('DraggablePlayerCard', () => {
 
       // Should update opacity
       expect(card).toHaveStyle({ opacity: 0.3 });
+    });
+
+    it('should re-render when isSwapTarget changes', () => {
+      const { container, rerender } = render(
+        <DraggablePlayerCard
+          player={mockPlayer}
+          isDragging={false}
+          shift={0}
+          onPointerStart={jest.fn()}
+          onClick={jest.fn()}
+          isInMultipleMatches={false}
+          isSelectedAndOnlyAvailableHere={false}
+          isDragActivating={false}
+          isSwapTarget={false}
+        />
+      );
+
+      const card = container.querySelector('[data-drag-item-id]');
+      expect(card).not.toHaveClass('border-sky-300');
+
+      rerender(
+        <DraggablePlayerCard
+          player={mockPlayer}
+          isDragging={false}
+          shift={0}
+          onPointerStart={jest.fn()}
+          onClick={jest.fn()}
+          isInMultipleMatches={false}
+          isSelectedAndOnlyAvailableHere={false}
+          isDragActivating={false}
+          isSwapTarget={true}
+        />
+      );
+
+      expect(card).toHaveClass('border-sky-300');
     });
 
     it('should re-render when player properties change', () => {

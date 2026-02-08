@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Button } from '../../shared/UI';
 import { Portal } from '../../shared';
 import { PlayerSelector } from './PlayerSelector';
@@ -8,6 +8,8 @@ import { DraggablePlayerCard } from './DraggablePlayerCard';
 
 export function MatchCard({
   match,
+  matchId,
+  matchCount,
   roster,
   rosterById,
   selectedIds,
@@ -21,7 +23,12 @@ export function MatchCard({
   onToggleUnavailable,
   formatSchedule,
   isPlayerInMultipleMatches,
-  onReorderSelectedPlayers
+  onReorderSelectedPlayers,
+  registerContainer,
+  onCrossDragMove,
+  onCrossDragEnd,
+  crossMatchState,
+  swapAnimation
 }) {
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
   const displayRoster = useMemo(() => {
@@ -42,6 +49,79 @@ export function MatchCard({
   }, [rosterById, selectedIds]);
 
   const listContainerRef = useRef(null);
+  const flipCleanupRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!swapAnimation || swapAnimation.toMatchId !== matchId) return;
+
+    const container = listContainerRef.current;
+    if (!container) return;
+
+    const card = container.querySelector(
+      `[data-drag-item-id="${swapAnimation.playerId}"]`
+    );
+    if (!card) return;
+
+    const toRect = card.getBoundingClientRect();
+    const dx = swapAnimation.fromRect.left - toRect.left;
+    const dy = swapAnimation.fromRect.top - toRect.top;
+
+    card.style.transition = 'none';
+    card.style.transform = `translate(${dx}px, ${dy}px)`;
+    card.style.zIndex = '50';
+
+    // Force reflow
+    card.getBoundingClientRect();
+
+    card.style.transition = 'transform 300ms ease-out';
+    card.style.transform = 'translate(0, 0)';
+
+    if (flipCleanupRef.current) {
+      clearTimeout(flipCleanupRef.current);
+    }
+
+    flipCleanupRef.current = setTimeout(() => {
+      card.style.transition = '';
+      card.style.transform = '';
+      card.style.zIndex = '';
+      flipCleanupRef.current = null;
+    }, 320);
+
+    return () => {
+      if (flipCleanupRef.current) {
+        clearTimeout(flipCleanupRef.current);
+        flipCleanupRef.current = null;
+      }
+    };
+  }, [swapAnimation, matchId]);
+
+  useEffect(() => {
+    if (matchCount > 1 && registerContainer && matchId) {
+      return registerContainer(matchId, listContainerRef);
+    }
+  }, [matchCount, registerContainer, matchId]);
+
+  const handleLocalDragMove = useCallback((moveData) => {
+    if (onCrossDragMove && matchId) {
+      onCrossDragMove(moveData, matchId);
+    }
+  }, [onCrossDragMove, matchId]);
+
+  const handleLocalDragEnd = useCallback((endData) => {
+    if (onCrossDragEnd && matchId) {
+      onCrossDragEnd(endData, matchId);
+    }
+  }, [onCrossDragEnd, matchId]);
+
+  const isSwapTarget = useCallback((playerId) => {
+    if (!crossMatchState?.active) return false;
+    return (
+      crossMatchState.targetMatchId === matchId &&
+      crossMatchState.hoveredPlayerId === String(playerId) &&
+      crossMatchState.isEligible
+    );
+  }, [crossMatchState, matchId]);
+
   const {
     isDragging,
     draggedItemId,
@@ -61,7 +141,9 @@ export function MatchCard({
       onReorderSelectedPlayers(match.id, newOrderedIds);
     },
     containerRef: listContainerRef,
-    activationThreshold: { time: 300, distance: 10 }
+    activationThreshold: { time: 300, distance: 10 },
+    onDragMove: matchCount > 1 ? handleLocalDragMove : undefined,
+    onDragEnd: matchCount > 1 ? handleLocalDragEnd : undefined
   });
 
   const ghostPlayer = useMemo(() => {
@@ -134,6 +216,12 @@ export function MatchCard({
                 isInMultipleMatches={isPlayerInMultipleMatches(player.id)}
                 isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(player.id)}
                 isDragActivating={isItemDragActivating(player.id)}
+                isSwapTarget={isSwapTarget(player.id)}
+                isSwapLanding={
+                  swapAnimation
+                  && swapAnimation.sourceNewMatchId === matchId
+                  && String(swapAnimation.sourcePlayerId) === String(player.id)
+                }
               />
             ))}
             {selectedPlayers.length === 0 && (
