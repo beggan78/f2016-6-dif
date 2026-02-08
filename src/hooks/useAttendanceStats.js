@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getAttendanceStats } from '../services/connectorService';
 
 export const useAttendanceStats = (teamId, startDate, endDate) => {
+  const { t } = useTranslation('common');
   const [attendanceStats, setAttendanceStats] = useState([]);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState(null);
@@ -24,7 +26,7 @@ export const useAttendanceStats = (teamId, startDate, endDate) => {
       .catch((error) => {
         if (!isActive) return;
         console.error('Failed to load attendance stats:', error);
-        setStatsError(error?.message || 'Failed to load attendance stats');
+        setStatsError(error?.message || t('errors.failedToLoadAttendanceStats'));
       })
       .finally(() => {
         if (!isActive) return;
@@ -34,7 +36,7 @@ export const useAttendanceStats = (teamId, startDate, endDate) => {
     return () => {
       isActive = false;
     };
-  }, [teamId, startDate, endDate]);
+  }, [teamId, startDate, endDate, t]);
 
   return { attendanceStats, statsLoading, statsError };
 };

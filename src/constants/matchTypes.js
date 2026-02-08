@@ -40,34 +40,5 @@ export const getMatchTypeOptions = (t) => [
   }
 ];
 
-// Backward compatibility - static MATCH_TYPE_OPTIONS for components that don't use translation yet
-export const MATCH_TYPE_OPTIONS = [
-  {
-    value: MATCH_TYPES.LEAGUE,
-    label: 'League',
-    description: 'Official league/conference game'
-  },
-  {
-    value: MATCH_TYPES.FRIENDLY,
-    label: 'Friendly',
-    description: 'Practice or non-competitive game'
-  },
-  {
-    value: MATCH_TYPES.CUP,
-    label: 'Cup',
-    description: 'Tournament or cup competition game'
-  },
-  {
-    value: MATCH_TYPES.TOURNAMENT,
-    label: 'Tournament',
-    description: 'Tournament bracket or playoff game'
-  },
-  {
-    value: MATCH_TYPES.INTERNAL,
-    label: 'Internal',
-    description: 'Team scrimmage or internal practice'
-  }
-];
-
 // Default match type
 export const DEFAULT_MATCH_TYPE = MATCH_TYPES.LEAGUE;

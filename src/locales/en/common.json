@@ -36,6 +36,17 @@
     "loanDateRequired": "Loan date is required",
     "loanRecordFailed": "Failed to record player loans",
     "noTeamSelected": "No current team selected. Please create or select a team first.",
-    "matchSavedSuccess": "Match saved to your history successfully!"
+    "matchSavedSuccess": "Match saved to your history successfully!",
+    "failedToLoadAttendanceStats": "Failed to load attendance stats",
+    "failedToLoadConnectors": "Failed to load connectors",
+    "failedToConnectProvider": "Failed to connect provider",
+    "failedToDisconnectProvider": "Failed to disconnect provider",
+    "failedToTriggerSync": "Failed to trigger sync",
+    "failedToRetryConnector": "Failed to retry connector",
+    "validationFailed": "Validation failed",
+    "unexpectedError": "An unexpected error occurred. Please try again."
+  },
+  "footer": {
+    "copyright": "\u00a9 {{year}} Coach App by Codewizard"
   }
 }

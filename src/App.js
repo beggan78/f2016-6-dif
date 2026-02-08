@@ -1368,7 +1368,7 @@ function AppContent() {
         </main>
       )}
       <footer className="mt-8 text-center text-sm text-slate-500">
-        <p>&copy; {new Date().getFullYear()} Coach App by Codewizard</p>
+        <p>{t('common:footer.copyright', { year: new Date().getFullYear() })}</p>
       </footer>
       
       <ConfirmationModal
