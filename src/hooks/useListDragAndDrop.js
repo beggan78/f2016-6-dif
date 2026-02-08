@@ -63,17 +63,9 @@ export function useListDragAndDrop({
   const onDragMoveRef = useRef(onDragMove);
   const onDragEndRef = useRef(onDragEnd);
 
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
-
-  useEffect(() => {
-    onDragMoveRef.current = onDragMove;
-  }, [onDragMove]);
-
-  useEffect(() => {
-    onDragEndRef.current = onDragEnd;
-  }, [onDragEnd]);
+  itemsRef.current = items;
+  onDragMoveRef.current = onDragMove;
+  onDragEndRef.current = onDragEnd;
 
   const clearActivationTimers = useCallback(() => {
     if (activationTimerRef.current) {
