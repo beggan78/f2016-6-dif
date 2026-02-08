@@ -12,7 +12,8 @@ const DraggablePlayerCardComponent = ({
   isSelectedAndOnlyAvailableHere,
   isDragActivating,
   isSwapTarget,
-  isSwapLanding
+  isSwapLanding,
+  isBeingDisplaced
 }) => {
   if (!player) {
     return null;
@@ -40,11 +41,15 @@ const DraggablePlayerCardComponent = ({
               : 'border border-sky-500/60 bg-sky-900/20 text-sky-100'
       } ${isDragActivating ? 'drag-activating' : ''} ${isSwapLanding ? 'swap-landing' : ''}`}
       style={{
-        transform: shift ? `translateY(${shift}px)` : undefined,
+        transform: isBeingDisplaced
+          ? 'translateX(30px)'
+          : shift ? `translateY(${shift}px)` : undefined,
         transition: isDragging
           ? 'none'
-          : 'transform 200ms ease-out, opacity 100ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out',
-        opacity: isDragging ? 0.3 : 1
+          : isBeingDisplaced
+            ? 'transform 300ms ease-out, opacity 300ms ease-out'
+            : 'transform 200ms ease-out, opacity 100ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out',
+        opacity: isDragging ? 0.3 : isBeingDisplaced ? 0.4 : 1
       }}
     >
       <div className="flex items-center gap-2 min-w-0">
@@ -73,6 +78,7 @@ export const DraggablePlayerCard = React.memo(
     prevProps.isSelectedAndOnlyAvailableHere === nextProps.isSelectedAndOnlyAvailableHere &&
     prevProps.isSwapTarget === nextProps.isSwapTarget &&
     prevProps.isSwapLanding === nextProps.isSwapLanding &&
+    prevProps.isBeingDisplaced === nextProps.isBeingDisplaced &&
     prevProps.player?.id === nextProps.player?.id &&
     prevProps.player?.displayName === nextProps.player?.displayName &&
     prevProps.player?.jerseyNumber === nextProps.player?.jerseyNumber &&

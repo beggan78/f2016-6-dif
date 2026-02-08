@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../shared/UI';
 import { Portal } from '../../shared';
 import { PlayerSelector } from './PlayerSelector';
@@ -28,7 +28,8 @@ export function MatchCard({
   onCrossDragMove,
   onCrossDragEnd,
   crossMatchState,
-  swapAnimation
+  swapAnimation,
+  slideInAnimation
 }) {
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
   const displayRoster = useMemo(() => {
@@ -50,6 +51,76 @@ export function MatchCard({
 
   const listContainerRef = useRef(null);
   const flipCleanupRef = useRef(null);
+  const slideInOverlayRef = useRef(null);
+  const slideInDelayRef = useRef(null);
+  const [slideInReady, setSlideInReady] = useState(false);
+
+  const isTargetOfSlideIn = slideInAnimation && slideInAnimation.targetMatchId === matchId;
+
+  const isBeingDisplaced = useCallback((playerId) => {
+    if (!isTargetOfSlideIn) return false;
+    return String(slideInAnimation.targetPlayerId) === String(playerId);
+  }, [isTargetOfSlideIn, slideInAnimation]);
+
+  const slideInSourcePlayer = useMemo(() => {
+    if (!isTargetOfSlideIn) return null;
+    return rosterById.get(slideInAnimation.sourcePlayerId) || null;
+  }, [isTargetOfSlideIn, slideInAnimation, rosterById]);
+
+  // Slide-in overlay positioning
+  useLayoutEffect(() => {
+    if (!isTargetOfSlideIn || !slideInAnimation.targetRect || !slideInAnimation.releasePosition) {
+      setSlideInReady(false);
+      return;
+    }
+
+    const overlay = slideInOverlayRef.current;
+    if (!overlay) {
+      setSlideInReady(false);
+      return;
+    }
+
+    const { targetRect, releasePosition } = slideInAnimation;
+
+    // Position overlay at target rect (fixed)
+    overlay.style.position = 'fixed';
+    overlay.style.left = `${targetRect.left}px`;
+    overlay.style.top = `${targetRect.top}px`;
+    overlay.style.width = `${targetRect.width}px`;
+
+    // Calculate inverse transform: from release position (pointer-centered) to target slot
+    const targetCenterX = targetRect.left + targetRect.width / 2;
+    const targetCenterY = targetRect.top + targetRect.height / 2;
+    const dx = releasePosition.x - targetCenterX;
+    const dy = releasePosition.y - targetCenterY;
+
+    // Start at release position with slight scale-up
+    overlay.style.transition = 'none';
+    overlay.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
+    overlay.style.opacity = '0.9';
+
+    // Force reflow
+    overlay.getBoundingClientRect();
+
+    setSlideInReady(true);
+
+    // After a small delay, animate to target position
+    slideInDelayRef.current = setTimeout(() => {
+      slideInDelayRef.current = null;
+      if (overlay) {
+        overlay.style.transition = 'transform 400ms ease-out, opacity 400ms ease-out';
+        overlay.style.transform = 'translate(0, 0) scale(1)';
+        overlay.style.opacity = '1';
+      }
+    }, 100);
+
+    return () => {
+      if (slideInDelayRef.current) {
+        clearTimeout(slideInDelayRef.current);
+        slideInDelayRef.current = null;
+      }
+    };
+  }, [isTargetOfSlideIn, slideInAnimation]);
 
   useLayoutEffect(() => {
     if (!swapAnimation || swapAnimation.toMatchId !== matchId) return;
@@ -222,6 +293,7 @@ export function MatchCard({
                   && swapAnimation.sourceNewMatchId === matchId
                   && String(swapAnimation.sourcePlayerId) === String(player.id)
                 }
+                isBeingDisplaced={isBeingDisplaced(player.id)}
               />
             ))}
             {selectedPlayers.length === 0 && (
@@ -246,6 +318,23 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(ghostPlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(ghostPlayer.id)}
+                  />
+                </div>
+              </Portal>
+            )}
+            {isTargetOfSlideIn && slideInSourcePlayer && (
+              <Portal>
+                <div
+                  ref={slideInOverlayRef}
+                  className="slide-in-overlay"
+                  style={{ visibility: slideInReady ? 'visible' : 'hidden' }}
+                >
+                  <DraggablePlayerCard
+                    player={slideInSourcePlayer}
+                    isDragging={false}
+                    shift={0}
+                    isInMultipleMatches={isPlayerInMultipleMatches(slideInSourcePlayer.id)}
+                    isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(slideInSourcePlayer.id)}
                   />
                 </div>
               </Portal>

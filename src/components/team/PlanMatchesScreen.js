@@ -256,7 +256,7 @@ export function PlanMatchesScreen({
     });
   }, [setSelectedPlayersByMatch]);
 
-  const { registerContainer, handleDragMove, handleDragEnd, crossMatchState, swapAnimation } = useCrossMatchDrag({
+  const { registerContainer, handleDragMove, handleDragEnd, crossMatchState, swapAnimation, slideInAnimation } = useCrossMatchDrag({
     selectedPlayersByMatch,
     unavailablePlayersByMatch,
     onSwapPlayers: handleSwapPlayers
@@ -509,6 +509,7 @@ export function PlanMatchesScreen({
               onCrossDragEnd={handleDragEnd}
               crossMatchState={crossMatchState}
               swapAnimation={swapAnimation}
+              slideInAnimation={slideInAnimation}
             />
           );
         })}

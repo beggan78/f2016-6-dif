@@ -1439,7 +1439,7 @@ describe('useListDragAndDrop', () => {
         window.dispatchEvent(upEvent);
       });
 
-      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: false });
+      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: false, clientX: 200, clientY: 200 });
     });
 
     it('should call onDragEnd with cancelled: true on pointer cancel', () => {
@@ -1477,7 +1477,7 @@ describe('useListDragAndDrop', () => {
         window.dispatchEvent(cancelEvent);
       });
 
-      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: true });
+      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: true, clientX: 0, clientY: 0 });
     });
 
     it('should call onDragEnd with cancelled: true on Escape key', () => {

@@ -479,7 +479,7 @@ export function useListDragAndDrop({
         }
 
         if (onDragEndRef.current) {
-          onDragEndRef.current({ cancelled: false });
+          onDragEndRef.current({ cancelled: false, clientX: endEvent.clientX, clientY: endEvent.clientY });
         }
         markSuppressClick(session.itemId);
         cancelDrag();
@@ -492,7 +492,7 @@ export function useListDragAndDrop({
 
         clearActivationTimers();
         if (onDragEndRef.current) {
-          onDragEndRef.current({ cancelled: true });
+          onDragEndRef.current({ cancelled: true, clientX: cancelEvent.clientX, clientY: cancelEvent.clientY });
         }
         cancelDrag();
       };
