@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { initializeEventLogger, getMatchStartTime, getAllEvents, clearAllEvents, addEventListener } from '../utils/gameEventLogger';
 
 /**
@@ -128,6 +129,7 @@ export function useLegacyMatchEvents(initialState = {}) {
  * @returns {Object} Live event state and helpers
  */
 export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refreshIntervalMs = 60000 } = {}) {
+  const { t } = useTranslation('common');
   const [events, setEvents] = useState([]);
   const [latestOrdinal, setLatestOrdinal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -141,7 +143,7 @@ export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refres
   const fetchEvents = useCallback(async (since = null) => {
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Missing Supabase configuration for live match events');
-      setError('Supabase configuration missing. Please check environment variables.');
+      setError(t('errors.supabaseConfigMissing'));
       setIsLoading(false);
       return;
     }
@@ -185,7 +187,7 @@ export function useMatchEvents(matchId, { isLive = false, pollingEnabled, refres
     } finally {
       setIsLoading(false);
     }
-  }, [matchId, supabaseAnonKey, supabaseUrl]);
+  }, [matchId, supabaseAnonKey, supabaseUrl, t]);
 
   useEffect(() => {
     setEvents([]);

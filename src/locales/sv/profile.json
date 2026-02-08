@@ -1,0 +1,110 @@
+{
+  "header": {
+    "title": "Profilinställningar"
+  },
+  "form": {
+    "nameLabel": "Visningsnamn",
+    "namePlaceholder": "Ange ditt namn",
+    "emailLabel": "E-postadress",
+    "languageLabel": "Språk",
+    "languageEnglish": "English",
+    "languageSwedish": "Svenska",
+    "saveButton": "Spara Ändringar",
+    "savingButton": "Sparar..."
+  },
+  "validation": {
+    "nameRequired": "Namn krävs",
+    "nameTooShort": "Namnet måste vara minst 2 tecken",
+    "nameInvalidChars": "Namnet innehåller ogiltiga tecken. Använd endast bokstäver, siffror, mellanslag, bindestreck, apostrofer och punkter."
+  },
+  "messages": {
+    "updateSuccess": "Profil uppdaterad!",
+    "updateError": "Misslyckades med att uppdatera profil",
+    "unexpectedError": "Ett oväntat fel inträffade. Försök igen."
+  },
+  "screen": {
+    "title": "Profil",
+    "back": "Tillbaka"
+  },
+  "personalInfo": {
+    "title": "Personlig Information",
+    "fullName": "Fullständigt Namn",
+    "emailAddress": "E-postadress",
+    "password": "Lösenord",
+    "namePlaceholder": "Ange ditt fullständiga namn",
+    "readOnly": "(Skrivskyddad)",
+    "changePassword": "Byt Lösenord",
+    "passwordHint": "Att regelbundet uppdatera ditt lösenord hjälper till att hålla ditt konto säkert",
+    "emailVerified": "E-post verifierad"
+  },
+  "accountInfo": {
+    "title": "Kontoinformation",
+    "created": "Konto Skapat",
+    "updated": "Senast Uppdaterad",
+    "userId": "Användar-ID",
+    "emailStatus": "E-poststatus",
+    "verified": "Verifierad",
+    "pendingVerification": "Väntar på verifiering"
+  },
+  "teamManagement": {
+    "title": "Laghantering",
+    "loading": "Laddar dina klubbar och lag...",
+    "currentTeam": "Nuvarande Lag",
+    "yourClubs": "Dina Klubbar ({{count}})",
+    "yourTeams": "Dina Lag ({{count}})",
+    "member": "Medlem",
+    "inactive": "Inaktiv",
+    "switch": "Byt",
+    "leave": "Lämna",
+    "leaving": "Lämnar..."
+  },
+  "emptyStates": {
+    "noClubs": {
+      "title": "Inga klubbar än",
+      "description": "Du har inte gått med i någon klubb än. Skapa en klubb eller gå med i en befintlig klubb.",
+      "action": "Skapa eller gå med i klubb"
+    },
+    "noTeams": {
+      "title": "Inga Lag Än",
+      "description": "Du har inte gått med i något lag än. Skapa ditt första lag eller be en tränare att bjuda in dig.",
+      "action": "Skapa eller Gå med i Lag"
+    }
+  },
+  "modals": {
+    "leaveClub": {
+      "title": "Lämna klubb",
+      "message": "Är du säker på att du vill lämna {{clubName}}?",
+      "confirm": "Lämna klubb"
+    },
+    "leaveTeam": {
+      "title": "Lämna lag",
+      "message": "Är du säker på att du vill lämna {{teamName}}?",
+      "confirm": "Lämna lag"
+    },
+    "cantLeaveClub": {
+      "title": "Kan inte lämna klubb",
+      "lastMember": "Du är den sista medlemmen i {{teamName}}. Ta bort laget istället?",
+      "deleteButton": "Ta Bort Lag",
+      "deletingButton": "Tar Bort..."
+    },
+    "cantLeaveTeam": {
+      "title": "Kan inte lämna lag",
+      "lastMember": "Du är den sista medlemmen i {{teamName}}. Ta bort laget istället?",
+      "lastAdmin": "Du är den sista administratören för {{teamName}}. Ta bort laget istället?"
+    }
+  },
+  "buttons": {
+    "save": "Spara",
+    "saving": "Sparar...",
+    "cancel": "Avbryt",
+    "edit": "Redigera"
+  },
+  "formatting": {
+    "notAvailable": "Ej tillgängligt",
+    "invalidDate": "Ogiltigt datum",
+    "defaultUser": "Användare",
+    "unknownClub": "Okänd klubb",
+    "unknownTeam": "Okänt lag",
+    "thisTeam": "detta lag"
+  }
+}

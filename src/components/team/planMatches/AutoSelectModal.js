@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Input } from '../../shared/UI';
 import { AUTO_SELECT_STRATEGY } from '../../../constants/planMatchesConstants';
+import { useTranslation } from 'react-i18next';
 
 export function AutoSelectModal({
   isOpen,
@@ -15,6 +16,8 @@ export function AutoSelectModal({
   onConfirm,
   formatSchedule
 }) {
+  const { t } = useTranslation('team');
+
   if (!isOpen) {
     return null;
   }
@@ -31,13 +34,13 @@ export function AutoSelectModal({
       >
         <div className="p-4 border-b border-slate-600">
           <h3 id="auto-select-title" className="text-lg font-semibold text-sky-300">
-            Auto Select
+            {t('planMatches.autoSelect.title')}
           </h3>
         </div>
         <div className="p-4 space-y-4">
           <div className="space-y-2">
             <div className="text-sm font-semibold text-slate-200">
-              {isMultiMatch ? 'Squad size per match' : 'Squad size for this match'}
+              {isMultiMatch ? t('planMatches.autoSelect.squadSizeMulti') : t('planMatches.autoSelect.squadSizeSingle')}
             </div>
             <div className="space-y-2">
               {autoSelectMatches.map((match) => (
@@ -71,7 +74,7 @@ export function AutoSelectModal({
                 })}
                 className="h-4 w-4 rounded border-slate-500 text-sky-500 focus:ring-sky-500"
               />
-              Each player plays at least one match?
+              {t('planMatches.autoSelect.ensureCoverage')}
             </label>
           )}
           {isMultiMatch && (
@@ -87,7 +90,7 @@ export function AutoSelectModal({
                   })}
                   className="h-4 w-4 border-slate-500 text-sky-500 focus:ring-sky-500"
                 />
-                Prioritize practices/match score
+                {t('planMatches.autoSelect.prioritizePractices')}
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-200">
                 <input
@@ -100,17 +103,17 @@ export function AutoSelectModal({
                   })}
                   className="h-4 w-4 border-slate-500 text-sky-500 focus:ring-sky-500"
                 />
-                Prioritize attendance %
+                {t('planMatches.autoSelect.prioritizeAttendance')}
               </label>
             </div>
           )}
         </div>
         <div className="p-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
           <Button variant="secondary" onClick={onCancel}>
-            Cancel
+            {t('planMatches.autoSelect.cancel')}
           </Button>
           <Button variant="accent" onClick={onConfirm}>
-            Apply
+            {t('planMatches.autoSelect.apply')}
           </Button>
         </div>
       </div>

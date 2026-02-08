@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getMostRecentFinishedMatch, resolveMatchPlanningDefaults } from '../services/matchPlanningService';
 
 export const usePlanningDefaults = (teamId, loadTeamPreferences) => {
+  const { t } = useTranslation('common');
   const [defaults, setDefaults] = useState(null);
   const [defaultsError, setDefaultsError] = useState(null);
 
@@ -25,14 +27,14 @@ export const usePlanningDefaults = (teamId, loadTeamPreferences) => {
         preferences = await loadTeamPreferences(teamId);
       } catch (error) {
         console.error('Failed to load team preferences:', error);
-        setDefaultsError('Failed to load match defaults.');
+        setDefaultsError(t('errors.failedToLoadMatchDefaults'));
       }
 
       try {
         recentMatch = await getMostRecentFinishedMatch(teamId);
       } catch (error) {
         console.error('Failed to load recent match:', error);
-        setDefaultsError('Failed to load match defaults.');
+        setDefaultsError(t('errors.failedToLoadMatchDefaults'));
       }
 
       if (!isActive) return;
@@ -44,7 +46,7 @@ export const usePlanningDefaults = (teamId, loadTeamPreferences) => {
     return () => {
       isActive = false;
     };
-  }, [teamId, loadTeamPreferences]);
+  }, [teamId, loadTeamPreferences, t]);
 
   return { defaults, defaultsError };
 };

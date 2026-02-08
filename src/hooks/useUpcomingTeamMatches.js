@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getUpcomingMatchesForTeam } from '../services/matchIntegrationService';
 
 /**
@@ -8,6 +9,7 @@ import { getUpcomingMatchesForTeam } from '../services/matchIntegrationService';
  * @returns {{ matches: Array, loading: boolean, error: string|null, refetch: Function }}
  */
 export function useUpcomingTeamMatches(teamId) {
+  const { t } = useTranslation('team');
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,19 +37,19 @@ export function useUpcomingTeamMatches(teamId) {
       if (result.success) {
         setMatches(result.matches || []);
       } else {
-        setError(result.error || 'Failed to load upcoming matches');
+        setError(result.error || t('teamMatches.error.loadUpcomingFailed'));
       }
     } catch (err) {
       console.error('Error fetching upcoming matches:', err);
       if (isActiveRef.current) {
-        setError('Failed to load upcoming matches');
+        setError(t('teamMatches.error.loadUpcomingFailed'));
       }
     } finally {
       if (isActiveRef.current) {
         setLoading(false);
       }
     }
-  }, [teamId]);
+  }, [teamId, t]);
 
   useEffect(() => {
     isActiveRef.current = true;

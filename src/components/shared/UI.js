@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, X } from 'lucide-react';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
@@ -75,6 +76,7 @@ export function MultiSelect({
   disabled = false,
   className = ''
 }) {
+  const { t } = useTranslation('shared');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -102,15 +104,15 @@ export function MultiSelect({
     }
 
     if (selectedOptions.length === normalizedOptions.length) {
-      return 'All selected';
+      return t('multiSelect.allSelected');
     }
 
     if (selectedOptions.length <= 2) {
       return selectedOptions.map(opt => opt.label).join(', ');
     }
 
-    return `${selectedOptions.length} selected`;
-  }, [normalizedOptions.length, placeholder, selectedOptions]);
+    return `${selectedOptions.length} ${t('multiSelect.selected')}`;
+  }, [normalizedOptions.length, placeholder, selectedOptions, t]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -170,7 +172,7 @@ export function MultiSelect({
           className="absolute z-20 mt-1 w-full bg-slate-700 border border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
         >
           {normalizedOptions.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-slate-400">No options available</div>
+            <div className="px-3 py-2 text-sm text-slate-400">{t('multiSelect.noOptions')}</div>
           ) : (
             <ul className="py-1">
               {normalizedOptions.map((opt) => {
@@ -201,7 +203,7 @@ export function MultiSelect({
                 onClick={handleClear}
                 className="text-xs text-sky-400 hover:text-sky-300"
               >
-                Clear selection
+                {t('multiSelect.clearSelection')}
               </button>
             )}
             <button
@@ -209,7 +211,7 @@ export function MultiSelect({
               onClick={() => setIsOpen(false)}
               className="ml-auto text-sm px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded transition-colors"
             >
-              Done
+              {t('multiSelect.done')}
             </button>
           </div>
         </div>
@@ -264,12 +266,14 @@ export function ConfirmationModal({
   onCancel,
   title,
   message,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
   variant = "danger",
   confirmDisabled = false,
   cancelDisabled = false
 }) {
+  const { t } = useTranslation('common');
+
   if (!isOpen) return null;
 
   return (
@@ -287,10 +291,10 @@ export function ConfirmationModal({
           <p className="text-slate-200 mb-6">{message}</p>
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
             <Button onClick={onCancel} variant="secondary" className="sm:order-1" disabled={cancelDisabled}>
-              {cancelText}
+              {cancelText || t('buttons.cancel')}
             </Button>
             <Button onClick={onConfirm} variant={variant} className="sm:order-2" disabled={confirmDisabled}>
-              {confirmText}
+              {confirmText || t('buttons.confirm')}
             </Button>
           </div>
         </div>
@@ -299,7 +303,9 @@ export function ConfirmationModal({
   );
 }
 
-export function NotificationModal({ isOpen, onClose, title, message, buttonText = "OK" }) {
+export function NotificationModal({ isOpen, onClose, title, message, buttonText }) {
+  const { t } = useTranslation('shared');
+
   if (!isOpen) return null;
 
   return (
@@ -317,7 +323,7 @@ export function NotificationModal({ isOpen, onClose, title, message, buttonText 
           <p className="text-slate-200 mb-6">{message}</p>
           <div className="flex justify-center">
             <Button onClick={onClose} variant="primary">
-              {buttonText}
+              {buttonText || t('ok')}
             </Button>
           </div>
         </div>
@@ -326,20 +332,22 @@ export function NotificationModal({ isOpen, onClose, title, message, buttonText 
   );
 }
 
-export function ThreeOptionModal({ 
-  isOpen, 
-  onPrimary, 
-  onSecondary, 
-  onTertiary, 
-  title, 
-  message, 
-  primaryText = "Confirm", 
-  secondaryText = "Cancel", 
-  tertiaryText = "Option 3",
+export function ThreeOptionModal({
+  isOpen,
+  onPrimary,
+  onSecondary,
+  onTertiary,
+  title,
+  message,
+  primaryText,
+  secondaryText,
+  tertiaryText,
   primaryVariant = "danger",
   secondaryVariant = "secondary",
   tertiaryVariant = "secondary"
 }) {
+  const { t } = useTranslation('common');
+
   if (!isOpen) return null;
 
   return (
@@ -352,10 +360,10 @@ export function ThreeOptionModal({
           <p className="text-slate-200 mb-6">{message}</p>
           <div className="flex flex-col gap-3">
             <Button onClick={onPrimary} variant={primaryVariant}>
-              {primaryText}
+              {primaryText || t('buttons.confirm')}
             </Button>
             <Button onClick={onSecondary} variant={secondaryVariant}>
-              {secondaryText}
+              {secondaryText || t('buttons.cancel')}
             </Button>
             <Button onClick={onTertiary} variant={tertiaryVariant}>
               {tertiaryText}
@@ -382,6 +390,8 @@ export function FieldPlayerModal({
   canSubstitute = true,
   isPlayerAboutToSubOff = false
 }) {
+  const { t } = useTranslation('modals');
+
   if (!isOpen) return null;
 
   const handleBack = () => {
@@ -394,18 +404,18 @@ export function FieldPlayerModal({
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
           <h3 className="text-lg font-semibold text-sky-300">
-            {showPositionOptions ? 'Change Position' : 'Field Player Options'}
+            {showPositionOptions ? t('fieldPlayer.changePositionTitle') : t('fieldPlayer.title')}
           </h3>
         </div>
         <div className="p-4">
           {showPositionOptions ? (
             <>
               <p className="text-slate-200 mb-6">
-                Select which player to switch positions with {playerName}:
+                {t('fieldPlayer.selectPositionSwitch', { playerName })}
               </p>
               <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
                 <Button onClick={handleBack} variant="secondary">
-                  Back
+                  {t('fieldPlayer.back')}
                 </Button>
                 {availablePlayers.map((player) => (
                   <Button
@@ -421,10 +431,10 @@ export function FieldPlayerModal({
             </>
           ) : (
             <>
-              <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
+              <p className="text-slate-200 mb-6">{t('fieldPlayer.message', { playerName })}</p>
               <div className="flex flex-col gap-3">
                 <Button onClick={onCancel} variant="secondary">
-                  Cancel
+                  {t('fieldPlayer.cancel')}
                 </Button>
                 {showSubstitutionOptions && (
                   <>
@@ -433,33 +443,33 @@ export function FieldPlayerModal({
                         onClick={onRemoveFromNext}
                         variant="primary"
                         disabled={!canSubstitute}
-                        title={canSubstitute ? "Remove from next to go off" : "All substitutes are inactive - cannot modify rotation"}
+                        title={canSubstitute ? t('fieldPlayer.removeFromNext') : t('fieldPlayer.tooltipCannotModify')}
                       >
-                        Remove from next to go off
+                        {t('fieldPlayer.removeFromNext')}
                       </Button>
                     ) : (
                       <Button
                         onClick={onSetNext}
                         variant="primary"
                         disabled={!canSubstitute}
-                        title={canSubstitute ? "Set as next to substitute" : "All substitutes are inactive - cannot set as next"}
+                        title={canSubstitute ? t('fieldPlayer.setToGoOffNext') : t('fieldPlayer.tooltipCannotSetNext')}
                       >
-                        Set to go off next
+                        {t('fieldPlayer.setToGoOffNext')}
                       </Button>
                     )}
                     <Button
                       onClick={onSubNow}
                       variant="danger"
                       disabled={!canSubstitute}
-                      title={canSubstitute ? "Substitute this player now" : "All substitutes are inactive - cannot substitute"}
+                      title={canSubstitute ? t('fieldPlayer.substituteNow') : t('fieldPlayer.tooltipCannotSubstitute')}
                     >
-                      Substitute now
+                      {t('fieldPlayer.substituteNow')}
                     </Button>
                   </>
                 )}
                 {showPositionChange && (
                   <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
-                    Change position
+                    {t('fieldPlayer.changePosition')}
                   </Button>
                 )}
               </div>
@@ -486,6 +496,8 @@ export function SubstitutePlayerModal({
   availableNextPositions = [],
   showPositionSelection = false
 }) {
+  const { t } = useTranslation('modals');
+
   if (!isOpen) return null;
 
   const handleBack = () => {
@@ -498,18 +510,18 @@ export function SubstitutePlayerModal({
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
           <h3 className="text-lg font-semibold text-sky-300">
-            {showPositionSelection ? 'Change Next Position' : 'Substitute Options'}
+            {showPositionSelection ? t('substitute.changeNextPositionTitle') : t('substitute.title')}
           </h3>
         </div>
         <div className="p-4">
           {showPositionSelection ? (
             <>
               <p className="text-slate-200 mb-6">
-                Select which position {playerName} should take when coming in:
+                {t('substitute.selectNextPosition', { playerName })}
               </p>
               <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
                 <Button onClick={handleBack} variant="secondary">
-                  Back
+                  {t('substitute.back')}
                 </Button>
                 {availableNextPositions.map((position) => (
                   <Button
@@ -525,28 +537,28 @@ export function SubstitutePlayerModal({
             </>
           ) : (
             <>
-              <p className="text-slate-200 mb-6">What would you like to do with {playerName}?</p>
+              <p className="text-slate-200 mb-6">{t('substitute.message', { playerName })}</p>
               <div className="flex flex-col gap-3">
                 <Button onClick={onCancel} variant="secondary">
-                  Cancel
+                  {t('substitute.cancel')}
                 </Button>
                 {canChangeNextPosition && !isCurrentlyInactive && (
                   <Button onClick={() => onChangeNextPosition && onChangeNextPosition('show-options')} variant="accent">
-                    Change next position
+                    {t('substitute.changeNextPosition')}
                   </Button>
                 )}
                 {canSetAsNextToGoIn && !isCurrentlyInactive && (
                   <Button onClick={onSetAsNextToGoIn} variant="accent">
-                    Set to go in next
+                    {t('substitute.setToGoInNext')}
                   </Button>
                 )}
                 {isCurrentlyInactive ? (
                   <Button onClick={onActivate} variant="primary">
-                    Put {playerName} back into rotation
+                    {t('substitute.putBackInRotation', { playerName })}
                   </Button>
                 ) : (
                   <Button onClick={onInactivate} variant="danger">
-                    Take {playerName} out of rotation
+                    {t('substitute.takeOutOfRotation', { playerName })}
                   </Button>
                 )}
               </div>
@@ -558,28 +570,30 @@ export function SubstitutePlayerModal({
   );
 }
 
-export function GoalieModal({ 
-  isOpen, 
-  onCancel, 
-  onSelectGoalie, 
-  currentGoalieName, 
-  availablePlayers = [] 
+export function GoalieModal({
+  isOpen,
+  onCancel,
+  onSelectGoalie,
+  currentGoalieName,
+  availablePlayers = []
 }) {
+  const { t } = useTranslation(['modals', 'shared']);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Replace Goalie</h3>
+          <h3 className="text-lg font-semibold text-sky-300">{t('modals:goalie.title')}</h3>
         </div>
         <div className="p-4">
           <p className="text-slate-200 mb-6">
-            Select a new goalie to replace {currentGoalieName}:
+            {t('modals:goalie.message', { goalieName: currentGoalieName })}
           </p>
           <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
             <Button onClick={onCancel} variant="secondary">
-              Cancel
+              {t('modals:goalie.cancel')}
             </Button>
             {availablePlayers.map((player) => (
               <Button
@@ -589,7 +603,7 @@ export function GoalieModal({
                 disabled={player.isInactive}
                 className={`text-left ${player.isInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {formatPlayerName(player)} {player.isInactive ? '(Inactive)' : ''}
+                {formatPlayerName(player)} {player.isInactive ? t('modals:goalie.inactive') : ''}
               </Button>
             ))}
           </div>
@@ -599,15 +613,17 @@ export function GoalieModal({
   );
 }
 
-export function ScoreEditModal({ 
-  isOpen, 
-  onCancel, 
-  onSave, 
+export function ScoreEditModal({
+  isOpen,
+  onCancel,
+  onSave,
   ownScore,
   opponentScore,
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
-  opponentTeam = "Opponent"
+  opponentTeam
 }) {
+  const { t } = useTranslation(['modals', 'shared']);
+  const resolvedOpponentTeam = opponentTeam || t('shared:opponent');
   const [editOwnScore, setEditOwnScore] = React.useState(ownScore);
   const [editOpponentScore, setEditOpponentScore] = React.useState(opponentScore);
 
@@ -634,7 +650,7 @@ export function ScoreEditModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Edit Score</h3>
+          <h3 className="text-lg font-semibold text-sky-300">{t('scoreEdit.title')}</h3>
         </div>
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between space-x-4">
@@ -668,9 +684,9 @@ export function ScoreEditModal({
             <div className="text-2xl font-mono font-bold text-slate-400">-</div>
             
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{opponentTeam}</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">{resolvedOpponentTeam}</label>
               <div className="flex items-center space-x-2">
-                <Button 
+                <Button
                   onClick={() => setEditOpponentScore(Math.max(0, editOpponentScore - 1))}
                   variant="secondary"
                   size="sm"
@@ -697,10 +713,10 @@ export function ScoreEditModal({
           
           <div className="flex gap-3 justify-end pt-4">
             <Button onClick={handleCancel} variant="secondary">
-              Cancel
+              {t('scoreEdit.cancel')}
             </Button>
             <Button onClick={handleSave} variant="primary">
-              Save Score
+              {t('scoreEdit.saveScore')}
             </Button>
           </div>
         </div>
@@ -709,13 +725,13 @@ export function ScoreEditModal({
   );
 }
 
-export function ScoreManagerModal({ 
-  isOpen, 
-  onCancel, 
+export function ScoreManagerModal({
+  isOpen,
+  onCancel,
   ownScore,
   opponentScore,
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
-  opponentTeam = "Opponent",
+  opponentTeam,
   matchEvents = [],
   goalScorers = {},
   allPlayers = [],
@@ -728,6 +744,9 @@ export function ScoreManagerModal({
   getPlayerName,
   allowScorerSelection = true
 }) {
+  const { t } = useTranslation(['modals', 'shared']);
+  const resolvedOpponentTeam = opponentTeam || t('shared:opponent');
+
   // Filter and process goal events (using same pattern as reporting screens)
   const goalEvents = React.useMemo(() => {
     const goals = matchEvents
@@ -741,8 +760,8 @@ export function ScoreManagerModal({
         const scorerId = goalScorers[event.id] || event.data?.scorerId;
         const scorerName = scorerId && getPlayerName ? getPlayerName(scorerId) : null;
         const scorerLabel = allowScorerSelection
-          ? (scorerName || 'Unknown scorer')
-          : 'Scorer not tracked';
+          ? (scorerName || t('scoreManager.unknownScorer'))
+          : t('scoreManager.scorerNotTracked');
         
         return {
           ...event,
@@ -755,7 +774,7 @@ export function ScoreManagerModal({
       .sort((a, b) => a.timestamp - b.timestamp);
     
     return goals;
-  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime, allowScorerSelection]);
+  }, [matchEvents, goalScorers, getPlayerName, calculateMatchTime, allowScorerSelection, t]);
 
   const handleClose = () => {
     onCancel();
@@ -782,7 +801,7 @@ export function ScoreManagerModal({
         <div className="p-4 border-b border-slate-600">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-sky-300">Manage Score</h3>
+              <h3 className="text-lg font-semibold text-sky-300">{t('scoreManager.title')}</h3>
             </div>
             <button
               onClick={handleClose}
@@ -801,18 +820,18 @@ export function ScoreManagerModal({
             </div>
             <div className="text-2xl font-mono font-bold text-slate-400">-</div>
             <div className="text-center">
-              <div className="text-sm text-slate-300">{opponentTeam}</div>
+              <div className="text-sm text-slate-300">{resolvedOpponentTeam}</div>
               <div className="text-2xl font-bold text-sky-400">{opponentScore}</div>
             </div>
           </div>
 
           {/* Goal History */}
           <div>
-            <h4 className="text-sm font-medium text-slate-300 mb-2">Goals Scored</h4>
+            <h4 className="text-sm font-medium text-slate-300 mb-2">{t('scoreManager.goalsScored')}</h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {goalEvents.length === 0 ? (
                 <div className="text-slate-400 text-sm italic text-center py-4">
-                  No goals recorded yet
+                  {t('scoreManager.noGoalsRecorded')}
                 </div>
               ) : (
                 goalEvents.map((goal) => {
@@ -847,7 +866,7 @@ export function ScoreManagerModal({
                       {!goal.isGoalScored && (
                             <>
                               <span className="text-sm text-slate-400">|</span>
-                              <span className="text-sm text-slate-300">Opponent</span>
+                              <span className="text-sm text-slate-300">{t('scoreManager.opponent')}</span>
                             </>
                           )}
                         </div>
@@ -859,7 +878,7 @@ export function ScoreManagerModal({
                             variant="secondary"
                             size="sm"
                           >
-                            Edit
+                            {t('scoreManager.edit')}
                           </Button>
                         )}
                         <Button
@@ -867,7 +886,7 @@ export function ScoreManagerModal({
                           variant="danger"
                           size="sm"
                         >
-                          Delete
+                          {t('scoreManager.delete')}
                         </Button>
                       </div>
                     </div>
@@ -880,7 +899,7 @@ export function ScoreManagerModal({
 
           {/* Add Goals */}
           <div className="border-t border-slate-600 pt-4">
-            <h4 className="text-sm font-medium text-slate-300 mb-2">Add Goal</h4>
+            <h4 className="text-sm font-medium text-slate-300 mb-2">{t('scoreManager.addGoal')}</h4>
             <div className="flex gap-2">
               <Button 
                 onClick={onAddGoalScored}
@@ -894,15 +913,15 @@ export function ScoreManagerModal({
                 variant="secondary"
                 className="flex-1"
               >
-                + {opponentTeam}
+                + {resolvedOpponentTeam}
               </Button>
             </div>
           </div>
 
-          
+
           <div className="flex justify-center pt-4">
             <Button onClick={handleClose} variant="primary">
-              Close
+              {t('scoreManager.close')}
             </Button>
           </div>
         </div>
@@ -918,21 +937,23 @@ export function SubstituteSelectionModal({
   fieldPlayerName,
   availableSubstitutes = []
 }) {
+  const { t } = useTranslation('modals');
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
         <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">Select Substitute</h3>
+          <h3 className="text-lg font-semibold text-sky-300">{t('substituteSelection.title')}</h3>
         </div>
         <div className="p-4">
           <p className="text-slate-200 mb-6">
-            Select which substitute to bring on for {fieldPlayerName}:
+            {t('substituteSelection.message', { fieldPlayerName })}
           </p>
           <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
             <Button onClick={onCancel} variant="secondary">
-              Cancel
+              {t('substituteSelection.cancel')}
             </Button>
             {availableSubstitutes.map((substitute) => (
               <Button

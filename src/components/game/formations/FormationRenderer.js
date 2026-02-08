@@ -1,11 +1,13 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { IndividualFormation } from './IndividualFormation';
 
 export function FormationRenderer({ teamConfig, selectedFormation, renderSection = 'all', ...props }) {
+  const { t } = useTranslation('game');
   const testId = renderSection === 'all' ? 'formation-renderer' : `formation-renderer-${renderSection}`;
 
   if (!teamConfig) {
-    return <div data-testid={testId}>No team configuration available</div>;
+    return <div data-testid={testId}>{t('formation.noConfig')}</div>;
   }
 
   const hasRequiredFields =
@@ -14,7 +16,7 @@ export function FormationRenderer({ teamConfig, selectedFormation, renderSection
     typeof teamConfig.squadSize === 'number';
 
   if (!hasRequiredFields) {
-    return <div data-testid={testId}>Invalid team configuration</div>;
+    return <div data-testid={testId}>{t('formation.invalidConfig')}</div>;
   }
 
   return (

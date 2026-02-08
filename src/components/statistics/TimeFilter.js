@@ -1,44 +1,12 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, ChevronDown, Check } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
-import { TIME_PRESETS } from '../../constants/timePresets';
-
-const formatDateForDisplay = (date) => {
-  if (!date) return '';
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-};
+import { TIME_PRESETS, getTimePresets } from '../../constants/timePresets';
 
 const formatDateForInput = (date) => {
   if (!date) return '';
   return date.toISOString().split('T')[0];
-};
-
-const formatTimeRangeLabel = (start, end, presetLabel) => {
-  if (presetLabel && presetLabel !== 'Custom') {
-    return presetLabel;
-  }
-
-  if (!start && !end) {
-    return 'All time';
-  }
-
-  if (start && end) {
-    return `${formatDateForDisplay(start)} - ${formatDateForDisplay(end)}`;
-  }
-
-  if (start) {
-    return `From ${formatDateForDisplay(start)}`;
-  }
-
-  if (end) {
-    return `Until ${formatDateForDisplay(end)}`;
-  }
-
-  return 'All time';
 };
 
 export function TimeFilter({
@@ -48,6 +16,18 @@ export function TimeFilter({
   onTimeRangeChange,
   className = ''
 }) {
+  const { t, i18n } = useTranslation('statistics');
+  const translatedPresets = useMemo(() => getTimePresets(t), [t]);
+
+  const formatDateForDisplay = useCallback((date) => {
+    if (!date) return '';
+    const locale = i18n.language === 'sv' ? 'sv-SE' : 'en-US';
+    return date.toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }, [i18n.language]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(selectedPresetId);
   const [customStartDate, setCustomStartDate] = useState('');
@@ -86,15 +66,38 @@ export function TimeFilter({
 
   const currentPresetLabel = useMemo(() => {
     if (selectedPreset === 'custom') {
-      return 'Custom';
+      return t('timeFilter.custom');
     }
-    const preset = TIME_PRESETS.find(p => p.id === selectedPreset);
-    return preset ? preset.label : 'All time';
-  }, [selectedPreset]);
+    const preset = translatedPresets.find(p => p.id === selectedPreset);
+    return preset ? preset.label : t('timeFilter.allTime');
+  }, [selectedPreset, t, translatedPresets]);
 
   const displayLabel = useMemo(() => {
-    return formatTimeRangeLabel(startDate, endDate, currentPresetLabel);
-  }, [startDate, endDate, currentPresetLabel]);
+    if (currentPresetLabel && selectedPreset !== 'custom') {
+      return currentPresetLabel;
+    }
+
+    if (!startDate && !endDate) {
+      return t('timeFilter.allTime');
+    }
+
+    if (startDate && endDate) {
+      return t('timeFilter.dateRange', {
+        start: formatDateForDisplay(startDate),
+        end: formatDateForDisplay(endDate)
+      });
+    }
+
+    if (startDate) {
+      return t('timeFilter.from', { date: formatDateForDisplay(startDate) });
+    }
+
+    if (endDate) {
+      return t('timeFilter.until', { date: formatDateForDisplay(endDate) });
+    }
+
+    return t('timeFilter.allTime');
+  }, [startDate, endDate, currentPresetLabel, selectedPreset, t, formatDateForDisplay]);
 
   const hasActiveRange = useMemo(() => Boolean(startDate || endDate), [startDate, endDate]);
 
@@ -125,7 +128,7 @@ export function TimeFilter({
     if (customStartDate) {
       start = new Date(customStartDate);
       if (isNaN(start.getTime())) {
-        alert('Invalid start date');
+        alert(t('timeFilter.invalidStartDate'));
         return;
       }
     }
@@ -134,14 +137,14 @@ export function TimeFilter({
     if (customEndDate) {
       end = new Date(customEndDate);
       if (isNaN(end.getTime())) {
-        alert('Invalid end date');
+        alert(t('timeFilter.invalidEndDate'));
         return;
       }
     }
 
     // Validate date range
     if (start && end && start > end) {
-      alert('Start date must be before end date');
+      alert(t('timeFilter.startBeforeEnd'));
       return;
     }
 
@@ -150,12 +153,12 @@ export function TimeFilter({
     const maxFutureDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // 1 year in future
 
     if (start && start > maxFutureDate) {
-      alert('Start date cannot be more than a year in the future');
+      alert(t('timeFilter.startDateTooFar'));
       return;
     }
 
     if (end && end > maxFutureDate) {
-      alert('End date cannot be more than a year in the future');
+      alert(t('timeFilter.endDateTooFar'));
       return;
     }
 
@@ -223,12 +226,12 @@ export function TimeFilter({
           <div className="p-3">
             <div className="flex items-center space-x-2 mb-3">
               <Calendar className="h-4 w-4 text-sky-400" />
-              <h3 className="text-sm font-medium text-sky-400">Select Time Range</h3>
+              <h3 className="text-sm font-medium text-sky-400">{t('timeFilter.selectTimeRange')}</h3>
             </div>
 
             {/* Preset Options */}
             <div className="space-y-1 mb-4">
-              {TIME_PRESETS.map((preset) => (
+              {translatedPresets.map((preset) => (
                 <button
                   key={preset.id}
                   onClick={() => handlePresetSelect(preset.id)}
@@ -253,7 +256,7 @@ export function TimeFilter({
                     : 'text-slate-300 hover:bg-slate-700 hover:text-slate-200'
                 }`}
               >
-                <span>Custom range...</span>
+                <span>{t('timeFilter.customRange')}</span>
                 {selectedPreset === 'custom' && (
                   <Check className="h-4 w-4" />
                 )}
@@ -266,7 +269,7 @@ export function TimeFilter({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Start Date
+                      {t('timeFilter.startDate')}
                     </label>
                     <Input
                       type="date"
@@ -278,7 +281,7 @@ export function TimeFilter({
 
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      End Date
+                      {t('timeFilter.endDate')}
                     </label>
                     <Input
                       type="date"
@@ -295,7 +298,7 @@ export function TimeFilter({
                       size="sm"
                       className="flex-1"
                     >
-                      Apply
+                      {t('timeFilter.apply')}
                     </Button>
                     <Button
                       onClick={handleCustomRangeCancel}
@@ -303,7 +306,7 @@ export function TimeFilter({
                       size="sm"
                       className="flex-1"
                     >
-                      Cancel
+                      {t('timeFilter.cancel')}
                     </Button>
                   </div>
                 </div>

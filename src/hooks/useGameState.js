@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PLAYER_ROLES, PLAYER_STATUS } from '../constants/playerConstants';
 import { useTeam } from '../contexts/TeamContext';
 import { VIEWS } from '../constants/viewConstants';
@@ -131,6 +132,7 @@ const normalizeView = (value) => {
 };
 
 export function useGameState(navigateToView = null) {
+  const { t } = useTranslation('game');
   // Get current team from context for database operations
   const { currentTeam, updateMatchActivityStatus, loadTeamPreferences } = useTeam();
   // Get preferences for various integrations
@@ -404,12 +406,12 @@ export function useGameState(navigateToView = null) {
 
   const handleStartPeriodSetup = useCallback(async () => {
     if (selectedSquadIds.length < minimumPlayersForFormat || selectedSquadIds.length > maximumPlayersForMatch) {
-      alert(`Please select between ${minimumPlayersForFormat} and ${maximumPlayersForMatch} players for the squad.`); // Replace with modal
+      alert(t('validation.selectPlayersCount', { min: minimumPlayersForFormat, max: maximumPlayersForMatch }));
       return;
     }
     const goaliesAssigned = Array.from({ length: numPeriods }, (_, i) => periodGoalieIds[i + 1]).every(Boolean);
     if (!goaliesAssigned) {
-      alert("Please assign a goalie for each period."); // Replace with modal
+      alert(t('validation.assignGoaliePerPeriod'));
       return;
     }
 
@@ -503,7 +505,7 @@ export function useGameState(navigateToView = null) {
       teamConfig, selectedFormation, periodDurationMinutes, opponentTeam, captainId, matchType, venueType,
       formation, setCurrentMatchId, setAllPlayers, setMatchState,
       setCurrentPeriodNumber, setGameLog, setView, setFormation, currentMatchId, matchCreated,
-      getFormationAwareTeamConfig, minimumPlayersForFormat, maximumPlayersForMatch]);
+      getFormationAwareTeamConfig, minimumPlayersForFormat, maximumPlayersForMatch, t]);
 
   const handleStartGame = () => {
     // Validate formation
@@ -511,7 +513,7 @@ export function useGameState(navigateToView = null) {
     const modeDefinition = getModeDefinition(formationAwareConfig);
 
     if (!modeDefinition) {
-      alert('Invalid formation detected. Please ensure all positions are properly assigned.');
+      alert(t('validation.invalidFormation'));
       return;
     }
 
@@ -524,7 +526,7 @@ export function useGameState(navigateToView = null) {
     const uniqueAssignedCount = new Set(assignedOutfielders).size;
 
     if (uniqueAssignedCount !== expectedOutfieldCount || assignedOutfielders.length !== expectedOutfieldCount || !formation.goalie) {
-      alert(`Please complete the team formation with 1 goalie and ${expectedOutfieldCount} unique outfield players.`);
+      alert(t('validation.completeFormation', { count: expectedOutfieldCount }));
       return;
     }
 
@@ -742,22 +744,23 @@ export function useGameState(navigateToView = null) {
         .filter(Boolean);
 
       if (names.length > 0) {
-        details.push(`Player stats failed for: ${names.join(', ')}`);
+        details.push(t('persistence.playerStatsFailed', { names: names.join(', ') }));
       } else {
-        details.push(`Player stats failed for ${failures.length} player(s)`);
+        details.push(t('persistence.playerStatsFailedCount', { count: failures.length }));
       }
     }
 
     return details.join(' ');
-  }, []);
+  }, [t]);
 
-  const buildMatchPersistenceErrorMessage = useCallback((result, players, prefix = 'Failed to save match') => {
+  const buildMatchPersistenceErrorMessage = useCallback((result, players, prefix = null) => {
+    const resolvedPrefix = prefix || t('persistence.failedToSaveMatch');
     const details = getMatchPersistenceErrorDetails(result, players);
     if (!details) {
-      return `${prefix}.`;
+      return `${resolvedPrefix}.`;
     }
-    return `${prefix}: ${details}`;
-  }, [getMatchPersistenceErrorDetails]);
+    return `${resolvedPrefix}: ${details}`;
+  }, [getMatchPersistenceErrorDetails, t]);
 
   const openMatchPersistenceError = useCallback((message, context) => {
     setPersistenceErrorMessage(message);
@@ -802,18 +805,18 @@ export function useGameState(navigateToView = null) {
 
   const resolveMatchCompletionPayload = useCallback((context) => {
     if (!context?.matchId) {
-      return { error: 'Cannot save match: No match ID.' };
+      return { error: t('persistence.cannotSaveNoMatchId') };
     }
 
     if (!Array.isArray(context.updatedPlayers) || context.updatedPlayers.length === 0) {
-      return { error: 'Cannot save match: No player data available.' };
+      return { error: t('persistence.cannotSaveNoPlayerData') };
     }
 
     let matchDurationSeconds = context.matchDurationSeconds;
     if (matchDurationSeconds === undefined || matchDurationSeconds === null) {
       const startTime = context.matchStartTime ?? matchStartTime;
       if (!startTime) {
-        return { error: 'Cannot save match: Missing start time.' };
+        return { error: t('persistence.cannotSaveMissingStartTime') };
       }
       matchDurationSeconds = Math.floor((context.matchEndTimeEpoch - startTime) / 1000);
     }
@@ -826,14 +829,14 @@ export function useGameState(navigateToView = null) {
 
     const validation = validateFinalStats(finalStats);
     if (!validation.valid) {
-      return { error: `Cannot save match: Incomplete match data (${validation.missingFields.join(', ')})` };
+      return { error: t('persistence.cannotSaveIncompleteData', { fields: validation.missingFields.join(', ') }) };
     }
 
     const participatingPlayers = context.updatedPlayers.filter(player =>
       player.stats?.startedMatchAs || player.stats?.startedAtPosition
     );
     if (participatingPlayers.length === 0) {
-      return { error: 'Cannot save match: No participating players found.' };
+      return { error: t('persistence.cannotSaveNoParticipants') };
     }
 
     return {
@@ -843,7 +846,7 @@ export function useGameState(navigateToView = null) {
         matchDurationSeconds
       }
     };
-  }, [matchStartTime]);
+  }, [matchStartTime, t]);
 
   const persistMatchCompletion = useCallback(async (context) => {
     const { payload, error } = resolveMatchCompletionPayload(context);
@@ -875,7 +878,7 @@ export function useGameState(navigateToView = null) {
   const retryMatchPersistence = useCallback(async (maxAttempts = 3) => {
     const pendingContext = pendingMatchCompletionRef.current;
     if (!pendingContext) {
-      openMatchPersistenceError('Cannot retry: No pending match data found.');
+      openMatchPersistenceError(t('persistence.cannotRetry'));
       return { success: false, error: 'No pending match data' };
     }
 
@@ -890,7 +893,7 @@ export function useGameState(navigateToView = null) {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       setMatchPersistenceRetryAttempt(attempt);
-      setPersistenceErrorMessage(`Retrying save (attempt ${attempt}/${maxAttempts})...`);
+      setPersistenceErrorMessage(t('persistence.retrying', { attempt, maxAttempts }));
 
       lastResult = await updateMatchToFinished(
         payload.matchId,
@@ -917,11 +920,11 @@ export function useGameState(navigateToView = null) {
     const finalMessage = buildMatchPersistenceErrorMessage(
       lastResult,
       payload.updatedPlayers,
-      `Failed to save match after ${maxAttempts} attempts`
+      t('persistence.failedAfterRetries', { maxAttempts })
     );
     openMatchPersistenceError(finalMessage, payload);
-    return lastResult || { success: false, error: 'Failed after retries' };
-  }, [resolveMatchCompletionPayload, openMatchPersistenceError, clearMatchPersistenceError, buildMatchPersistenceErrorMessage, finalizeMatchCompletion]);
+    return lastResult || { success: false, error: t('persistence.failedAfterRetries', { maxAttempts }) };
+  }, [resolveMatchCompletionPayload, openMatchPersistenceError, clearMatchPersistenceError, buildMatchPersistenceErrorMessage, finalizeMatchCompletion, t]);
 
   const handleEndPeriod = async (isSubTimerPaused = false) => {
     // Auto-backup disabled to prevent localStorage quota issues
@@ -1260,11 +1263,11 @@ export function useGameState(navigateToView = null) {
   const handleSaveConfiguration = useCallback(async () => {
     // Validation
     if (selectedSquadIds.length < minimumPlayersForFormat || selectedSquadIds.length > maximumPlayersForMatch) {
-      return { success: false, error: `Please select between ${minimumPlayersForFormat} and ${maximumPlayersForMatch} players for the squad.` };
+      return { success: false, error: t('validation.selectPlayersCount', { min: minimumPlayersForFormat, max: maximumPlayersForMatch }) };
     }
     // Skip save if no team context
     if (!currentTeam?.id) {
-      return { success: false, error: "Team context required for saving configuration." };
+      return { success: false, error: t('validation.teamContextRequired') };
     }
 
     try {
@@ -1318,11 +1321,11 @@ export function useGameState(navigateToView = null) {
         
     } catch (error) {
       console.error('❌ Error saving configuration:', error);
-      return { success: false, error: 'Failed to save configuration: ' + error.message };
+      return { success: false, error: t('persistence.failedToSaveConfigError', { error: error.message }) };
     }
-  }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation, 
+  }, [selectedSquadIds, numPeriods, periodGoalieIds, currentTeam, teamConfig, selectedFormation,
       periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentMatchId, matchCreated,
-      formation, allPlayers, minimumPlayersForFormat, maximumPlayersForMatch]);
+      formation, allPlayers, minimumPlayersForFormat, maximumPlayersForMatch, t]);
 
   // Save Period Configuration handler for PeriodSetupScreen - extracts database save logic without navigation
   // Shared function for saving match configuration (used by both handleStartGame and handleSavePeriodConfiguration)
@@ -1333,12 +1336,12 @@ export function useGameState(navigateToView = null) {
     const formationAwareConfig = getFormationAwareTeamConfig();
 
     if (!formationAwareConfig) {
-      return { success: false, error: "Please complete the formation assignment." };
+      return { success: false, error: t('validation.completeFormationAssignment') };
     }
 
     const modeDefinition = getModeDefinition(formationAwareConfig);
     if (!modeDefinition) {
-      return { success: false, error: "Please complete the formation assignment." };
+      return { success: false, error: t('validation.completeFormationAssignment') };
     }
 
     const outfieldPositions = [...modeDefinition.fieldPositions, ...modeDefinition.substitutePositions];
@@ -1354,7 +1357,7 @@ export function useGameState(navigateToView = null) {
       uniqueAssignedCount !== expectedOutfieldCount ||
       !formation.goalie
     ) {
-      const errorMessage = "Please assign all positions including goalie.";
+      const errorMessage = t('validation.assignAllPositions');
       if (shouldNavigate) {
         alert(errorMessage);
         return { success: false, error: errorMessage };
@@ -1364,7 +1367,7 @@ export function useGameState(navigateToView = null) {
 
     // Skip save if no current match
     if (!currentMatchId) {
-      return { success: false, error: "No active match to save." };
+      return { success: false, error: t('validation.noActiveMatch') };
     }
 
     try {
@@ -1553,18 +1556,18 @@ export function useGameState(navigateToView = null) {
       
       return {
         success: hasSuccess,
-        message: hasSuccess 
-          ? `Configuration saved${errors.length ? ' (with warnings)' : ''}`
-          : 'Failed to save configuration',
+        message: hasSuccess
+          ? (errors.length ? t('persistence.configSavedWithWarnings') : t('persistence.configSaved'))
+          : t('persistence.failedToSaveConfig'),
         error: errors.length ? errors.join(', ') : undefined
       };
     } catch (error) {
       console.error('❌ Error saving match configuration:', error);
-      return { success: false, error: 'Failed to save configuration: ' + error.message };
+      return { success: false, error: t('persistence.failedToSaveConfigError', { error: error.message }) };
     }
   }, [formation, selectedFormation, currentMatchId, allPlayers, selectedSquadIds,
       numPeriods, periodDurationMinutes, opponentTeam, captainId, matchType, venueType, currentTeam?.id, periodGoalieIds,
-      currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig]);
+      currentPeriodNumber, matchCreated, setMatchCreated, setCurrentMatchId, setAllPlayers, getFormationAwareTeamConfig, t]);
 
   const handleSavePeriodConfiguration = useCallback(async () => {
     return await saveMatchConfiguration({ shouldNavigate: false });

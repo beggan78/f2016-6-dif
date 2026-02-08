@@ -1,7 +1,11 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
+import { I18nextProvider } from 'react-i18next';
+import { createTestI18n } from '../../../../test-utils/i18nTestSetup';
 import { IndividualFormation } from '../IndividualFormation';
 import { TEAM_CONFIGS, createMockFormation, createMockPlayers } from '../../../../game/testUtils';
+
+const testI18n = createTestI18n();
 
 const createDefaultProps = (overrides = {}) => {
   const teamConfig = overrides.teamConfig || TEAM_CONFIGS.INDIVIDUAL_7;
@@ -36,6 +40,8 @@ const createDefaultProps = (overrides = {}) => {
   };
 };
 
+const renderWithI18n = (ui) => render(<I18nextProvider i18n={testI18n}>{ui}</I18nextProvider>);
+
 describe('IndividualFormation - substitute position indicators', () => {
   it('shows the target position and player name for the next substitute when substitutionCount is 1', () => {
     const formation = createMockFormation(TEAM_CONFIGS.INDIVIDUAL_7);
@@ -46,7 +52,7 @@ describe('IndividualFormation - substitute position indicators', () => {
       substitutionCount: 1,
     });
 
-    render(<IndividualFormation {...props} />);
+    renderWithI18n(<IndividualFormation {...props} />);
 
     // Should show "Substitute (Player X - Left Defender)" where X is the player ID at leftDefender
     const leftDefenderPlayerId = formation.leftDefender;
@@ -64,7 +70,7 @@ describe('IndividualFormation - substitute position indicators', () => {
       substitutionCount: 2,
     });
 
-    render(<IndividualFormation {...props} />);
+    renderWithI18n(<IndividualFormation {...props} />);
 
     // First substitute should show player name and position
     const leftDefenderPlayerId = formation.leftDefender;
@@ -90,7 +96,7 @@ describe('IndividualFormation - substitute position indicators', () => {
       substitutionCount: 1, // Only first substitute should show next position
     });
 
-    render(<IndividualFormation {...props} />);
+    renderWithI18n(<IndividualFormation {...props} />);
 
     // Third substitute should not show next position indicator
     const thirdSubstituteCard = screen.getByTestId('player-7');

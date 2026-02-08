@@ -67,17 +67,17 @@ export const FORMATION_DEFINITIONS = {
     formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_1_3]: { 
-    label: '1-3 (Coming soon - Select to up-vote)', 
+    label: '1-3',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_1_1_2]: { 
-    label: '1-1-2 (Coming soon - Select to up-vote)', 
+    label: '1-1-2',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_5V5]
   },
   [FORMATIONS.FORMATION_2_1_1]: { 
-    label: '2-1-1 (Coming soon - Select to up-vote)', 
+    label: '2-1-1',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_5V5]
   },
@@ -92,27 +92,27 @@ export const FORMATION_DEFINITIONS = {
     formats: [FORMATS.FORMAT_7V7]
   },
   [FORMATIONS.FORMATION_3_3]: {
-    label: '3-3 (Coming soon - Select to up-vote)',
+    label: '3-3',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_7V7]
   },
   [FORMATIONS.FORMATION_1_3_2]: {
-    label: '1-3-2 (Coming soon - Select to up-vote)',
+    label: '1-3-2',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_7V7]
   },
   [FORMATIONS.FORMATION_2_1_3]: {
-    label: '2-1-3 (Coming soon - Select to up-vote)',
+    label: '2-1-3',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_7V7]
   },
   [FORMATIONS.FORMATION_3_2_1]: {
-    label: '3-2-1 (Coming soon - Select to up-vote)',
+    label: '3-2-1',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_7V7]
   },
   [FORMATIONS.FORMATION_3_1_2]: {
-    label: '3-1-2 (Coming soon - Select to up-vote)',
+    label: '3-1-2',
     status: 'coming-soon',
     formats: [FORMATS.FORMAT_7V7]
   },

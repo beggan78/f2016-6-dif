@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Input } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
+import { useTranslation } from 'react-i18next';
 import { Users, Building2, UserPlus, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
 
 export function ClubMembershipManager() {
+  const { t } = useTranslation('team');
   const {
     searchClubs,
     joinClub,
@@ -86,16 +88,16 @@ export function ClubMembershipManager() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-sky-300 flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          My Clubs
+          {t('clubMembership.myClubs.title')}
         </h3>
       </div>
 
       {myClubs.length === 0 ? (
         <Card className="text-center py-8">
           <Building2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-400 mb-4">You're not a member of any clubs yet</p>
+          <p className="text-slate-400 mb-4">{t('clubMembership.myClubs.empty')}</p>
           <p className="text-slate-500 text-sm">
-            Search for clubs to request membership
+            {t('clubMembership.myClubs.emptyHint')}
           </p>
         </Card>
       ) : (
@@ -123,7 +125,7 @@ export function ClubMembershipManager() {
                       {membership.role}
                     </span>
                     <span className="text-xs text-slate-500">
-                      Joined {new Date(membership.joined_at).toLocaleDateString()}
+                      {t('clubMembership.myClubs.joined', { date: new Date(membership.joined_at).toLocaleDateString() })}
                     </span>
                   </div>
                 </div>
@@ -141,7 +143,7 @@ export function ClubMembershipManager() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-sky-300 flex items-center gap-2">
           <Search className="h-5 w-5" />
-          Find Clubs
+          {t('clubMembership.search.title')}
         </h3>
       </div>
 
@@ -149,20 +151,20 @@ export function ClubMembershipManager() {
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search for clubs..."
+          placeholder={t('clubMembership.search.placeholder')}
           onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
         />
         <Button
           onClick={handleSearch}
           disabled={isSearching || !searchQuery.trim()}
         >
-          {isSearching ? 'Searching...' : 'Search'}
+          {isSearching ? t('clubMembership.search.searching') : t('clubMembership.search.searchButton')}
         </Button>
       </div>
 
       {searchResults.length > 0 && (
         <div className="space-y-3">
-          <h4 className="font-medium text-slate-200">Search Results</h4>
+          <h4 className="font-medium text-slate-200">{t('clubMembership.search.resultsTitle')}</h4>
           {searchResults.map((club) => (
             <Card key={club.id} className="p-4">
               <div className="flex items-center justify-between">
@@ -179,7 +181,7 @@ export function ClubMembershipManager() {
                   {club.membershipJoined ? (
                     <span className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-emerald-100 text-emerald-800">
                       <CheckCircle className="h-4 w-4 mr-1" />
-                      Joined
+                      {t('clubMembership.search.joined')}
                     </span>
                   ) : (
                     <Button
@@ -188,7 +190,7 @@ export function ClubMembershipManager() {
                       disabled={loading}
                       Icon={UserPlus}
                     >
-                      Join Club
+                      {t('clubMembership.search.joinClub')}
                     </Button>
                   )}
                 </div>
@@ -200,9 +202,9 @@ export function ClubMembershipManager() {
 
       {searchQuery && searchResults.length === 0 && !isSearching && (
         <Card className="text-center py-6">
-          <p className="text-slate-400">No clubs found matching "{searchQuery}"</p>
+          <p className="text-slate-400">{t('clubMembership.search.noResults', { query: searchQuery })}</p>
           <p className="text-slate-500 text-sm mt-2">
-            Try a different search term or ask a club admin to invite you
+            {t('clubMembership.search.noResultsHint')}
           </p>
         </Card>
       )}
@@ -214,7 +216,7 @@ export function ClubMembershipManager() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-sky-300 flex items-center gap-2">
           <Clock className="h-5 w-5" />
-          Pending Requests
+          {t('clubMembership.requests.title')}
           {pendingRequests.length > 0 && (
             <span className="bg-amber-500 text-amber-900 text-xs px-2 py-1 rounded-full">
               {pendingRequests.length}
@@ -226,7 +228,7 @@ export function ClubMembershipManager() {
       {pendingRequests.length === 0 ? (
         <Card className="text-center py-8">
           <CheckCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-400">No pending membership requests</p>
+          <p className="text-slate-400">{t('clubMembership.requests.empty')}</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -240,12 +242,12 @@ export function ClubMembershipManager() {
                         {request.user.name}
                       </h4>
                       <p className="text-sm text-slate-400">
-                        wants to join {request.club.name}
+                        {t('clubMembership.requests.wantsToJoin', { clubName: request.club.name })}
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-slate-500">
-                    Requested {new Date(request.created_at).toLocaleDateString()}
+                    {t('clubMembership.requests.requested', { date: new Date(request.created_at).toLocaleDateString() })}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -256,7 +258,7 @@ export function ClubMembershipManager() {
                     disabled={loading}
                     Icon={XCircle}
                   >
-                    Reject
+                    {t('clubMembership.requests.reject')}
                   </Button>
                   <Button
                     size="sm"
@@ -264,7 +266,7 @@ export function ClubMembershipManager() {
                     disabled={loading}
                     Icon={CheckCircle}
                   >
-                    Approve
+                    {t('clubMembership.requests.approve')}
                   </Button>
                 </div>
               </div>
@@ -276,18 +278,18 @@ export function ClubMembershipManager() {
   );
 
   const tabs = [
-    { id: 'my-clubs', label: 'My Clubs', count: myClubs.length },
-    { id: 'search', label: 'Find Clubs', count: null },
-    { id: 'pending', label: 'Requests', count: pendingRequests.length }
+    { id: 'my-clubs', label: t('clubMembership.tabs.myClubs'), count: myClubs.length },
+    { id: 'search', label: t('clubMembership.tabs.findClubs'), count: null },
+    { id: 'pending', label: t('clubMembership.tabs.requests'), count: pendingRequests.length }
   ];
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <Building2 className="h-8 w-8 text-sky-400 mx-auto mb-3" />
-        <h2 className="text-xl font-semibold text-sky-300">Club Management</h2>
+        <h2 className="text-xl font-semibold text-sky-300">{t('clubMembership.title')}</h2>
         <p className="text-slate-400 text-sm mt-2">
-          Manage your club memberships and discover new clubs
+          {t('clubMembership.subtitle')}
         </p>
       </div>
 

@@ -1,22 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Filter, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
-import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { getMatchTypeOptions } from '../../constants/matchTypes';
 import { MultiSelect, Button } from '../shared/UI';
 import { BREAKPOINTS } from '../../constants/layoutConstants';
-
-const MATCH_TYPES = MATCH_TYPE_OPTIONS.map(({ value, label }) => ({ value, label }));
-
-const OUTCOMES = [
-  { value: 'W', label: 'Win' },
-  { value: 'D', label: 'Draw' },
-  { value: 'L', label: 'Loss' }
-];
-
-const VENUE_TYPES = [
-  { value: 'home', label: 'Home' },
-  { value: 'away', label: 'Away' },
-  { value: 'neutral', label: 'Neutral' }
-];
 
 /**
  * Reusable match filters panel with collapsible behavior
@@ -39,6 +26,24 @@ export function MatchFiltersPanel({
   onFormatFilterChange,
   onClearAllFilters
 }) {
+  const { t } = useTranslation('statistics');
+
+  const MATCH_TYPES = useMemo(() =>
+    getMatchTypeOptions(t).map(({ value, label }) => ({ value, label })),
+  [t]);
+
+  const OUTCOMES = useMemo(() => [
+    { value: 'W', label: t('filters.outcomes.win') },
+    { value: 'D', label: t('filters.outcomes.draw') },
+    { value: 'L', label: t('filters.outcomes.loss') }
+  ], [t]);
+
+  const VENUE_TYPES = useMemo(() => [
+    { value: 'home', label: t('filters.venues.home') },
+    { value: 'away', label: t('filters.venues.away') },
+    { value: 'neutral', label: t('filters.venues.neutral') }
+  ], [t]);
+
   const isBelowLgBreakpoint = useCallback(() => {
     return typeof window !== 'undefined' && window.innerWidth < BREAKPOINTS.LG;
   }, []);
@@ -118,7 +123,7 @@ export function MatchFiltersPanel({
         >
           <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filter
+            {t('filters.title')}
           </h3>
           {needsCollapse && (
             <button className="text-sky-400 hover:text-sky-300 transition-colors">
@@ -138,7 +143,7 @@ export function MatchFiltersPanel({
           size="sm"
           className="text-sky-400 hover:text-sky-300"
         >
-          Clear All
+          {t('filters.clearAll')}
         </Button>
       </div>
 
@@ -150,65 +155,65 @@ export function MatchFiltersPanel({
       }`}>
           <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${filterColumnLayout}`}>
           <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Type</label>
+            <label className="text-slate-300 text-sm mb-2">{t('filters.type')}</label>
             <MultiSelect
               value={typeFilter}
               onChange={onTypeFilterChange}
               options={MATCH_TYPES}
-              placeholder="All"
+              placeholder={t('filters.all')}
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Outcome</label>
+            <label className="text-slate-300 text-sm mb-2">{t('filters.outcome')}</label>
             <MultiSelect
               value={outcomeFilter}
               onChange={onOutcomeFilterChange}
               options={OUTCOMES}
-              placeholder="All"
+              placeholder={t('filters.all')}
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Venue</label>
+            <label className="text-slate-300 text-sm mb-2">{t('filters.venue')}</label>
             <MultiSelect
               value={venueFilter}
               onChange={onVenueFilterChange}
               options={VENUE_TYPES}
-              placeholder="All"
+              placeholder={t('filters.all')}
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-slate-300 text-sm mb-2">Opponent</label>
+            <label className="text-slate-300 text-sm mb-2">{t('filters.opponent')}</label>
             <MultiSelect
               value={opponentFilter}
               onChange={onOpponentFilterChange}
               options={opponents}
-              placeholder="All"
+              placeholder={t('filters.all')}
             />
           </div>
 
           {showPlayerFilter && (
             <div className="flex flex-col">
-              <label className="text-slate-300 text-sm mb-2">With Player</label>
+              <label className="text-slate-300 text-sm mb-2">{t('filters.withPlayer')}</label>
               <MultiSelect
                 value={playerFilter}
                 onChange={onPlayerFilterChange}
                 options={players}
-                placeholder="All"
+                placeholder={t('filters.all')}
               />
             </div>
           )}
 
           {shouldShowFormatFilter && (
             <div className="flex flex-col">
-              <label className="text-slate-300 text-sm mb-2">Format</label>
+              <label className="text-slate-300 text-sm mb-2">{t('filters.format')}</label>
               <MultiSelect
                 value={formatFilter}
                 onChange={onFormatFilterChange}
                 options={formats}
-                placeholder="All"
+                placeholder={t('filters.all')}
               />
             </div>
           )}

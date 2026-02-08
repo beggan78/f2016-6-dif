@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
-import { PERIOD_OPTIONS, DURATION_OPTIONS, ALERT_OPTIONS } from '../../constants/gameConfig';
+import { PERIOD_OPTIONS, DURATION_OPTIONS, getAlertOptions } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
@@ -24,8 +25,8 @@ import { FormationPreview } from './FormationPreview';
 import { OpponentNameAutocomplete } from './OpponentNameAutocomplete';
 import FeatureVoteModal from '../shared/FeatureVoteModal';
 import { VIEWS } from '../../constants/viewConstants';
-import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
-import { VENUE_TYPE_OPTIONS, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
+import { getMatchTypeOptions } from '../../constants/matchTypes';
+import { getVenueTypeOptions, DEFAULT_VENUE_TYPE } from '../../constants/matchVenues';
 import { TAB_VIEWS } from '../../constants/teamManagementTabs';
 import { DETECTION_TYPES } from '../../services/sessionDetectionService';
 import { checkForPendingMatches, createResumeDataForConfiguration } from '../../services/pendingMatchService';
@@ -94,6 +95,9 @@ export function ConfigurationScreen({
   pushNavigationState,
   removeFromNavigationStack
 }) {
+  // Translation hook
+  const { t } = useTranslation(['configuration', 'common']);
+
   const [isVoteModalOpen, setIsVoteModalOpen] = React.useState(false);
   const [formationToVoteFor, setFormationToVoteFor] = React.useState(null);
   const [playerSyncStatus, setPlayerSyncStatus] = React.useState({ loading: false, message: '' });
@@ -335,15 +339,15 @@ export function ConfigurationScreen({
     } catch (error) {
       console.error('❌ Failed to check for pending matches:', error);
       setPendingMatchError({
-        message: 'Failed to check for pending matches. Please check your internet connection and try again.',
+        message: t('configuration:pendingMatch.errors.checkFailed'),
         detail: error.message,
         canRetry: true
       });
     } finally {
       setPendingMatchLoading(false);
     }
-  }, []);
-  
+  }, [t]);
+
   // Direct pending match detection (no navigation complexity)
   React.useEffect(() => {
     if (sessionDetectionResult?.type === DETECTION_TYPES.NEW_SIGN_IN && 
@@ -778,16 +782,16 @@ export function ConfigurationScreen({
     }
 
     const performSync = async () => {
-      setPlayerSyncStatus({ loading: true, message: 'Syncing team roster...' });
+      setPlayerSyncStatus({ loading: true, message: t('configuration:sync.syncing') });
       teamSyncCompletedRef.current = false;
-      
+
       try {
         const result = syncPlayersFromTeamRoster(rosterPlayers);
-        
+
         if (result.success) {
-          setPlayerSyncStatus({ 
-            loading: false, 
-            message: result.message === 'No sync needed' ? '' : `✅ ${result.message}` 
+          setPlayerSyncStatus({
+            loading: false,
+            message: result.message === 'No sync needed' ? '' : t('configuration:sync.syncSuccess', { message: result.message })
           });
           
           // Mark team sync as completed
@@ -800,24 +804,24 @@ export function ConfigurationScreen({
             }, 3000);
           }
         } else {
-          setPlayerSyncStatus({ 
-            loading: false, 
-            message: `⚠️ Sync failed: ${result.error}` 
+          setPlayerSyncStatus({
+            loading: false,
+            message: t('configuration:sync.syncFailed', { error: result.error })
           });
           teamSyncCompletedRef.current = false;
         }
       } catch (error) {
         console.error('ConfigurationScreen sync error:', error);
-        setPlayerSyncStatus({ 
-          loading: false, 
-          message: `⚠️ Sync error: ${error.message}` 
+        setPlayerSyncStatus({
+          loading: false,
+          message: t('configuration:sync.syncError', { error: error.message })
         });
         teamSyncCompletedRef.current = false;
       }
     };
 
     performSync();
-  }, [currentTeam, currentTeam?.id, teamPlayers, syncPlayersFromTeamRoster]);
+  }, [currentTeam, currentTeam?.id, teamPlayers, syncPlayersFromTeamRoster, t]);
 
   const handleFormationChange = (newFormation) => {
     const definition = FORMATION_DEFINITIONS[newFormation];
@@ -1413,10 +1417,10 @@ export function ConfigurationScreen({
       .map(({ value, label }) => ({ value, label }));
 
     return [
-      { value: "", label: "No Captain" },
+      { value: "", label: t('configuration:captain.noCaptain') },
       ...squadOptions
     ];
-  }, [captainHistoryCounts, selectedSquadPlayers]);
+  }, [captainHistoryCounts, selectedSquadPlayers, t]);
 
   const setOpponentTeamValue = React.useCallback((value, options = {}) => {
     const { markActive = true } = options;
@@ -1581,7 +1585,7 @@ export function ConfigurationScreen({
   }, [currentTeam?.id, teamLoading, opponentTeam, isResumedMatch, setOpponentTeamValue, configurationSessionId]);
 
   const handleMigrateData = async () => {
-    setSyncStatus({ loading: true, message: 'Migrating local data to cloud...', error: null });
+    setSyncStatus({ loading: true, message: t('configuration:dataMigration.migratingFull'), error: null });
 
     try {
       const result = await dataSyncManager.migrateLocalDataToCloud();
@@ -1602,14 +1606,14 @@ export function ConfigurationScreen({
         setSyncStatus({
           loading: false,
           message: '',
-          error: result.error || 'Migration failed'
+          error: result.error || t('dataMigration.failed')
         });
       }
     } catch (error) {
       setSyncStatus({
         loading: false,
         message: '',
-        error: 'Migration failed: ' + error.message
+        error: t('dataMigration.failedWithError', { error: error.message })
       });
     }
   };
@@ -1676,7 +1680,7 @@ export function ConfigurationScreen({
       return;
     }
 
-    setSaveConfigStatus({ loading: true, message: 'Saving configuration...', error: null });
+    setSaveConfigStatus({ loading: true, message: t('configuration:saveConfig.saving'), error: null });
 
     try {
       const result = await handleSaveConfiguration();
@@ -1684,7 +1688,7 @@ export function ConfigurationScreen({
       if (result.success) {
         setSaveConfigStatus({
           loading: false,
-          message: `✅ ${result.message || 'Configuration saved successfully'}`,
+          message: t('configuration:saveConfig.savedSuccess', { message: result.message || t('configuration:saveConfig.savedSuccessDefault') }),
           error: null
         });
         
@@ -1699,7 +1703,7 @@ export function ConfigurationScreen({
         setSaveConfigStatus({
           loading: false,
           message: '',
-          error: result.error || 'Failed to save configuration'
+          error: result.error || t('configuration:saveConfig.errors.failed')
         });
       }
     } catch (error) {
@@ -1707,7 +1711,7 @@ export function ConfigurationScreen({
       setSaveConfigStatus({
         loading: false,
         message: '',
-        error: 'Failed to save configuration: ' + error.message
+        error: t('configuration:saveConfig.errors.failedWithMessage', { error: error.message })
       });
     }
   };
@@ -1721,13 +1725,13 @@ export function ConfigurationScreen({
     if (!isAuthenticated || !currentTeam) {
       setShareLinkNotification({
         isOpen: true,
-        title: 'Authentication Required',
-        message: 'You must be signed in with a team to share a live match link.'
+        title: t('configuration:liveLinkNotifications.authRequired'),
+        message: t('configuration:liveLinkNotifications.authRequiredMessage')
       });
       return;
     }
 
-    setSaveConfigStatus({ loading: true, message: 'Creating live match link...', error: null });
+    setSaveConfigStatus({ loading: true, message: t('configuration:liveLinkNotifications.creating'), error: null });
 
     try {
       const result = await handleSaveConfiguration();
@@ -1736,7 +1740,7 @@ export function ConfigurationScreen({
         const matchId = result.matchId;
 
         if (!matchId) {
-          throw new Error('No match ID returned from save operation');
+          throw new Error(t('configuration:saveConfig.errors.noMatchId'));
         }
 
         const copyResult = await copyLiveMatchUrlToClipboard(matchId);
@@ -1744,13 +1748,13 @@ export function ConfigurationScreen({
         if (copyResult.success) {
           setShareLinkNotification({
             isOpen: true,
-            title: 'Link Copied!',
-            message: 'Live match link copied to clipboard!'
+            title: t('configuration:liveLinkNotifications.linkCopied'),
+            message: t('configuration:liveLinkNotifications.linkCopiedMessage')
           });
         } else {
           setShareLinkNotification({
             isOpen: true,
-            title: 'Live Match URL',
+            title: t('configuration:liveLinkNotifications.liveMatchUrl'),
             message: copyResult.url
           });
         }
@@ -1760,7 +1764,7 @@ export function ConfigurationScreen({
         setSaveConfigStatus({
           loading: false,
           message: '',
-          error: result.error || 'Failed to create live match link'
+          error: result.error || t('configuration:liveLinkNotifications.failed')
         });
       }
     } catch (error) {
@@ -1768,7 +1772,7 @@ export function ConfigurationScreen({
       setSaveConfigStatus({
         loading: false,
         message: '',
-        error: 'Failed to create live match link: ' + error.message
+        error: t('configuration:liveLinkNotifications.failedWithError', { error: error.message })
       });
     }
   };
@@ -1788,7 +1792,7 @@ export function ConfigurationScreen({
     <div className="space-y-4">
       {isAuthenticated && currentTeam && (
         <div className="p-3 bg-sky-600/20 border border-sky-500 rounded-lg">
-          <div className="text-sky-200 font-medium">Team: {currentTeam.club?.name} {currentTeam.name}</div>
+          <div className="text-sky-200 font-medium">{t('configuration:teamBanner.label', { clubName: currentTeam.club?.name || '', teamName: currentTeam.name })}</div>
           {playerSyncStatus.loading && (
             <div className="text-sky-300 text-sm mt-1">
               🔄 {playerSyncStatus.message}
@@ -1807,7 +1811,7 @@ export function ConfigurationScreen({
         <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
           <div className="flex items-start space-x-3">
             <div className="flex-1">
-              <div className="text-red-300 font-medium text-sm">Failed to Check Pending Matches</div>
+              <div className="text-red-300 font-medium text-sm">{t('configuration:pendingMatch.errors.title')}</div>
               <div className="text-red-200 text-sm mt-1">
                 {pendingMatchError.message}
               </div>
@@ -1825,7 +1829,7 @@ export function ConfigurationScreen({
                     disabled={pendingMatchLoading}
                     className="text-red-300 border-red-500/50 hover:bg-red-500/20"
                   >
-                    {pendingMatchLoading ? 'Retrying...' : 'Try Again'}
+                    {pendingMatchLoading ? t('configuration:pendingMatch.errors.retrying') : t('configuration:pendingMatch.errors.tryAgain')}
                   </Button>
                 </div>
               )}
@@ -1845,9 +1849,9 @@ export function ConfigurationScreen({
                   <Upload className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-emerald-300 text-sm">Migrate Local Data</h3>
+                  <h3 className="font-semibold text-emerald-300 text-sm">{t('configuration:dataMigration.title')}</h3>
                   <p className="text-emerald-200 text-sm mt-1">
-                    We found match history saved locally. Would you like to sync it to your cloud account?
+                    {t('configuration:dataMigration.description')}
                   </p>
                   <div className="flex gap-2 mt-3">
                     <Button
@@ -1857,7 +1861,7 @@ export function ConfigurationScreen({
                       disabled={syncStatus.loading}
                       className="bg-emerald-600 hover:bg-emerald-700"
                     >
-                      {syncStatus.loading ? 'Migrating...' : 'Migrate Data'}
+                      {syncStatus.loading ? t('configuration:dataMigration.migrating') : t('configuration:dataMigration.migrateButton')}
                     </Button>
                     <Button
                       onClick={handleDismissMigration}
@@ -1865,7 +1869,7 @@ export function ConfigurationScreen({
                       size="sm"
                       disabled={syncStatus.loading}
                     >
-                      Later
+                      {t('configuration:dataMigration.laterButton')}
                     </Button>
                   </div>
                 </div>
@@ -1903,7 +1907,7 @@ export function ConfigurationScreen({
         /* Cloud Sync Features for Anonymous Users */
         <FeatureGate
           feature="cloud synchronization"
-          description="Save your team, configurations and match data. Access your data from any device and unlock season statistics."
+          description={t('configuration:cloudSync.featureDescription')}
           variant="inline"
           authModal={authModal}
         >
@@ -1911,8 +1915,8 @@ export function ConfigurationScreen({
             <div className="flex items-center space-x-3">
               <Cloud className="w-8 h-8 text-slate-400" />
               <div>
-                <div className="text-slate-300 font-medium">Cloud Sync Available</div>
-                <div className="text-slate-400 text-sm">Keep your data safe across devices</div>
+                <div className="text-slate-300 font-medium">{t('configuration:cloudSync.available')}</div>
+                <div className="text-slate-400 text-sm">{t('configuration:cloudSync.description')}</div>
               </div>
             </div>
           </div>
@@ -1920,15 +1924,15 @@ export function ConfigurationScreen({
       )}
 
       <h2 className="text-xl font-semibold text-sky-300 flex items-center">
-        <Settings className="mr-2 h-6 w-6" />Game & Squad Configuration
+        <Settings className="mr-2 h-6 w-6" />{t('configuration:header.title')}
       </h2>
 
       {/* Squad Selection */}
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2">
           {hasNoTeamPlayers
-            ? "Add Players to Your Team"
-            : `Select Squad (5-15 Players) - Selected: ${selectedSquadIds.length}`
+            ? t('configuration:squad.addPlayerTitle')
+            : t('configuration:squad.selectTitle', { count: selectedSquadIds.length })
           }
         </h3>
         {hasNoTeamPlayers ? (
@@ -1943,9 +1947,9 @@ export function ConfigurationScreen({
               /* Show empty state when no unmapped players */
               <>
                 <UserPlus className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-                <p className="text-lg font-medium text-slate-300 mb-2">No Players Added Yet</p>
+                <p className="text-lg font-medium text-slate-300 mb-2">{t('configuration:squad.noPlayers.title')}</p>
                 <p className="text-sm text-slate-400 mb-4">
-                  Your team roster is empty. Add players to start setting up your game.
+                  {t('configuration:squad.noPlayers.description')}
                 </p>
                 <div className="flex justify-center">
                   <Button
@@ -1953,7 +1957,7 @@ export function ConfigurationScreen({
                     variant="primary"
                     Icon={UserPlus}
                   >
-                    Add Player
+                    {t('configuration:squad.addPlayer')}
                   </Button>
                 </div>
               </>
@@ -1978,7 +1982,7 @@ export function ConfigurationScreen({
                 size="sm"
                 disabled={areAllEligibleSelected || playersToShow.length === 0}
               >
-                {areAllEligibleSelected ? 'All Selected' : 'Select All'}
+                {areAllEligibleSelected ? t('configuration:squad.allSelected') : t('configuration:squad.selectAll')}
               </Button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1992,7 +1996,7 @@ export function ConfigurationScreen({
                   />
                   <span>{formatPlayerName(player)}</span>
                   {player.isTemporary && (
-                    <span className="text-xs text-slate-300">(Temporary)</span>
+                    <span className="text-xs text-slate-300">{t('configuration:squad.temporaryLabel')}</span>
                   )}
                 </label>
               ))}
@@ -2004,12 +2008,12 @@ export function ConfigurationScreen({
                 size="sm"
                 Icon={UserPlus}
               >
-                Add Player
+                {t('configuration:squad.addPlayer')}
               </Button>
             </div>
             {exceedsFormatMaximum && (
               <p className="mt-2 text-xs text-amber-300">
-                You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad selection.
+                {t('configuration:squad.exceededFormat', { count: selectedSquadIds.length, format: formatLabel, max: maxPlayersAllowed })}
               </p>
             )}
           </>
@@ -2026,24 +2030,24 @@ export function ConfigurationScreen({
       {/* Match Details */}
       <div className="p-3 bg-slate-700 rounded-md space-y-4">
         <div>
-          <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">Opponent Team Name</label>
+          <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.opponentLabel')}</label>
           <OpponentNameAutocomplete
             teamId={currentTeam?.id}
             value={opponentTeam}
             onChange={handleOpponentTeamChange}
             onSelect={handleOpponentSuggestionSelect}
             inputId="opponentTeam"
-            placeholder="Enter opponent team name (optional)"
+            placeholder={t('configuration:matchDetails.opponentPlaceholder')}
           />
         </div>
 
         <div>
-          <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">Match Type</label>
+          <label htmlFor="matchType" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.matchTypeLabel')}</label>
           <Select
             id="matchType"
             value={matchType}
             onChange={handleMatchTypeChange}
-            options={MATCH_TYPE_OPTIONS.map(option => ({
+            options={getMatchTypeOptions(t).map(option => ({
               value: option.value,
               label: option.label
             }))}
@@ -2051,12 +2055,12 @@ export function ConfigurationScreen({
         </div>
 
         <div>
-          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">Venue</label>
+          <label htmlFor="venueType" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.venueLabel')}</label>
           <Select
             id="venueType"
             value={effectiveVenueType}
             onChange={handleVenueTypeChange}
-            options={VENUE_TYPE_OPTIONS.map(option => ({
+            options={getVenueTypeOptions(t).map(option => ({
               value: option.value,
               label: option.label
             }))}
@@ -2067,27 +2071,27 @@ export function ConfigurationScreen({
       {/* Game Settings */}
       <div className="p-3 bg-slate-700 rounded-md grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">Number of Periods</label>
+          <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.periodsLabel')}</label>
           <Select value={numPeriods} onChange={value => setNumPeriods(Number(value))} options={PERIOD_OPTIONS} id="numPeriods" />
         </div>
         <div>
-          <label htmlFor="periodDuration" className="block text-sm font-medium text-sky-200 mb-1">Period Duration (minutes)</label>
+          <label htmlFor="periodDuration" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.durationLabel')}</label>
           <Select value={periodDurationMinutes} onChange={value => setPeriodDurationMinutes(Number(value))} options={DURATION_OPTIONS} id="periodDuration" />
         </div>
         <div>
-          <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">Substitution Alert</label>
-          <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={ALERT_OPTIONS} id="alertMinutes" />
+          <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.alertLabel')}</label>
+          <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={getAlertOptions(t)} id="alertMinutes" />
         </div>
       </div>
 
       <div className="p-3 bg-slate-700 rounded-md">
         <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
           <Layers className="mr-2 h-4 w-4" />
-          Match Format & Formation
+          {t('configuration:formation.header')}
         </h3>
         <div className="space-y-4">
           <div>
-            <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">Match Format</label>
+            <label htmlFor="matchFormat" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:formation.formatLabel')}</label>
             <Select
               id="matchFormat"
               value={currentFormat}
@@ -2102,16 +2106,17 @@ export function ConfigurationScreen({
           <div className="space-y-3">
             <div>
               <label htmlFor="formation" className="block text-sm font-medium text-sky-200 mb-1">
-                Tactical Formation
+                {t('configuration:formation.formationLabel')}
               </label>
               <Select
                 id="formation"
                 value={selectedFormation}
                 onChange={value => handleFormationChange(value)}
-                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => ({
-                  value: formation,
-                  label: FORMATION_DEFINITIONS[formation].label
-                }))}
+                options={getValidFormations(currentFormat, selectedSquadIds.length).map(formation => {
+                  const def = FORMATION_DEFINITIONS[formation];
+                  const suffix = def.status === 'coming-soon' ? ` ${t('configuration:formation.comingSoonSuffix')}` : '';
+                  return { value: formation, label: `${def.label}${suffix}` };
+                })}
               />
             </div>
 
@@ -2120,7 +2125,7 @@ export function ConfigurationScreen({
 
           {!withinFormatBounds && meetsMinimumSelection && (
             <p className="text-xs text-amber-300">
-              You have selected {selectedSquadIds.length} players, which exceeds the {formatLabel} limit of {maxPlayersAllowed}. Update the match format or adjust the squad before configuring formations.
+              {t('configuration:formation.formatExceeded', { count: selectedSquadIds.length, format: formatLabel, max: maxPlayersAllowed })}
             </p>
           )}
         </div>
@@ -2130,17 +2135,17 @@ export function ConfigurationScreen({
       {/* Goalie Assignment */}
       {withinFormatBounds && (
         <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2">Assign Goalies</h3>
+          <h3 className="text-base font-medium text-sky-200 mb-2">{t('configuration:goalies.header')}</h3>
           <div className="space-y-2">
             {Array.from({ length: numPeriods }, (_, i) => i + 1).map(period => (
               <div key={period}>
-                <label htmlFor={`goalie_p${period}`} className="block text-sm font-medium text-sky-200 mb-1">Period {period} Goalie</label>
+                <label htmlFor={`goalie_p${period}`} className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:goalies.periodLabel', { period })}</label>
                 <Select
                   id={`goalie_p${period}`}
                   value={periodGoalieIds[period] || ""}
                   onChange={value => handleGoalieChange(period, value)}
                   options={selectedSquadPlayers.map(p => ({ value: p.id, label: formatPlayerName(p) }))}
-                  placeholder="Select Goalie"
+                  placeholder={t('configuration:goalies.placeholder')}
                 />
               </div>
             ))}
@@ -2151,16 +2156,16 @@ export function ConfigurationScreen({
       {/* Captain Assignment */}
       {selectedSquadIds.length >= minPlayersRequired && teamPreferences?.teamCaptain !== 'none' && (
         <div className="p-3 bg-slate-700 rounded-md">
-          <h3 className="text-base font-medium text-sky-200 mb-2">Assign Captain</h3>
+          <h3 className="text-base font-medium text-sky-200 mb-2">{t('configuration:captain.header')}</h3>
           <div>
-            <label htmlFor="captain" className="block text-sm font-medium text-sky-200 mb-1">Team Captain</label>
+            <label htmlFor="captain" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:captain.label')}</label>
             <Select
               id="captain"
               value={captainId || ""}
               onChange={value => handleCaptainChange(value)}
               options={captainOptions}
             />
-            <p className="text-xs text-slate-400 mt-1">Optional - select a team captain for this game</p>
+            <p className="text-xs text-slate-400 mt-1">{t('configuration:captain.hint')}</p>
           </div>
         </div>
       )}
@@ -2176,7 +2181,7 @@ export function ConfigurationScreen({
           variant="secondary"
           Icon={Save}
         >
-          {saveConfigStatus.loading ? 'Saving...' : 'Save Configuration'}
+          {saveConfigStatus.loading ? t('configuration:buttons.savingConfig') : t('configuration:buttons.saveConfig')}
         </Button>
       )}
 
@@ -2191,7 +2196,7 @@ export function ConfigurationScreen({
           variant="secondary"
           Icon={Share2}
         >
-          {saveConfigStatus.loading ? 'Creating Link...' : 'Get Live Match Link'}
+          {saveConfigStatus.loading ? t('configuration:buttons.creatingLink') : t('configuration:buttons.getLiveLink')}
         </Button>
       )}
 
@@ -2203,7 +2208,7 @@ export function ConfigurationScreen({
         }
         Icon={Play}
       >
-        Proceed to Period Setup
+        {t('configuration:buttons.proceedToPeriod')}
       </Button>
 
       {/* Debug Mode Randomize Button */}
@@ -2214,7 +2219,7 @@ export function ConfigurationScreen({
           Icon={Shuffle}
           className="bg-amber-600 hover:bg-amber-700 text-white"
         >
-          🎲 Randomize Configuration (Debug)
+          {t('configuration:buttons.randomize')}
         </Button>
       )}
 
@@ -2234,7 +2239,7 @@ export function ConfigurationScreen({
         isAuthenticated={isVoteAuthenticated}
         authModal={authModal}
       >
-        <p>Only the 2-2 and 1-2-1 formations are currently implemented. By voting, you help us prioritize which formations to build next. Only one vote per user per formation will be counted.</p>
+        <p>{t('configuration:formationVoting.description')}</p>
       </FeatureVoteModal>
 
       <ThreeOptionModal
@@ -2242,11 +2247,11 @@ export function ConfigurationScreen({
         onPrimary={handleAddPlayerToTeam}
         onSecondary={handleAddTemporaryPlayer}
         onTertiary={handleCloseAddPlayerOptionsModal}
-        title="Add Player"
-        message="Choose how you'd like to add a player."
-        primaryText="Add Player to Team"
-        secondaryText="Add Temporary Player"
-        tertiaryText="Cancel"
+        title={t('configuration:addPlayerModal.title')}
+        message={t('configuration:addPlayerModal.message')}
+        primaryText={t('configuration:addPlayerModal.addToTeam')}
+        secondaryText={t('configuration:addPlayerModal.addTemporary')}
+        tertiaryText={t('configuration:addPlayerModal.cancel')}
         primaryVariant="primary"
         secondaryVariant="secondary"
         tertiaryVariant="secondary"

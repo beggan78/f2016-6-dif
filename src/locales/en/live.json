@@ -1,0 +1,31 @@
+{
+  "screen": {
+    "title": "Live Match",
+    "spectatorView": "Spectator View",
+    "loading": "Loading match...",
+    "notFound": "Match not found",
+    "ended": "This match has ended"
+  },
+  "status": {
+    "waitingToStart": "Waiting for match to start",
+    "inProgress": "Match in progress",
+    "paused": "Paused",
+    "ended": "Ended",
+    "matchNotStarted": "Match Not Started",
+    "liveMatch": "LIVE Match",
+    "matchFinished": "Match Finished"
+  },
+  "info": {
+    "period": "Period {{number}}",
+    "periodWithMinute": "Period {{period}} - {{minute}}'",
+    "score": "Score",
+    "time": "Time",
+    "lastUpdated": "Last updated: {{time}}",
+    "loadingEvents": "Loading match events...",
+    "errorLoadingMatch": "Error Loading Match",
+    "noEventsFound": "No match events found",
+    "matchSummary": "Match Summary",
+    "gameEvents": "Game Events",
+    "substitutions": "Substitutions"
+  }
+}

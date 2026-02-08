@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { VIEWS } from '../../constants/viewConstants';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
  * @returns {React.ReactNode}
  */
 export function ProfileCompletionPrompt({ setView, onClose }) {
+  const { t } = useTranslation('auth');
   const { markProfileCompleted } = useAuth();
 
   const handleCompleteProfile = () => {
@@ -38,31 +40,31 @@ export function ProfileCompletionPrompt({ setView, onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-sky-300">Welcome!</h2>
-          <p className="text-slate-400 mt-2">Let's complete your profile to get started</p>
+          <h2 className="text-xl font-bold text-sky-300">{t('profileCompletion.welcome')}</h2>
+          <p className="text-slate-400 mt-2">{t('profileCompletion.subtitle')}</p>
         </div>
 
         {/* Benefits */}
         <div className="bg-slate-700 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-semibold text-slate-300 mb-3">Complete your profile to:</h3>
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">{t('profileCompletion.benefitsTitle')}</h3>
           <ul className="space-y-2 text-sm text-slate-400">
             <li className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>Personalize your coaching experience</span>
+              <span>{t('profileCompletion.benefits.personalize')}</span>
             </li>
             <li className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>Display your name in team reports</span>
+              <span>{t('profileCompletion.benefits.displayName')}</span>
             </li>
             <li className="flex items-center space-x-2">
               <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>Set up your coaching preferences</span>
+              <span>{t('profileCompletion.benefits.preferences')}</span>
             </li>
           </ul>
         </div>
@@ -75,20 +77,20 @@ export function ProfileCompletionPrompt({ setView, onClose }) {
             size="lg"
             className="w-full"
           >
-            Complete Profile
+            {t('profileCompletion.completeButton')}
           </Button>
-          
+
           <button
             onClick={handleSkipForNow}
             className="w-full text-slate-400 hover:text-slate-300 text-sm transition-colors py-2"
           >
-            Skip for now
+            {t('profileCompletion.skipButton')}
           </button>
         </div>
 
         {/* Fine Print */}
         <p className="text-xs text-slate-500 mt-4 text-center">
-          You can complete this later from the profile section
+          {t('profileCompletion.finePrint')}
         </p>
       </div>
     </div>

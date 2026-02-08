@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
 import { AuthButtonPair } from './AuthButtons';
 
@@ -17,8 +18,8 @@ import { AuthButtonPair } from './AuthButtons';
  * @returns {React.ReactNode}
  */
 export function AnonymousAlert({
-  feature = "this feature",
-  description = "Sign in to access enhanced features and save your data across devices.",
+  feature,
+  description,
   requireProfile = false,
   title,
   benefits = [],
@@ -26,28 +27,33 @@ export function AnonymousAlert({
   icon,
   authModal: authModalProp
 }) {
+  const { t } = useTranslation('auth');
   const authModal = useAuthModalIntegration(authModalProp);
+
+  // Use translations with fallbacks
+  const displayFeature = feature || t('anonymousAlert.defaultFeature');
+  const displayDescription = description || t('anonymousAlert.defaultDescription');
 
   // Default benefits if none provided
   const defaultBenefits = [
-    "Save your team data across devices",
-    "Access match history and statistics",
-    "Create and manage multiple teams",
-    "Never lose your progress"
+    t('anonymousAlert.defaultBenefits.saveData'),
+    t('anonymousAlert.defaultBenefits.accessHistory'),
+    t('anonymousAlert.defaultBenefits.manageTeams'),
+    t('anonymousAlert.defaultBenefits.neverLose')
   ];
 
   const displayBenefits = benefits.length > 0 ? benefits : defaultBenefits;
-  const displayTitle = title || (requireProfile ? "Complete Your Profile" : `Sign in to use ${feature}`);
+  const displayTitle = title || (requireProfile ? t('anonymousAlert.completeProfile') : t('anonymousAlert.signInToUse', { feature: displayFeature }));
 
   // Minimal variant for inline use
   if (variant === 'minimal') {
     return (
       <div className="text-center py-2">
-        <p className="text-slate-400 text-sm mb-3">{description}</p>
+        <p className="text-slate-400 text-sm mb-3">{displayDescription}</p>
         <AuthButtonPair
           authModal={authModal}
           variant="compact"
-          signUpText="Sign Up"
+          signUpText={t('anonymousAlert.signUpButton')}
           className="justify-center"
         />
       </div>
@@ -68,12 +74,12 @@ export function AnonymousAlert({
           )}
           <div className="flex-1">
             <h3 className="font-semibold text-sky-300 text-sm">{displayTitle}</h3>
-            <p className="text-slate-400 text-sm mt-1">{description}</p>
+            <p className="text-slate-400 text-sm mt-1">{displayDescription}</p>
             <div className="mt-3">
               <AuthButtonPair
                 authModal={authModal}
                 variant="compact"
-                signUpText="Create Account"
+                signUpText={t('anonymousAlert.createAccountButton')}
               />
             </div>
           </div>
@@ -106,13 +112,13 @@ export function AnonymousAlert({
 
         {/* Description */}
         <p className="text-slate-400 mb-6">
-          {description}
+          {displayDescription}
         </p>
 
         {/* Benefits List */}
         {displayBenefits.length > 0 && (
           <div className="bg-slate-800 rounded-lg p-4 mb-6">
-            <h3 className="text-sm font-semibold text-slate-300 mb-3">What you'll get:</h3>
+            <h3 className="text-sm font-semibold text-slate-300 mb-3">{t('anonymousAlert.benefitsTitle')}</h3>
             <ul className="space-y-2 text-sm text-slate-400">
               {displayBenefits.map((benefit, index) => (
                 <li key={index} className="flex items-center space-x-2">
@@ -130,12 +136,12 @@ export function AnonymousAlert({
         <AuthButtonPair
           authModal={authModal}
           variant="stacked"
-          signUpText="Create Free Account"
+          signUpText={t('anonymousAlert.createFreeAccountButton')}
         />
 
         {/* Fine Print */}
         <p className="text-xs text-slate-500 mt-4">
-          Free forever • No credit card required • Your data stays private
+          {t('anonymousAlert.finePrint')}
         </p>
       </div>
     </div>
@@ -146,17 +152,19 @@ export function AnonymousAlert({
  * TeamManagementAlert - Specialized alert for team management features
  */
 export function TeamManagementAlert(props) {
+  const { t } = useTranslation('auth');
+
   return (
     <AnonymousAlert
-      feature="team management"
-      title="Manage Your Teams"
-      description="Create and manage team rosters, save player information, and track team performance across multiple matches."
+      feature={t('anonymousAlert.teamManagement.feature')}
+      title={t('anonymousAlert.teamManagement.title')}
+      description={t('anonymousAlert.teamManagement.description')}
       benefits={[
-        "Create multiple team rosters",
-        "Save player information and jersey numbers",
-        "Track team performance over time",
-        "Access match history and analytics",
-        "Sync data across all your devices"
+        t('anonymousAlert.teamManagement.benefits.createRosters'),
+        t('anonymousAlert.teamManagement.benefits.savePlayerInfo'),
+        t('anonymousAlert.teamManagement.benefits.trackPerformance'),
+        t('anonymousAlert.teamManagement.benefits.accessHistory'),
+        t('anonymousAlert.teamManagement.benefits.syncDevices')
       ]}
       {...props}
     />
@@ -167,17 +175,19 @@ export function TeamManagementAlert(props) {
  * MatchHistoryAlert - Specialized alert for match history features
  */
 export function MatchHistoryAlert(props) {
+  const { t } = useTranslation('auth');
+
   return (
     <AnonymousAlert
-      feature="match history"
-      title="Save Your Match History"
-      description="Keep track of all your matches with detailed statistics, player performance data, and game analytics."
+      feature={t('anonymousAlert.matchHistory.feature')}
+      title={t('anonymousAlert.matchHistory.title')}
+      description={t('anonymousAlert.matchHistory.description')}
       benefits={[
-        "Save detailed match reports",
-        "Track player statistics over time",
-        "View formation and substitution patterns",
-        "Compare team performance across matches",
-        "Never lose important game data"
+        t('anonymousAlert.matchHistory.benefits.saveReports'),
+        t('anonymousAlert.matchHistory.benefits.trackStats'),
+        t('anonymousAlert.matchHistory.benefits.viewPatterns'),
+        t('anonymousAlert.matchHistory.benefits.comparePerformance'),
+        t('anonymousAlert.matchHistory.benefits.neverLoseData')
       ]}
       {...props}
     />
@@ -185,20 +195,22 @@ export function MatchHistoryAlert(props) {
 }
 
 /**
- * CloudSyncAlert - Specialized alert for cloud synchronization features  
+ * CloudSyncAlert - Specialized alert for cloud synchronization features
  */
 export function CloudSyncAlert(props) {
+  const { t } = useTranslation('auth');
+
   return (
     <AnonymousAlert
-      feature="cloud sync"
-      title="Sync Across Devices"
-      description="Access your teams and match data from any device. Your information is automatically backed up and synchronized."
+      feature={t('anonymousAlert.cloudSync.feature')}
+      title={t('anonymousAlert.cloudSync.title')}
+      description={t('anonymousAlert.cloudSync.description')}
       benefits={[
-        "Access from phone, tablet, or computer",
-        "Automatic cloud backup",
-        "Never lose your data",
-        "Share team information with other coaches",
-        "Real-time synchronization"
+        t('anonymousAlert.cloudSync.benefits.accessAnywhere'),
+        t('anonymousAlert.cloudSync.benefits.autoBackup'),
+        t('anonymousAlert.cloudSync.benefits.neverLose'),
+        t('anonymousAlert.cloudSync.benefits.shareInfo'),
+        t('anonymousAlert.cloudSync.benefits.realTimeSync')
       ]}
       {...props}
     />

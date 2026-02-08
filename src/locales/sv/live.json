@@ -1,0 +1,31 @@
+{
+  "screen": {
+    "title": "Livematch",
+    "spectatorView": "\u00c5sk\u00e5darvy",
+    "loading": "Laddar match...",
+    "notFound": "Match hittades inte",
+    "ended": "Denna match har avslutats"
+  },
+  "status": {
+    "waitingToStart": "V\u00e4ntar p\u00e5 att matchen ska starta",
+    "inProgress": "Match p\u00e5g\u00e5r",
+    "paused": "Pausad",
+    "ended": "Avslutad",
+    "matchNotStarted": "Matchen Har Inte Startat",
+    "liveMatch": "LIVE Match",
+    "matchFinished": "Match Avslutad"
+  },
+  "info": {
+    "period": "Period {{number}}",
+    "periodWithMinute": "Period {{period}} - {{minute}}'",
+    "score": "St\u00e4llning",
+    "time": "Tid",
+    "lastUpdated": "Senast uppdaterad: {{time}}",
+    "loadingEvents": "Laddar matchh\u00e4ndelser...",
+    "errorLoadingMatch": "Fel Vid Laddning Av Match",
+    "noEventsFound": "Inga matchh\u00e4ndelser hittades",
+    "matchSummary": "Match\u00f6versikt",
+    "gameEvents": "Matchh\u00e4ndelser",
+    "substitutions": "Byten"
+  }
+}

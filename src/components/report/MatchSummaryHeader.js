@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, Trophy, Calendar, Timer } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { formatTime } from '../../utils/formatUtils';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 
@@ -32,6 +33,7 @@ export function MatchSummaryHeader({
   matchHasStarted = true,
   matchHasFinished = matchHasStarted
 }) {
+  const { t } = useTranslation('statistics');
   
   // Format match start time
   const formatMatchStartTime = () => {
@@ -58,21 +60,21 @@ export function MatchSummaryHeader({
 
       // Format: "Scheduled: 2024-03-15 09:45 - 11:30" or include venue if available
       return venue
-        ? `Scheduled: ${date} ${time} (${venue})`
-        : `Scheduled: ${date} ${time}`;
+        ? `${t('matchSummary.scheduled')} ${date} ${time} (${venue})`
+        : `${t('matchSummary.scheduled')} ${date} ${time}`;
     }
 
     // Fallback
-    return "No start time recorded";
+    return t('matchSummary.noStartTime');
   };
 
   // Format match duration
   const formatMatchDuration = () => {
     if (matchDurationDisplay) return matchDurationDisplay;
-    if (!matchDuration || matchDuration <= 0) return "Duration unknown";
-    
+    if (!matchDuration || matchDuration <= 0) return t('matchSummary.durationUnknown');
+
     const formatted = formatTime(matchDuration);
-    
+
     return formatted;
   };
 
@@ -130,9 +132,9 @@ export function MatchSummaryHeader({
           <div className="flex items-center justify-center space-x-2 text-sm">
             <Trophy className="h-4 w-4 text-yellow-400" />
             <span className="text-slate-300">
-              {ownScore > opponentScore ? `${ownTeamName} wins` :
-               opponentScore > ownScore ? `${opponentTeam} wins` :
-               'Match tied'}
+              {ownScore > opponentScore ? t('matchSummary.wins', { teamName: ownTeamName }) :
+               opponentScore > ownScore ? t('matchSummary.wins', { teamName: opponentTeam }) :
+               t('matchSummary.tied')}
             </span>
           </div>
         )}
@@ -151,7 +153,7 @@ export function MatchSummaryHeader({
         {/* Periods */}
         <div className="flex items-center space-x-1">
           <Timer className="h-4 w-4" />
-          <span>{totalPeriods} × {periodDurationMinutes}min</span>
+          <span>{t('matchSummary.periodsFormat', { periods: totalPeriods, duration: periodDurationMinutes })}</span>
         </div>
       </div>
     </div>

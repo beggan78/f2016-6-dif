@@ -1,11 +1,12 @@
 /**
  * Preferences Modal Component
- * 
+ *
  * Provides UI for managing user preferences including audio alert settings.
  * Features sound selection, volume control, and preview functionality.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings, Volume2, Play, Globe, Palette, Loader, X } from 'lucide-react';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { AUDIO_ALERT_OPTIONS, LANGUAGE_OPTIONS, THEME_OPTIONS } from '../../constants/audioAlerts';
@@ -13,6 +14,7 @@ import { audioAlertService } from '../../services/audioAlertService';
 import { Button, Select, Slider } from './UI';
 
 export function PreferencesModal({ isOpen, onClose }) {
+  const { t } = useTranslation('modals');
   const { preferences, updateAudioPreferences, updateLanguagePreference, updateThemePreference, preferencesLoading } = usePreferences();
   const [tempPreferences, setTempPreferences] = useState(preferences);
   const [isTestingSound, setIsTestingSound] = useState(false);
@@ -24,10 +26,10 @@ export function PreferencesModal({ isOpen, onClose }) {
     if (isOpen && !preferencesLoading) {
       setTempPreferences(preferences);
       setTestError(null);
-      
+
       // Trigger background preloading of all sounds when modal opens
       audioAlertService.triggerFullPreload();
-      
+
       // Initialize loading states
       const initialStates = {};
       AUDIO_ALERT_OPTIONS.forEach(option => {
@@ -64,11 +66,11 @@ export function PreferencesModal({ isOpen, onClose }) {
    */
   const handleTestSound = useCallback(async () => {
     if (isTestingSound || !tempPreferences.audio.enabled) return;
-    
+
     const selectedSound = tempPreferences.audio.selectedSound;
     setIsTestingSound(true);
     setTestError(null);
-    
+
     // Update loading state for this specific sound
     setSoundLoadingStates(prev => ({
       ...prev,
@@ -77,10 +79,10 @@ export function PreferencesModal({ isOpen, onClose }) {
         loading: !audioAlertService.isLoaded(selectedSound)
       }
     }));
-    
+
     try {
       await audioAlertService.play(selectedSound, tempPreferences.audio.volume);
-      
+
       // Update state to reflect sound is now loaded
       setSoundLoadingStates(prev => ({
         ...prev,
@@ -92,7 +94,7 @@ export function PreferencesModal({ isOpen, onClose }) {
     } catch (error) {
       console.error('Failed to test sound:', error);
       setTestError(error.message);
-      
+
       // Update loading state on error
       setSoundLoadingStates(prev => ({
         ...prev,
@@ -111,15 +113,15 @@ export function PreferencesModal({ isOpen, onClose }) {
    * Handle updating temp audio preferences with sound change optimization
    */
   const updateTempAudioPreferences = useCallback((updates) => {
-    setTempPreferences(prev => ({ 
-      ...prev, 
+    setTempPreferences(prev => ({
+      ...prev,
       audio: { ...prev.audio, ...updates }
     }));
-    
+
     // If selected sound changed, update loading states and preload new sound
     if (updates.selectedSound && updates.selectedSound !== tempPreferences.audio.selectedSound) {
       const newSound = updates.selectedSound;
-      
+
       // Update loading state
       setSoundLoadingStates(prev => ({
         ...prev,
@@ -128,7 +130,7 @@ export function PreferencesModal({ isOpen, onClose }) {
           loading: !audioAlertService.isLoaded(newSound)
         }
       }));
-      
+
       // Preload the new sound if not already loaded
       if (!audioAlertService.isLoaded(newSound)) {
         const loadPromise = audioAlertService.loadSound(newSound, true);
@@ -180,7 +182,7 @@ export function PreferencesModal({ isOpen, onClose }) {
         <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex items-center justify-center space-x-3">
             <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-slate-100">Loading preferences...</span>
+            <span className="text-slate-100">{t('preferences.loadingPreferences')}</span>
           </div>
         </div>
       </div>
@@ -210,7 +212,7 @@ export function PreferencesModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <Settings className="h-6 w-6 text-sky-400" />
-            <h2 id="preferences-title" className="text-xl font-semibold text-sky-300">Preferences</h2>
+            <h2 id="preferences-title" className="text-xl font-semibold text-sky-300">{t('preferences.title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -225,21 +227,21 @@ export function PreferencesModal({ isOpen, onClose }) {
           <div className="space-y-4">
             <div className="flex items-center space-x-3 border-b border-slate-600 pb-2">
               <Volume2 className="h-5 w-5 text-sky-400" />
-              <h3 className="text-lg font-medium text-sky-200">Substitution Alerts</h3>
+              <h3 className="text-lg font-medium text-sky-200">{t('preferences.substitutionAlerts')}</h3>
             </div>
-            
+
             {/* Enable/Disable Toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-100">Enable Audio Alerts</label>
-                <p className="text-xs text-slate-400 mt-1">Play sound when substitution timer reaches alert time</p>
+                <label className="text-sm font-medium text-slate-100">{t('preferences.enableAudioAlerts')}</label>
+                <p className="text-xs text-slate-400 mt-1">{t('preferences.enableAudioDescription')}</p>
               </div>
               <button
                 onClick={() => updateTempAudioPreferences({ enabled: !tempPreferences.audio.enabled })}
                 className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 ${
                   tempPreferences.audio.enabled ? 'bg-sky-600' : 'bg-slate-600'
                 }`}
-                aria-label={tempPreferences.audio.enabled ? 'Disable audio alerts' : 'Enable audio alerts'}
+                aria-label={tempPreferences.audio.enabled ? t('preferences.disableAudioLabel') : t('preferences.enableAudioLabel')}
               >
                 <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
                   tempPreferences.audio.enabled ? 'translate-x-6' : 'translate-x-1'
@@ -250,10 +252,10 @@ export function PreferencesModal({ isOpen, onClose }) {
             {/* Sound Selection and Preview */}
             <div className={`space-y-3 transition-opacity ${!tempPreferences.audio.enabled ? 'opacity-50' : ''}`}>
               <div>
-                <label className="block text-sm font-medium text-slate-100 mb-2">Alert Sound</label>
+                <label className="block text-sm font-medium text-slate-100 mb-2">{t('preferences.alertSound')}</label>
                 <div className="flex space-x-2">
                   <div className="flex-1">
-                    <Select 
+                    <Select
                       value={tempPreferences.audio.selectedSound}
                       onChange={(value) => updateTempAudioPreferences({ selectedSound: value })}
                       options={soundOptions}
@@ -266,8 +268,8 @@ export function PreferencesModal({ isOpen, onClose }) {
                     variant="secondary"
                     size="md"
                     className="px-3"
-                    title={soundLoadingStates[tempPreferences.audio.selectedSound]?.loading ? 
-                           "Loading sound..." : "Preview selected sound"}
+                    title={soundLoadingStates[tempPreferences.audio.selectedSound]?.loading ?
+                           t('preferences.loadingSound') : t('preferences.previewSound')}
                   >
                     {soundLoadingStates[tempPreferences.audio.selectedSound]?.loading && !isTestingSound ? (
                       <Loader className="h-4 w-4 animate-spin" />
@@ -276,18 +278,18 @@ export function PreferencesModal({ isOpen, onClose }) {
                     )}
                   </Button>
                 </div>
-                
+
                 {/* Test Error Message */}
                 {testError && (
                   <p className="text-xs text-rose-400 mt-1">
-                    Unable to preview sound: {testError}
+                    {t('preferences.unableToPreview', { error: testError })}
                   </p>
                 )}
-                
+
                 {/* Testing State */}
                 {isTestingSound && !testError && (
                   <p className="text-xs text-emerald-400 mt-1">
-                    Playing preview...
+                    {t('preferences.playingPreview')}
                   </p>
                 )}
               </div>
@@ -297,7 +299,7 @@ export function PreferencesModal({ isOpen, onClose }) {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
                     <Volume2 className="h-4 w-4 text-slate-400" />
-                    <label className="text-sm font-medium text-slate-100">Volume</label>
+                    <label className="text-sm font-medium text-slate-100">{t('preferences.volume')}</label>
                   </div>
                   <span className="text-sm text-slate-400 font-mono">
                     {Math.round(tempPreferences.audio.volume * 100)}%
@@ -322,9 +324,7 @@ export function PreferencesModal({ isOpen, onClose }) {
             {/* Additional Info */}
             <div className="bg-slate-700 rounded-lg p-3">
               <p className="text-xs text-slate-300 leading-relaxed">
-                <strong>Note:</strong> Audio alerts work alongside vibration alerts. 
-                If your browser blocks audio playback, only vibration will be used.
-                The alert timing is configured in the game setup screen.
+                <strong>{t('preferences.noteLabel')}</strong> {t('preferences.audioNote')}
               </p>
             </div>
           </div>
@@ -333,17 +333,17 @@ export function PreferencesModal({ isOpen, onClose }) {
           <div className="space-y-4">
             <div className="flex items-center space-x-3 border-b border-slate-600 pb-2">
               <Globe className="h-5 w-5 text-sky-400" />
-              <h3 className="text-lg font-medium text-sky-200">Language</h3>
+              <h3 className="text-lg font-medium text-sky-200">{t('preferences.language')}</h3>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-slate-100 mb-2">Application Language</label>
-              <Select 
+              <label className="block text-sm font-medium text-slate-100 mb-2">{t('preferences.applicationLanguage')}</label>
+              <Select
                 value={tempPreferences.language}
                 onChange={updateTempLanguagePreference}
                 options={languageOptions}
               />
-              <p className="text-xs text-slate-400 mt-2">More languages coming soon!</p>
+              <p className="text-xs text-slate-400 mt-2">{t('preferences.moreLanguages')}</p>
             </div>
           </div>
 
@@ -351,17 +351,17 @@ export function PreferencesModal({ isOpen, onClose }) {
           <div className="space-y-4">
             <div className="flex items-center space-x-3 border-b border-slate-600 pb-2">
               <Palette className="h-5 w-5 text-sky-400" />
-              <h3 className="text-lg font-medium text-sky-200">UI Theme</h3>
+              <h3 className="text-lg font-medium text-sky-200">{t('preferences.uiTheme')}</h3>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-slate-100 mb-2">Color Theme</label>
-              <Select 
+              <label className="block text-sm font-medium text-slate-100 mb-2">{t('preferences.colorTheme')}</label>
+              <Select
                 value={tempPreferences.theme}
                 onChange={updateTempThemePreference}
                 options={themeOptions}
               />
-              <p className="text-xs text-slate-400 mt-2">More themes coming soon!</p>
+              <p className="text-xs text-slate-400 mt-2">{t('preferences.moreThemes')}</p>
             </div>
           </div>
         </div>
@@ -369,10 +369,10 @@ export function PreferencesModal({ isOpen, onClose }) {
         {/* Action Buttons */}
         <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-slate-600">
           <Button variant="secondary" onClick={handleCancel}>
-            Cancel
+            {t('preferences.cancel')}
           </Button>
           <Button onClick={handleSave}>
-            Save Changes
+            {t('preferences.saveChanges')}
           </Button>
         </div>
       </div>

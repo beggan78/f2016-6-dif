@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { getPrimaryErrorMessage, getErrorDisplayClasses, createDebouncedErrorClear } from '../utils/authErrorHandling';
 
@@ -25,10 +26,11 @@ export const useAuthForm = ({
   onSuccess,
   clearErrorsOnInput = true
 }) => {
+  const { t } = useTranslation('common');
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const { loading, authError, clearAuthError } = useAuth();
 
   // Create debounced error clear function
@@ -99,7 +101,7 @@ export const useAuthForm = ({
     const { skipValidation = false, onError } = options;
     
     if (!skipValidation && !validateForm()) {
-      return { success: false, error: 'Validation failed' };
+      return { success: false, error: t('errors.validationFailed') };
     }
 
     setIsSubmitting(true);
@@ -118,7 +120,7 @@ export const useAuthForm = ({
       
       return result;
     } catch (error) {
-      const errorMessage = 'An unexpected error occurred. Please try again.';
+      const errorMessage = t('errors.unexpectedError');
       setErrors({ general: errorMessage });
       if (onError) {
         onError(error);

@@ -1,0 +1,124 @@
+{
+  "header": {
+    "title": "Matchrapport",
+    "noStartTime": "Ingen starttid registrerad",
+    "durationUnknown": "Längd okänd"
+  },
+  "navigation": {
+    "summary": "Sammanfattning",
+    "timeline": "Tidslinje",
+    "playerStats": "Spelarstatistik"
+  },
+  "timeline": {
+    "title": "Matchhändelser",
+    "noEvents": "Inga händelser registrerade",
+    "toggleSubstitutions": "Byten",
+    "eventTypes": {
+      "goal": "Mål",
+      "substitution": "Byte",
+      "periodStart": "Period Start",
+      "periodEnd": "Period Slut"
+    }
+  },
+  "playerStats": {
+    "title": "Spelarstatistik",
+    "name": "Spelare",
+    "playingTime": "Speltid",
+    "goals": "Mål",
+    "position": "Position",
+    "timeAsGoalie": "Tid som Målvakt",
+    "timeAsDefender": "Tid som Back",
+    "timeAsMidfielder": "Tid som Mittfält",
+    "timeAsAttacker": "Tid som Forward",
+    "noStats": "Ingen spelarstatistik tillgänglig"
+  },
+  "table": {
+    "columns": {
+      "player": "Spelare",
+      "startingRole": "Startroll",
+      "outfield": "Utespelare",
+      "defender": "Back",
+      "midfielder": "Mittfält",
+      "attacker": "Forward",
+      "goalie": "Målvakt",
+      "substitute": "Avbytare",
+      "goals": "Mål"
+    },
+    "roles": {
+      "goalie": "Målvakt",
+      "defender": "Back",
+      "midfielder": "Mittfält",
+      "attacker": "Forward",
+      "substitute": "Avb",
+      "field": "Ute",
+      "none": "--"
+    },
+    "noStats": "Ingen spelarstatistik tillgänglig"
+  },
+  "summary": {
+    "finalScore": "Slutresultat",
+    "duration": "Längd",
+    "periods": "Perioder",
+    "totalGoals": "Totalt Antal Mål",
+    "ourGoals": "Våra Mål",
+    "opponentGoals": "Motståndarens Mål"
+  },
+  "events": {
+    "matchStarted": "Match startad",
+    "matchEnded": "Match avslutad",
+    "periodStarted": "Period {{period}} startad",
+    "periodEnded": "Period {{period}} avslutad",
+    "goalScoredWithScore": "{{ownScore}}-{{opponentScore}} {{team}} Mål",
+    "goalFor": "Mål för {{team}} - {{scorer}}",
+    "goalForTeam": "Mål för {{team}}",
+    "unknownScorer": "Okänd målskytt",
+    "substitution": "Byte",
+    "out": "Ut",
+    "in": "In",
+    "unknown": "Okänd",
+    "unknownPlayer": "Okänd spelare",
+    "unknownPosition": "Okänd position",
+    "from": "från",
+    "newGoalie": "Ny målvakt",
+    "oldGoalie": "Tidigare målvakt",
+    "leavesGoal": "lämnar målet",
+    "otherSwitches": "Övriga byten",
+    "playerIsGoalie": "{{name}} är målvakt",
+    "goalieAssigned": "Målvakt tilldelad",
+    "positionSwitch": "Positionsbyte",
+    "positionChange": "Positionsändring",
+    "playerInactivated": "{{name}} inaktiverad",
+    "playerActivated": "{{name}} återaktiverad",
+    "fairPlayAward": "Fair Play-Utmärkelse",
+    "timerPaused": "Timer pausad",
+    "timerResumed": "Timer återupptagen",
+    "periodPaused": "Period pausad",
+    "periodResumed": "Period återupptagen",
+    "intermission": "Halvtidspaus",
+    "goalCorrected": "Mål korrigerat",
+    "goalUndone": "Mål ångrad",
+    "substitutionUndone": "Byte ångrad",
+    "technicalTimeout": "Teknisk timeout",
+    "undone": "ÅNGRAD",
+    "clickToEditScorer": "Tryck för att ändra målskytt"
+  },
+  "details": {
+    "period": "Period",
+    "score": "Ställning",
+    "awardedTo": "Tilldelad",
+    "undone": "Ångrad",
+    "userAction": "användaråtgärd",
+    "undoneAt": "Ångrad vid",
+    "relatedTo": "Relaterad till",
+    "positionChanges": "Positionsändringar",
+    "startingPositions": "Startpositioner"
+  },
+  "controls": {
+    "eventCount": "{{count}} händelser",
+    "player": "Spelare",
+    "allPlayers": "Alla Spelare",
+    "newestFirst": "Senaste först",
+    "oldestFirst": "Äldsta först",
+    "periodLabel": "Period {{period}}"
+  }
+}

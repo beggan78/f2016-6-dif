@@ -448,7 +448,7 @@ describe('invitationUtils', () => {
 
       expect(getInvitationStatus(null, invitationParams)).toEqual({
         type: 'account_setup',
-        message: 'Complete your account setup to join the team'
+        messageKey: 'auth:invitation.statusMessages.accountSetup'
       });
     });
 
@@ -462,7 +462,7 @@ describe('invitationUtils', () => {
 
       expect(getInvitationStatus(null, invitationParams)).toEqual({
         type: 'sign_in_required',
-        message: 'Sign in to accept your team invitation'
+        messageKey: 'auth:invitation.statusMessages.signInRequired'
       });
     });
 
@@ -477,7 +477,7 @@ describe('invitationUtils', () => {
 
       expect(getInvitationStatus(mockUser, invitationParams)).toEqual({
         type: 'ready_to_process',
-        message: 'Processing your team invitation...'
+        messageKey: 'auth:invitation.statusMessages.processing'
       });
     });
 

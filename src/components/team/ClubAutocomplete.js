@@ -4,15 +4,17 @@ import { useTeam } from '../../contexts/TeamContext';
 import { Input } from '../shared/UI';
 import { useTypeaheadDropdown } from '../../hooks/useTypeaheadDropdown';
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch';
+import { useTranslation } from 'react-i18next';
 
 export function ClubAutocomplete({ 
   value,
   onChange,
   onSelect,
   onCreateNew,
-  placeholder = "Search for your club...",
+  placeholder,
   disabled = false
 }) {
+  const { t } = useTranslation('team');
   const { searchClubs } = useTeam();
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,7 +101,7 @@ export function ClubAutocomplete({
           onFocus={handleInputFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder || t('clubAutocomplete.placeholder')}
           disabled={disabled}
           className="pr-10"
         />
@@ -140,7 +142,7 @@ export function ClubAutocomplete({
               <div className="flex items-center space-x-2">
                 <Plus className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="text-emerald-300 font-medium">Create new club</div>
+                  <div className="text-emerald-300 font-medium">{t('clubAutocomplete.createNewClub')}</div>
                   <div className="text-emerald-400 text-xs">"{query}"</div>
                 </div>
               </div>
@@ -149,7 +151,7 @@ export function ClubAutocomplete({
 
           {!isLoading && suggestions.length === 0 && !showCreateOption && query.trim() && (
             <div className="px-3 py-2 text-slate-400 text-sm">
-              No clubs found for "{query}"
+              {t('clubAutocomplete.noClubsFound', { query })}
             </div>
           )}
         </div>

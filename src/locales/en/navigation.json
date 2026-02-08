@@ -1,0 +1,40 @@
+{
+  "back": "Back",
+  "backTo": {
+    "setup": "Back to Setup",
+    "matchHistory": "Back to Match History",
+    "signIn": "Back to Sign In"
+  },
+  "goTo": {
+    "rosterManagement": "Go to Roster Management",
+    "connectors": "Go to Connectors"
+  },
+  "return": {
+    "toApp": "Return to app"
+  },
+  "menu": {
+    "ariaLabel": "Menu",
+    "profile": "Profile",
+    "preferences": "Preferences",
+    "teamManagement": "Team Management",
+    "createTeam": "Create Team",
+    "teamMatches": "Team Matches",
+    "statistics": "Statistics",
+    "tacticalBoard": "Tactical Board",
+    "addPlayer": "Add Player",
+    "getLiveMatchLink": "Get Live Match Link",
+    "newGame": "New Game",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "createAccount": "Create Account",
+    "signInToUnlock": "Sign in to unlock:",
+    "cloudSync": "Cloud Sync"
+  },
+  "liveMatchLink": {
+    "linkCopied": "Link Copied",
+    "linkCopiedMessage": "Live match link copied to clipboard!",
+    "liveMatchUrl": "Live Match URL",
+    "error": "Error",
+    "errorMessage": "Failed to generate live match link"
+  }
+}

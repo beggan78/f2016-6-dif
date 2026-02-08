@@ -103,7 +103,7 @@ export async function deleteAbandonedMatch(matchId) {
     if (!match) {
       return {
         success: false,
-        error: 'Match not found'
+        error: 'errors.matchNotFound'
       };
     }
 

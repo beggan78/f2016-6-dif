@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
-import { MATCH_TYPE_OPTIONS } from '../../constants/matchTypes';
+import { getMatchTypeOptions, DEFAULT_MATCH_TYPE } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
 import { getMatchDetails, updateMatchDetails, updatePlayerMatchStatsBatch, createManualMatch, calculateMatchOutcome, deleteFinishedMatch } from '../../services/matchStateManager';
 
@@ -98,11 +99,7 @@ const getSafeGoalValue = (value) => {
 };
 
 
-const VENUE_OPTIONS = [
-  { value: 'home', label: 'Home' },
-  { value: 'away', label: 'Away' },
-  { value: 'neutral', label: 'Neutral' }
-];
+// VENUE_OPTIONS is built inside the component with translations
 const STARTING_ROLES = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker', 'Substitute'];
 
 const DEFAULT_PERIODS = 3;
@@ -173,16 +170,16 @@ const formatTimeAsMinutesSeconds = (minutes) => {
   }
 };
 
-const resolvePlayerDisplayName = (player) => {
+const resolvePlayerDisplayName = (player, fallback = 'Unnamed Player') => {
   if (!player) {
-    return 'Unnamed Player';
+    return fallback;
   }
 
   return player.displayName ||
     player.display_name ||
     player.firstName ||
     player.first_name ||
-    'Unnamed Player';
+    fallback;
 };
 
 
@@ -196,14 +193,41 @@ export function MatchDetailsView({
   onMatchUpdated,
   onMatchDeleted
 }) {
+  const { t } = useTranslation('navigation');
+  const { t: tStats } = useTranslation('statistics');
   const isCreateMode = mode === 'create';
+
+  const unnamedPlayerLabel = tStats('matchDetails.unnamedPlayer');
+
+  const VENUE_OPTIONS = useMemo(() => [
+    { value: 'home', label: tStats('matchDetails.venues.home') },
+    { value: 'away', label: tStats('matchDetails.venues.away') },
+    { value: 'neutral', label: tStats('matchDetails.venues.neutral') }
+  ], [tStats]);
+
+  const ROLE_LABEL_MAP = useMemo(() => ({
+    Goalkeeper: tStats('matchDetails.playerStats.goalkeeper'),
+    Defender: tStats('matchDetails.playerStats.defender'),
+    Midfielder: tStats('matchDetails.playerStats.midfielder'),
+    Attacker: tStats('matchDetails.playerStats.attacker'),
+    Substitute: tStats('matchDetails.playerStats.substitute')
+  }), [tStats]);
+
+  const startingRoleOptions = useMemo(() =>
+    STARTING_ROLES.map(role => ({
+      value: role,
+      label: ROLE_LABEL_MAP[role] || role
+    })),
+    [ROLE_LABEL_MAP]
+  );
+
   const [playerToAdd, setPlayerToAdd] = useState('');
 
   const defaultPlayerStats = useMemo(() => {
     return (Array.isArray(teamPlayers) ? teamPlayers : []).map((player, index) => ({
       id: player.id || `player-${index}`,
       playerId: player.id,
-      displayName: resolvePlayerDisplayName(player),
+      displayName: resolvePlayerDisplayName(player, unnamedPlayerLabel),
       goalsScored: 0,
       totalTimePlayed: 0,
       timeAsDefender: 0,
@@ -214,7 +238,7 @@ export function MatchDetailsView({
       wasCaptain: false,
       receivedFairPlayAward: false
     }));
-  }, [teamPlayers]);
+  }, [teamPlayers, unnamedPlayerLabel]);
 
   const createModeDefaults = useMemo(() => {
     if (!isCreateMode) {
@@ -232,7 +256,7 @@ export function MatchDetailsView({
       goalsScored: 0,
       goalsConceded: 0,
       venueType: 'home',
-      type: MATCH_TYPE_OPTIONS[0]?.value || 'league',
+      type: DEFAULT_MATCH_TYPE,
       format: DEFAULT_FORMAT,
       formation: defaultFormation,
       periods: DEFAULT_PERIODS,
@@ -268,9 +292,9 @@ export function MatchDetailsView({
       .filter(player => !assignedPlayerIds.has(player.id))
       .map(player => ({
         ...player,
-        displayName: resolvePlayerDisplayName(player)
+        displayName: resolvePlayerDisplayName(player, unnamedPlayerLabel)
       }));
-  }, [teamPlayers, assignedPlayerIds]);
+  }, [teamPlayers, assignedPlayerIds, unnamedPlayerLabel]);
 
   // Initialise create mode defaults when roster data becomes available
   useEffect(() => {
@@ -305,7 +329,7 @@ export function MatchDetailsView({
     }
 
     if (!matchId) {
-      setError('No match ID provided');
+      setError(tStats('matchDetails.noMatchId'));
       setLoading(false);
       return;
     }
@@ -337,7 +361,7 @@ export function MatchDetailsView({
         setMatchData(data);
         setEditData(data);
       } else {
-        setError(result.error || 'Failed to load match details');
+        setError(result.error || tStats('matchDetails.failedToLoadDetails'));
       }
 
       setLoading(false);
@@ -348,7 +372,7 @@ export function MatchDetailsView({
     return () => {
       isMounted = false;
     };
-  }, [isCreateMode, matchId]);
+  }, [isCreateMode, matchId, tStats]);
 
   useEffect(() => {
     if (playerToAdd && !availablePlayers.some(player => player.id === playerToAdd)) {
@@ -398,11 +422,11 @@ export function MatchDetailsView({
     const issues = [];
 
     if (goalieCount !== 1) {
-      issues.push(`${goalieCount} goalkeeper${goalieCount !== 1 ? 's' : ''} (expected 1)`);
+      issues.push(tStats('matchDetails.playerStats.goalkeeperCountIssue', { count: goalieCount }));
     }
 
     if (outfieldCount !== expectedOutfieldCount) {
-      issues.push(`${outfieldCount} outfield player${outfieldCount !== 1 ? 's' : ''} (expected ${expectedOutfieldCount} for ${format})`);
+      issues.push(tStats('matchDetails.playerStats.outfieldCountIssue', { count: outfieldCount, expected: expectedOutfieldCount, format }));
     }
 
     if (issues.length > 0) {
@@ -410,7 +434,7 @@ export function MatchDetailsView({
     } else {
       setRoleWarning(null);
     }
-  }, [isEditing]);
+  }, [isEditing, tStats]);
 
   // Check for goal and role inconsistencies when entering/leaving edit mode
   useEffect(() => {
@@ -427,7 +451,7 @@ export function MatchDetailsView({
   if (loading) {
     return (
       <div className="text-center py-8 text-slate-400">
-        <p>Loading match details...</p>
+        <p>{tStats('matchDetails.loading')}</p>
       </div>
     );
   }
@@ -435,9 +459,9 @@ export function MatchDetailsView({
   if (error || !matchData || !editData) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-400 mb-2">{error || 'Match not found'}</p>
+        <p className="text-red-400 mb-2">{error || tStats('matchDetails.notFound')}</p>
         <Button onClick={onNavigateBack} variant="secondary" className="mt-4">
-          Back to Match History
+          {t('backTo.matchHistory')}
         </Button>
       </div>
     );
@@ -457,7 +481,7 @@ export function MatchDetailsView({
 
       if (isCreateMode || !matchId) {
         if (!teamId) {
-          throw new Error('A team must be selected before adding a match.');
+          throw new Error(tStats('matchDetails.teamRequired'));
         }
 
         const fairPlayAwardPlayerId = sanitizedPlayerStats.find((player) => player.receivedFairPlayAward)?.playerId || null;
@@ -471,7 +495,7 @@ export function MatchDetailsView({
         }, sanitizedPlayerStats);
 
         if (!manualResult.success) {
-          throw new Error(manualResult.error || 'Failed to create match');
+          throw new Error(manualResult.error || tStats('matchDetails.failedToCreate'));
         }
 
         setMatchData(sanitizedMatch);
@@ -501,13 +525,13 @@ export function MatchDetailsView({
       });
 
       if (!matchResult.success) {
-        throw new Error(matchResult.error || 'Failed to update match details');
+        throw new Error(matchResult.error || tStats('matchDetails.failedToUpdateDetails'));
       }
 
       const playerResult = await updatePlayerMatchStatsBatch(matchId, sanitizedPlayerStats);
 
       if (!playerResult.success) {
-        throw new Error(playerResult.error || 'Failed to update player stats');
+        throw new Error(playerResult.error || tStats('matchDetails.failedToUpdatePlayerStats'));
       }
 
       // Refresh data from database
@@ -772,7 +796,7 @@ export function MatchDetailsView({
     const newPlayerStats = {
       id: rosterPlayer.id,
       playerId: rosterPlayer.id,
-      displayName: resolvePlayerDisplayName(rosterPlayer),
+      displayName: resolvePlayerDisplayName(rosterPlayer, unnamedPlayerLabel),
       goalsScored: 0,
       totalTimePlayed: 0,
       timeAsDefender: 0,
@@ -812,13 +836,14 @@ export function MatchDetailsView({
   });
 
   const getMatchTypeLabel = (type) => {
-    const option = MATCH_TYPE_OPTIONS.find(matchType => matchType.value === type);
+    const options = getMatchTypeOptions(t);
+    const option = options.find(matchType => matchType.value === type);
     if (option) {
       return option.label;
     }
 
     if (!type) {
-      return 'Unknown';
+      return tStats('matchDetails.unknownType');
     }
 
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -896,14 +921,14 @@ export function MatchDetailsView({
             variant="secondary"
             size="md"
           >
-            Back
+            {t('back')}
           </Button>
           <div>
             <div className="flex items-center space-x-2">
               <ChartColumn className="h-6 w-6 text-sky-400" />
-              <h2 className="text-2xl font-bold text-sky-400">Match Details</h2>
+              <h2 className="text-2xl font-bold text-sky-400">{tStats('matchDetails.title')}</h2>
             </div>
-            <p className="text-slate-400 text-sm">{editData.opponent || 'New Match'}</p>
+            <p className="text-slate-400 text-sm">{editData.opponent || tStats('matchDetails.newMatch')}</p>
           </div>
         </div>
 
@@ -916,7 +941,7 @@ export function MatchDetailsView({
                 variant="primary"
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? tStats('matchDetails.saving') : tStats('matchDetails.saveChanges')}
               </Button>
               <Button
                 onClick={handleCancel}
@@ -924,13 +949,13 @@ export function MatchDetailsView({
                 variant="secondary"
                 disabled={isSaving}
               >
-                Cancel
+                {tStats('matchDetails.cancel')}
               </Button>
             </>
           ) : (
             <>
               <Button onClick={() => setIsEditing(true)} Icon={Edit} variant="secondary">
-                Edit Match
+                {tStats('matchDetails.editMatch')}
               </Button>
               {!isCreateMode && (
                 <Button
@@ -943,7 +968,7 @@ export function MatchDetailsView({
                   variant="secondary"
                   disabled={isDeleting}
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete Match'}
+                  {isDeleting ? tStats('matchDetails.deleting') : tStats('matchDetails.delete')}
                 </Button>
               )}
             </>
@@ -954,7 +979,7 @@ export function MatchDetailsView({
       {/* Save Error Message */}
       {saveError && (
         <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
-          <p className="text-red-200 font-medium">Error saving changes:</p>
+          <p className="text-red-200 font-medium">{tStats('matchDetails.errorSaving')}</p>
           <p className="text-red-300 text-sm mt-1">{saveError}</p>
         </div>
       )}
@@ -962,7 +987,7 @@ export function MatchDetailsView({
       {/* Delete Error Message */}
       {deleteError && (
         <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
-          <p className="text-red-200 font-medium">Error deleting match:</p>
+          <p className="text-red-200 font-medium">{tStats('matchDetails.errorDeleting')}</p>
           <p className="text-red-300 text-sm mt-1">{deleteError}</p>
         </div>
       )}
@@ -981,7 +1006,7 @@ export function MatchDetailsView({
           const result = await deleteFinishedMatch(matchId);
 
           if (!result.success) {
-            setDeleteError(result.error || 'Failed to delete match');
+            setDeleteError(result.error || tStats('matchDetails.failedToDelete'));
             setIsDeleting(false);
             setIsDeleteModalOpen(false);
             return;
@@ -994,10 +1019,10 @@ export function MatchDetailsView({
           }
           onNavigateBack();
         }}
-        title="Delete Match"
-        message="Are you sure you want to delete this match from history? This action cannot be undone."
-        confirmText={isDeleting ? 'Deleting…' : 'Delete Match'}
-        cancelText="Cancel"
+        title={tStats('matchDetails.deleteTitle')}
+        message={tStats('matchDetails.deleteConfirm')}
+        confirmText={isDeleting ? tStats('matchDetails.deletingEllipsis') : tStats('matchDetails.delete')}
+        cancelText={tStats('matchDetails.cancel')}
         variant="danger"
       />
 
@@ -1015,15 +1040,15 @@ export function MatchDetailsView({
                     value={editData.opponent}
                     onChange={(e) => updateMatchDetail('opponent', e.target.value)}
                     className="w-48 text-lg font-semibold"
-                    placeholder="Opponent name"
+                    placeholder={tStats('matchDetails.opponentName')}
                   />
                 ) : (
                   <span className="text-xl font-semibold text-slate-100">{editData.opponent}</span>
                 )}
               </div>
               <span className={getOutcomeBadge(editData.outcome)}>
-                {editData.outcome === 'W' ? 'Win' :
-                 editData.outcome === 'D' ? 'Draw' : 'Loss'}
+                {editData.outcome === 'W' ? tStats('matchDetails.outcomes.win') :
+                 editData.outcome === 'D' ? tStats('matchDetails.outcomes.draw') : tStats('matchDetails.outcomes.loss')}
               </span>
             </div>
 
@@ -1091,7 +1116,7 @@ export function MatchDetailsView({
             <div className="flex items-center justify-center gap-2">
               <span aria-hidden="true">⚠️</span>
               <span>
-                Player goals ({goalWarning.playerGoals}) exceed team total ({goalWarning.teamGoals}).
+                {tStats('matchDetails.playerStats.goalWarning', { playerGoals: goalWarning.playerGoals, teamGoals: goalWarning.teamGoals })}
               </span>
             </div>
           </div>
@@ -1102,7 +1127,7 @@ export function MatchDetailsView({
             <div className="flex items-center justify-center gap-2">
               <span aria-hidden="true">⚠️</span>
               <span>
-                Starting role inconsistency: {roleWarning.issues.join(', ')}.
+                {tStats('matchDetails.playerStats.roleWarning', { issues: roleWarning.issues.join(', ') })}
               </span>
             </div>
           </div>
@@ -1114,12 +1139,12 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <Trophy className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Type</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.type')}</div>
                 {isEditing ? (
                   <Select
                     value={editData.type}
                     onChange={(value) => updateMatchDetail('type', value)}
-                    options={MATCH_TYPE_OPTIONS.map(option => ({
+                    options={getMatchTypeOptions(t).map(option => ({
                       value: option.value,
                       label: option.label
                     }))}
@@ -1134,7 +1159,7 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <MapPin className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Venue</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.venue')}</div>
                 {isEditing ? (
                   <Select
                     value={editData.venueType}
@@ -1144,7 +1169,7 @@ export function MatchDetailsView({
                   />
                 ) : (
                   <div className="text-sm text-slate-100 font-medium">
-                    {editData.venueType === 'home' ? 'Home' : editData.venueType === 'neutral' ? 'Neutral' : 'Away'}
+                    {editData.venueType === 'home' ? tStats('matchDetails.venues.home') : editData.venueType === 'neutral' ? tStats('matchDetails.venues.neutral') : tStats('matchDetails.venues.away')}
                   </div>
                 )}
               </div>
@@ -1153,7 +1178,7 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <Layers2 className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Format</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.format')}</div>
                 {isEditing ? (
                   <Select
                     value={editData.format}
@@ -1170,7 +1195,7 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <Layers className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Formation</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.formation')}</div>
                 {isEditing ? (
                   <Select
                     value={editData.formation}
@@ -1187,7 +1212,7 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Periods</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.periods')}</div>
                 {isEditing ? (
                   <Input
                     type="number"
@@ -1206,7 +1231,7 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Period Duration</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.periodDuration')}</div>
                 {isEditing ? (
                   <Input
                     type="number"
@@ -1225,7 +1250,7 @@ export function MatchDetailsView({
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-slate-400" />
               <div>
-                <div className="text-xs text-slate-400 tracking-wide">Total Time</div>
+                <div className="text-xs text-slate-400 tracking-wide">{tStats('matchDetails.totalTime')}</div>
                 {isEditing ? (
                   <SmartTimeInput
                     value={(editData.matchDurationSeconds || 0) / 60}
@@ -1248,10 +1273,10 @@ export function MatchDetailsView({
         <div className="p-4 border-b border-slate-600">
           <div className="flex items-center space-x-2">
             <Users className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">Player Statistics</h3>
+            <h3 className="text-lg font-semibold text-sky-400">{tStats('matchDetails.playerStats.title')}</h3>
           </div>
           <p className="text-slate-400 text-sm mt-1">
-            Individual player performance for this match
+            {tStats('matchDetails.playerStats.subtitle')}
           </p>
         </div>
 
@@ -1263,9 +1288,9 @@ export function MatchDetailsView({
                 onChange={setPlayerToAdd}
                 options={availablePlayers.map(player => ({
                   value: player.id,
-                  label: resolvePlayerDisplayName(player)
+                  label: resolvePlayerDisplayName(player, unnamedPlayerLabel)
                 }))}
-                placeholder={availablePlayers.length === 0 ? 'All players included' : 'Select player'}
+                placeholder={availablePlayers.length === 0 ? tStats('matchDetails.playerStats.allPlayersIncluded') : tStats('matchDetails.playerStats.selectPlayer')}
                 disabled={availablePlayers.length === 0}
               />
               <Button
@@ -1274,7 +1299,7 @@ export function MatchDetailsView({
                 size="sm"
                 disabled={!playerToAdd}
               >
-                Add Player
+                {tStats('matchDetails.playerStats.addPlayer')}
               </Button>
             </div>
           </div>
@@ -1284,19 +1309,19 @@ export function MatchDetailsView({
           <table className="min-w-full">
             <thead className="bg-slate-800">
               <tr>
-                <SortableHeader field="displayName" align="left">Player</SortableHeader>
-                <SortableHeader field="goalsScored">Goals</SortableHeader>
-                <SortableHeader field="totalTimePlayed">Outfield Time</SortableHeader>
-                <SortableHeader field="timeAsDefender">Defender</SortableHeader>
-                <SortableHeader field="timeAsMidfielder">Midfielder</SortableHeader>
-                <SortableHeader field="timeAsAttacker">Attacker</SortableHeader>
-                <SortableHeader field="timeAsGoalkeeper">Goalkeeper</SortableHeader>
-                <SortableHeader field="startingRole">Starting Role</SortableHeader>
-                <SortableHeader field="wasCaptain">Captain</SortableHeader>
-                <SortableHeader field="receivedFairPlayAward">Fair Play</SortableHeader>
+                <SortableHeader field="displayName" align="left">{tStats('matchDetails.playerStats.player')}</SortableHeader>
+                <SortableHeader field="goalsScored">{tStats('matchDetails.playerStats.goals')}</SortableHeader>
+                <SortableHeader field="totalTimePlayed">{tStats('matchDetails.playerStats.outfieldTime')}</SortableHeader>
+                <SortableHeader field="timeAsDefender">{tStats('matchDetails.playerStats.defender')}</SortableHeader>
+                <SortableHeader field="timeAsMidfielder">{tStats('matchDetails.playerStats.midfielder')}</SortableHeader>
+                <SortableHeader field="timeAsAttacker">{tStats('matchDetails.playerStats.attacker')}</SortableHeader>
+                <SortableHeader field="timeAsGoalkeeper">{tStats('matchDetails.playerStats.goalkeeper')}</SortableHeader>
+                <SortableHeader field="startingRole">{tStats('matchDetails.playerStats.startingRole')}</SortableHeader>
+                <SortableHeader field="wasCaptain">{tStats('matchDetails.playerStats.captain')}</SortableHeader>
+                <SortableHeader field="receivedFairPlayAward">{tStats('matchDetails.playerStats.fairPlay')}</SortableHeader>
                 {isCreateMode && isEditing && (
                   <th className="px-3 py-2 text-center text-xs font-medium text-sky-200 tracking-wider">
-                    Actions
+                    {tStats('matchDetails.playerStats.actions')}
                   </th>
                 )}
               </tr>
@@ -1312,7 +1337,7 @@ export function MatchDetailsView({
                   <td className="px-3 py-2 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-100 font-medium">{resolvePlayerDisplayName(player)}</span>
+                      <span className="text-slate-100 font-medium">{resolvePlayerDisplayName(player, unnamedPlayerLabel)}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
@@ -1335,7 +1360,7 @@ export function MatchDetailsView({
                         <span className="text-slate-300 font-mono">{formatTimeAsMinutesSeconds(player.totalTimePlayed)}</span>
                         {checkTimeInconsistency(player) && (
                           <div className="text-xs text-red-400 text-center">
-                            ⚠️ Exceeds match duration
+                            {tStats('matchDetails.playerStats.exceedsMatchDuration')}
                           </div>
                         )}
                       </div>
@@ -1388,10 +1413,10 @@ export function MatchDetailsView({
                       <Select
                         value={player.startingRole}
                         onChange={(value) => updatePlayerStat(player.id, 'startingRole', value, { validateRoles: true })}
-                        options={STARTING_ROLES}
+                        options={startingRoleOptions}
                       />
                     ) : (
-                      <span className="text-slate-300 text-sm">{player.startingRole}</span>
+                      <span className="text-slate-300 text-sm">{ROLE_LABEL_MAP[player.startingRole] || player.startingRole}</span>
                     )}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap text-center">
@@ -1426,7 +1451,7 @@ export function MatchDetailsView({
                         variant="secondary"
                         size="sm"
                       >
-                        Remove
+                        {tStats('matchDetails.playerStats.remove')}
                       </Button>
                     </td>
                   )}

@@ -154,7 +154,7 @@ describe('SignupForm', () => {
     it('should display password requirements hint', () => {
       renderSignupForm();
 
-      expect(screen.getByText('Must be at least 8 characters, letters and at least one number')).toBeInTheDocument();
+      expect(screen.getByText('Password must be at least 8 characters long')).toBeInTheDocument();
     });
 
     it('should not display error message initially', () => {

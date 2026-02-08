@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function ChangePassword({ isOpen, onClose }) {
+  const { t } = useTranslation('auth');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,25 +49,25 @@ export function ChangePassword({ isOpen, onClose }) {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!currentPassword.trim()) {
-      newErrors.currentPassword = 'Current password is required';
+      newErrors.currentPassword = t('changePassword.errors.currentPasswordRequired');
     }
 
     if (!newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = t('changePassword.errors.newPasswordRequired');
     } else if (newPassword.length < 8) {
-      newErrors.newPassword = 'New password must be at least 8 characters long';
+      newErrors.newPassword = t('changePassword.errors.newPasswordTooShort');
     } else if (newPassword === currentPassword) {
-      newErrors.newPassword = 'New password must be different from current password';
+      newErrors.newPassword = t('changePassword.errors.newPasswordSame');
     }
-    
+
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your new password';
+      newErrors.confirmPassword = t('changePassword.errors.confirmPasswordRequired');
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('changePassword.errors.passwordsMismatch');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,7 +88,7 @@ export function ChangePassword({ isOpen, onClose }) {
         setSuccessMessage(message);
       }
     } catch (error) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+      setErrors({ general: t('changePassword.errors.unexpected') });
     }
   };
 
@@ -120,7 +122,7 @@ export function ChangePassword({ isOpen, onClose }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-sky-300">Password Changed!</h2>
+                <h2 className="text-2xl font-bold text-sky-300">{t('changePassword.success.title')}</h2>
                 <p className="text-slate-400 mt-2">{successMessage}</p>
               </div>
 
@@ -130,7 +132,7 @@ export function ChangePassword({ isOpen, onClose }) {
                 size="lg"
                 className="w-full"
               >
-                Done
+                {t('changePassword.success.button')}
               </Button>
             </div>
           </div>
@@ -149,12 +151,12 @@ export function ChangePassword({ isOpen, onClose }) {
         {/* Modal Header with Close Button */}
         <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center">
           <div className="text-lg font-semibold text-sky-300">
-            Change Password
+            {t('changePassword.modalTitle')}
           </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label="Close modal"
+            aria-label={t('changePassword.closeModal')}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -167,9 +169,9 @@ export function ChangePassword({ isOpen, onClose }) {
           <div className="space-y-6">
             {/* Header */}
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-sky-300">Change Your Password</h2>
+              <h2 className="text-2xl font-bold text-sky-300">{t('changePassword.header.title')}</h2>
               <p className="text-slate-400 mt-2">
-                Enter your current password to verify your identity, then set a new password
+                {t('changePassword.header.subtitle')}
               </p>
             </div>
 
@@ -184,7 +186,7 @@ export function ChangePassword({ isOpen, onClose }) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label htmlFor="current-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  Current Password
+                  {t('changePassword.form.currentPasswordLabel')}
                 </label>
                 <Input
                   id="current-password"
@@ -196,7 +198,7 @@ export function ChangePassword({ isOpen, onClose }) {
                       setErrors(prev => ({ ...prev, currentPassword: null }));
                     }
                   }}
-                  placeholder="Enter your current password"
+                  placeholder={t('changePassword.form.currentPasswordPlaceholder')}
                   disabled={loading}
                   className={errors.currentPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
@@ -207,7 +209,7 @@ export function ChangePassword({ isOpen, onClose }) {
 
               <div>
                 <label htmlFor="new-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  New Password
+                  {t('changePassword.form.newPasswordLabel')}
                 </label>
                 <Input
                   id="new-password"
@@ -219,7 +221,7 @@ export function ChangePassword({ isOpen, onClose }) {
                       setErrors(prev => ({ ...prev, newPassword: null }));
                     }
                   }}
-                  placeholder="Enter your new password"
+                  placeholder={t('changePassword.form.newPasswordPlaceholder')}
                   disabled={loading}
                   className={errors.newPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
@@ -230,7 +232,7 @@ export function ChangePassword({ isOpen, onClose }) {
 
               <div>
                 <label htmlFor="confirm-new-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  Confirm New Password
+                  {t('changePassword.form.confirmPasswordLabel')}
                 </label>
                 <Input
                   id="confirm-new-password"
@@ -242,7 +244,7 @@ export function ChangePassword({ isOpen, onClose }) {
                       setErrors(prev => ({ ...prev, confirmPassword: null }));
                     }
                   }}
-                  placeholder="Confirm your new password"
+                  placeholder={t('changePassword.form.confirmPasswordPlaceholder')}
                   disabled={loading}
                   className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
@@ -258,17 +260,17 @@ export function ChangePassword({ isOpen, onClose }) {
                 disabled={loading}
                 className="w-full"
               >
-                {loading ? 'Changing Password...' : 'Change Password'}
+                {loading ? t('changePassword.form.submittingButton') : t('changePassword.form.submitButton')}
               </Button>
             </form>
 
             {/* Security Info */}
             <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
-              <h4 className="text-slate-300 font-medium mb-2">Password Requirements:</h4>
+              <h4 className="text-slate-300 font-medium mb-2">{t('changePassword.requirements.title')}</h4>
               <ul className="text-slate-400 text-sm space-y-1">
-                <li>• At least 8 characters long</li>
-                <li>• Must be different from your current password</li>
-                <li>• Use a mix of letters, numbers, and symbols</li>
+                <li>• {t('changePassword.requirements.items.minLength')}</li>
+                <li>• {t('changePassword.requirements.items.different')}</li>
+                <li>• {t('changePassword.requirements.items.mix')}</li>
               </ul>
             </div>
           </div>

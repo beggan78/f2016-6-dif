@@ -1,0 +1,23 @@
+{
+  "multiSelect": {
+    "allSelected": "Alla valda",
+    "selected": "valda",
+    "noOptions": "Inga alternativ tillgängliga",
+    "clearSelection": "Rensa val",
+    "done": "Klar"
+  },
+  "badges": {
+    "comingSoon": "Kommer Snart",
+    "new": "Nytt",
+    "beta": "Beta"
+  },
+  "loading": "Laddar...",
+  "error": "Ett fel uppstod",
+  "retry": "Försök Igen",
+  "close": "Stäng",
+  "ok": "OK",
+  "back": "Tillbaka",
+  "inactive": "Inaktiv",
+  "opponent": "Motståndare",
+  "user": "Användare"
+}

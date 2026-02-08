@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { ProviderLogo } from '../connectors/ProviderLogo';
 import { getAllProviders } from '../../constants/connectorProviders';
@@ -15,6 +16,7 @@ import { ComingSoonBadge } from '../shared/ComingSoonBadge';
  * @param {Function} onNavigateToConnectors - Callback to navigate to Connectors tab
  */
 export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
+  const { t } = useTranslation(['connectors', 'navigation']);
   const providers = getAllProviders();
 
   return (
@@ -24,10 +26,10 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
         <Link className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
         <div className="flex-1">
           <h3 className="text-sky-200 font-medium text-sm mb-1">
-            Sync Players from External Platforms
+            {t('connectors:onboarding.syncTitle')}
           </h3>
           <p className="text-sky-300/80 text-xs">
-            Connect to your team management platform to automatically sync your roster and practice attendance.
+            {t('connectors:onboarding.syncDescription')}
           </p>
         </div>
       </div>
@@ -55,7 +57,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
           size="sm"
           Icon={ArrowRight}
         >
-          Go to Connectors
+          {t('navigation:goTo.connectors')}
         </Button>
       </div>
     </div>

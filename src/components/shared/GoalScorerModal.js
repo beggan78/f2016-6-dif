@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Users, Trophy, Sword, Shield, RotateCcw, ArrowDownUp, Hand } from 'lucide-react';
 import { getPlayerName } from '../../utils/playerUtils';
 import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
@@ -17,17 +18,19 @@ const GoalScorerModal = ({
   eligiblePlayers = [],
   mode = 'new', // 'new', 'correct', 'view'
   eventId = null,           // Direct eventId prop (new approach)
-  currentScorerId = null,   // Direct currentScorerId prop (new approach)  
+  currentScorerId = null,   // Direct currentScorerId prop (new approach)
   existingGoalData = null,  // Keep for backward compatibility
   matchTime = '00:00',
   goalType = 'scored'
 }) => {
+  const { t } = useTranslation(['modals', 'common', 'shared']);
+
   // Default to "No specific scorer" for new goals, existing scorer for corrections
   // Use direct props first, fall back to existingGoalData for backward compatibility
   const [selectedPlayerId, setSelectedPlayerId] = useState(
     mode === 'new' ? null : (currentScorerId ?? existingGoalData?.scorerId ?? null)
   );
-  
+
   // Reset selection when modal opens or when props change
   useEffect(() => {
     if (isOpen) {
@@ -40,9 +43,9 @@ const GoalScorerModal = ({
   // Get position icon for a player
   const getPositionIcon = (player) => {
     if (!player) return RotateCcw;
-    
+
     const role = getPlayerCurrentRole(player);
-    
+
     switch (role) {
       case PLAYER_ROLES.ATTACKER:
         return Sword;
@@ -62,9 +65,9 @@ const GoalScorerModal = ({
   // Get position color classes
   const getPositionColorClasses = (player) => {
     if (!player) return 'text-gray-400';
-    
+
     const role = getPlayerCurrentRole(player);
-    
+
     switch (role) {
       case PLAYER_ROLES.ATTACKER:
         return 'text-red-500';
@@ -86,27 +89,29 @@ const GoalScorerModal = ({
     switch (mode) {
       case 'correct':
         return {
-          title: 'Correct Goal Scorer',
-          subtitle: `Goal at ${matchTime}`,
-          primaryAction: 'Update Scorer',
+          title: t('modals:goalScorer.correctGoalScorer'),
+          subtitle: t('modals:goalScorer.goalAt', { time: matchTime }),
+          primaryAction: t('modals:goalScorer.updateScorer'),
           primaryColor: 'bg-amber-600 hover:bg-amber-500 focus:ring-amber-500'
         };
       case 'view':
         return {
-          title: 'Goal Information',
-          subtitle: `Goal at ${matchTime}`,
-          primaryAction: 'Close',
+          title: t('modals:goalScorer.goalInformation'),
+          subtitle: t('modals:goalScorer.goalAt', { time: matchTime }),
+          primaryAction: t('shared:close'),
           primaryColor: 'bg-slate-600 hover:bg-slate-500 focus:ring-slate-500'
         };
       default: // 'new'
         return {
-          title: 'Who Scored?',
-          subtitle: `${goalType === 'scored' ? 'Scored' : 'Conceded'} goal at ${matchTime}`,
-          primaryAction: 'Confirm Scorer',
+          title: t('modals:goalScorer.title'),
+          subtitle: goalType === 'scored'
+            ? t('modals:goalScorer.scoredGoalAt', { time: matchTime })
+            : t('modals:goalScorer.concededGoalAt', { time: matchTime }),
+          primaryAction: t('modals:goalScorer.confirmScorer'),
           primaryColor: 'bg-sky-600 hover:bg-sky-500 focus:ring-sky-500'
         };
     }
-  }, [mode, matchTime, goalType]);
+  }, [mode, matchTime, goalType, t]);
 
   const handlePlayerSelect = (playerId) => {
     setSelectedPlayerId(playerId);
@@ -129,7 +134,7 @@ const GoalScorerModal = ({
       }
       onCorrectGoal(actualEventId, selectedPlayerId);
     }
-    
+
     onClose();
   };
 
@@ -167,12 +172,12 @@ const GoalScorerModal = ({
             <div className="mb-6 p-4 bg-slate-700 rounded-lg border border-slate-600">
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-4 h-4 text-sky-400" />
-                <span className="text-sm font-medium text-sky-300">Current Scorer</span>
+                <span className="text-sm font-medium text-sky-300">{t('modals:goalScorer.currentScorer')}</span>
               </div>
               <p className="text-slate-100">
                 {(currentScorerId ?? existingGoalData?.scorerId)
                   ? getPlayerName(eligiblePlayers, currentScorerId ?? existingGoalData?.scorerId)
-                  : 'No scorer recorded'
+                  : t('modals:goalScorer.noScorerRecorded')
                 }
               </p>
             </div>
@@ -182,14 +187,14 @@ const GoalScorerModal = ({
           {mode !== 'view' && (
             <>
               <h3 className="text-sm font-medium text-slate-100 mb-3">
-                Select {mode === 'correct' ? 'New ' : ''}Scorer:
+                {mode === 'correct' ? t('modals:goalScorer.selectNewScorer') : t('modals:goalScorer.selectScorer')}
               </h3>
-              
+
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {eligiblePlayers.map((player) => {
                   const PositionIcon = getPositionIcon(player);
                   const positionColorClass = getPositionColorClasses(player);
-                  
+
                   return (
                     <button
                       key={player.id}
@@ -226,7 +231,7 @@ const GoalScorerModal = ({
                     <div className={`w-3 h-3 rounded-full ${
                       selectedPlayerId === null ? 'bg-slate-400' : 'bg-slate-500'
                     }`} />
-                    <span className="italic">No specific scorer</span>
+                    <span className="italic">{t('modals:goalScorer.noSpecificScorer')}</span>
                   </div>
                 </button>
               )}
@@ -237,23 +242,23 @@ const GoalScorerModal = ({
           {mode === 'view' && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-slate-100 mb-2">Goal Details:</h3>
+                <h3 className="text-sm font-medium text-slate-100 mb-2">{t('modals:goalScorer.goalDetails')}</h3>
                 <div className="space-y-2 text-sm text-slate-300">
-                  <div>Team: <span className="font-medium text-slate-100">{goalType === 'scored' ? 'Scored' : 'Conceded'}</span></div>
-                  <div>Time: <span className="font-medium text-slate-100">{matchTime}</span></div>
-                  <div>Period: <span className="font-medium text-slate-100">{existingGoalData?.period || 'Unknown'}</span></div>
-                  <div>Scorer: <span className="font-medium text-slate-100">
+                  <div>{t('modals:goalScorer.team')}: <span className="font-medium text-slate-100">{goalType === 'scored' ? t('modals:goalScorer.scored') : t('modals:goalScorer.conceded')}</span></div>
+                  <div>{t('modals:goalScorer.time')}: <span className="font-medium text-slate-100">{matchTime}</span></div>
+                  <div>{t('modals:goalScorer.period')}: <span className="font-medium text-slate-100">{existingGoalData?.period || t('modals:goalScorer.unknown')}</span></div>
+                  <div>{t('modals:goalScorer.scorer')}: <span className="font-medium text-slate-100">
                     {(currentScorerId ?? existingGoalData?.scorerId)
                       ? getPlayerName(eligiblePlayers, currentScorerId ?? existingGoalData?.scorerId)
-                      : 'No scorer recorded'
+                      : t('modals:goalScorer.noScorerRecorded')
                     }
                   </span></div>
                 </div>
               </div>
-              
+
               <div className="bg-slate-700 rounded-lg p-3 border border-slate-600">
                 <p className="text-sm text-sky-300">
-                  This goal information is read-only. Use the correction mode to make changes.
+                  {t('modals:goalScorer.readOnlyNotice')}
                 </p>
               </div>
             </div>
@@ -267,9 +272,9 @@ const GoalScorerModal = ({
               onClick={onClose}
               className="px-4 py-2 text-slate-300 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
-              Cancel
+              {t('common:buttons.cancel')}
             </button>
-            
+
             {mode !== 'view' && (
               <button
                 onClick={handlePrimaryAction}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
 
@@ -47,14 +48,19 @@ export function useAuthHandlers(authModal, { onSignIn, onSignUp } = {}) {
 export function AuthButtonPair({
   authModal: authModalProp,
   variant = 'inline',
-  signInText = 'Sign In',
-  signUpText = 'Create Account',
+  signInText,
+  signUpText,
   onSignIn,
   onSignUp,
   className = ''
 }) {
+  const { t } = useTranslation('auth');
   const authModal = useAuthModalIntegration(authModalProp);
   const { handleSignIn, handleSignUp } = useAuthHandlers(authModal, { onSignIn, onSignUp });
+
+  // Use translation defaults if not provided
+  const displaySignInText = signInText || t('authButtons.signIn');
+  const displaySignUpText = signUpText || t('authButtons.createAccount');
 
   // Stacked variant - buttons in column
   if (variant === 'stacked') {
@@ -66,16 +72,16 @@ export function AuthButtonPair({
           size="lg"
           className="w-full"
         >
-          {signUpText}
+          {displaySignUpText}
         </Button>
-        
+
         <Button
           onClick={handleSignIn}
           variant="secondary"
           size="lg"
           className="w-full"
         >
-          {signInText}
+          {displaySignInText}
         </Button>
       </div>
     );
@@ -90,14 +96,14 @@ export function AuthButtonPair({
           variant="secondary"
           size="sm"
         >
-          {signInText}
+          {displaySignInText}
         </Button>
         <Button
           onClick={handleSignUp}
           variant="primary"
           size="sm"
         >
-          {signUpText}
+          {displaySignUpText}
         </Button>
       </div>
     );
@@ -111,14 +117,14 @@ export function AuthButtonPair({
         variant="secondary"
         size="sm"
       >
-        {signInText}
+        {displaySignInText}
       </Button>
       <Button
         onClick={handleSignUp}
         variant="primary"
         size="sm"
       >
-        {signUpText}
+        {displaySignUpText}
       </Button>
     </div>
   );
@@ -133,11 +139,12 @@ export function AuthButtonPair({
  * @param {Object} props.buttonProps - Props to pass to the Button component
  * @returns {React.ReactNode}
  */
-export function SignInButton({ 
-  authModal: authModalProp, 
-  onSignIn, 
-  ...buttonProps 
+export function SignInButton({
+  authModal: authModalProp,
+  onSignIn,
+  ...buttonProps
 }) {
+  const { t } = useTranslation('auth');
   const authModal = useAuthModalIntegration(authModalProp);
   const { handleSignIn } = useAuthHandlers(authModal, { onSignIn });
 
@@ -147,7 +154,7 @@ export function SignInButton({
       variant="secondary"
       {...buttonProps}
     >
-      Sign In
+      {t('authButtons.signIn')}
     </Button>
   );
 }
@@ -162,12 +169,13 @@ export function SignInButton({
  * @param {Object} props.buttonProps - Props to pass to the Button component
  * @returns {React.ReactNode}
  */
-export function SignUpButton({ 
-  authModal: authModalProp, 
-  onSignUp, 
-  children = 'Create Account',
-  ...buttonProps 
+export function SignUpButton({
+  authModal: authModalProp,
+  onSignUp,
+  children,
+  ...buttonProps
 }) {
+  const { t } = useTranslation('auth');
   const authModal = useAuthModalIntegration(authModalProp);
   const { handleSignUp } = useAuthHandlers(authModal, { onSignUp });
 
@@ -177,7 +185,7 @@ export function SignUpButton({
       variant="primary"
       {...buttonProps}
     >
-      {children}
+      {children || t('authButtons.createAccount')}
     </Button>
   );
 }

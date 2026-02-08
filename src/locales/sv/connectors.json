@@ -1,0 +1,163 @@
+{
+  "section": {
+    "title": "Externa Kopplingar",
+    "description": "Anslut till externa plattformar för att synkronisera din trupp"
+  },
+  "card": {
+    "connected": "Ansluten",
+    "disconnected": "Inte Ansluten",
+    "verifying": "Verifierar...",
+    "error": "Anslutningsfel",
+    "retrying": "Försöker Igen...",
+    "connect": "Anslut",
+    "disconnect": "Koppla Bort",
+    "configure": "Konfigurera"
+  },
+  "sportAdmin": {
+    "title": "SportAdmin",
+    "description": "Synkronisera din laglista från SportAdmin",
+    "modal": {
+      "title": "Anslut till SportAdmin",
+      "email": "SportAdmin E-post",
+      "emailPlaceholder": "Ange din SportAdmin e-post",
+      "password": "SportAdmin Lösenord",
+      "passwordPlaceholder": "Ange ditt SportAdmin lösenord",
+      "teamId": "Lag-ID",
+      "teamIdPlaceholder": "Ange ditt SportAdmin lag-ID",
+      "connect": "Anslut",
+      "cancel": "Avbryt",
+      "connecting": "Ansluter..."
+    }
+  },
+  "disconnect": {
+    "title": "Koppla Bort {{provider}}?",
+    "subtitle": "Detta stoppar automatisk synkronisering",
+    "confirmMessage": "Är du säker på att du vill koppla bort {{provider}}?",
+    "warningAutoSync": "Automatisk datasynkronisering kommer att stoppas",
+    "warningCredentials": "Lagrade uppgifter kommer att tas bort",
+    "reassureData": "Befintlig närvaro- och matchdata bevaras",
+    "reassureReconnect": "Du kan återansluta när som helst",
+    "disconnecting": "Kopplar bort...",
+    "disconnect": "Koppla Bort",
+    "cancel": "Avbryt",
+    "errorFallback": "Misslyckades med att koppla bort leverantör"
+  },
+  "status": {
+    "syncing": "Synkroniserar trupp...",
+    "lastSync": "Senast synkroniserad: {{time}}",
+    "neverSynced": "Aldrig synkroniserad",
+    "syncSuccess": "Trupp synkroniserad",
+    "syncError": "Misslyckades med att synkronisera trupp"
+  },
+  "sportAdminConnect": {
+    "header": {
+      "title": "Anslut SportAdmin",
+      "subtitle": "Synkronisera närvaro och matchdata"
+    },
+    "info": {
+      "description": "Ange dina SportAdmin-uppgifter för att aktivera automatisk synkronisering.",
+      "security": "Dina uppgifter kommer att krypteras och lagras säkert."
+    },
+    "form": {
+      "labels": {
+        "username": "Användarnamn",
+        "password": "Lösenord"
+      },
+      "placeholders": {
+        "username": "Ditt SportAdmin användarnamn",
+        "password": "Ditt SportAdmin lösenord"
+      }
+    },
+    "validation": {
+      "usernameRequired": "Användarnamn krävs",
+      "usernameMaxLength": "Användarnamn får vara högst 100 tecken",
+      "passwordRequired": "Lösenord krävs",
+      "passwordMaxLength": "Lösenord får vara högst 200 tecken",
+      "connectionFailed": "Misslyckades ansluta SportAdmin. Kontrollera dina uppgifter och försök igen."
+    },
+    "buttons": {
+      "connect": "Anslut",
+      "connecting": "Ansluter...",
+      "cancel": "Avbryt"
+    }
+  },
+  "connectorsSection": {
+    "title": "Kopplingar",
+    "infoBanner": "Anslut externa laghanteringsplattformar för att automatiskt synkronisera träningsnärvaro och matchscheman.",
+    "loadingConnectors": "Laddar kopplingar...",
+    "connectedProviders": "Anslutna Leverantörer",
+    "availableProviders": "Tillgängliga Leverantörer",
+    "connected": "Ansluten",
+    "connect": "Anslut",
+    "dismiss": "Avfärda",
+    "connectedSuccess": "SportAdmin ansluten! Verifiering pågår (tar upp till 5 minuter)...",
+    "syncStarted": "Synkronisering startad!",
+    "disconnectedSuccess": "Leverantör bortkopplad!",
+    "retryingConnection": "Försöker ansluta igen...",
+    "immediateSyncFailed": "Omedelbar synkronisering misslyckades, körs enligt schema."
+  },
+  "onboarding": {
+    "syncTitle": "Synkronisera Spelare från Externa Plattformar",
+    "syncDescription": "Anslut till din laghanteringsplattform för att automatiskt synkronisera trupp och träningsnärvaro."
+  },
+  "unmappedBanner": {
+    "title": "Spelare Tillgängliga att Matcha",
+    "description": "Du har omatchade spelare från {{providerName}} som väntar på att matchas till din trupp."
+  },
+  "providerLogo": {
+    "fallbackLabel": "Koppling",
+    "logoAlt": "{{providerName}}-logotyp",
+    "logoPlaceholder": "{{label}} logotypplatshållare"
+  },
+  "connectorCard": {
+    "lastVerified": "Senast verifierad:",
+    "lastSync": "Senast synkroniserad:",
+    "never": "Aldrig",
+    "connectionCreated": "Anslutning Skapad",
+    "errorPrefix": "Fel:",
+    "connectionError": "Anslutningsfel",
+    "buttons": {
+      "retryConnection": "Försök Igen",
+      "manualSync": "Manuell Synkronisering",
+      "syncing": "Synkroniserar...",
+      "disconnect": "Koppla Bort"
+    }
+  },
+  "providers": {
+    "sportadmin": {
+      "description": "Svensk laghanteringsplattform",
+      "features": {
+        "practiceAttendance": "Närvarohantering",
+        "upcomingMatches": "Kommande matcher"
+      }
+    },
+    "svenska_lag": {
+      "description": "Svensk laghanteringsplattform",
+      "features": {
+        "comingSoon": "Kommer snart"
+      }
+    },
+    "myclub": {
+      "description": "Laghanteringsplattform",
+      "features": {
+        "comingSoon": "Kommer snart"
+      }
+    }
+  },
+  "statusLabels": {
+    "connected": "Ansluten",
+    "verifying": "Verifierar",
+    "error": "Fel",
+    "disconnected": "Frånkopplad",
+    "unknown": "Okänd"
+  },
+  "syncStatusLabels": {
+    "completed": "Klar",
+    "running": "Körs",
+    "waiting": "Väntar",
+    "retrying": "Försöker igen",
+    "failed": "Misslyckades",
+    "cancelled": "Avbruten",
+    "unknown": "Okänd"
+  }
+}

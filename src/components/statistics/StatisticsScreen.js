@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, BarChart3, Users, History, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -49,6 +50,8 @@ const getInitialTimeRange = (timeRangePersistence) => {
 };
 
 export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
+  const { t } = useTranslation('navigation');
+  const { t: tStats } = useTranslation('statistics');
   const tabPersistence = useMemo(
     () => createPersistenceManager(STORAGE_KEYS.STATISTICS_ACTIVE_TAB, { tab: STATS_TABS.TEAM }),
     []
@@ -177,27 +180,27 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
   const tabs = [
     {
       id: STATS_TABS.TEAM,
-      label: 'Team Stats',
+      label: tStats('screen.tabs.teamStats'),
       icon: BarChart3,
-      description: 'Team performance overview'
+      description: tStats('screen.tabs.teamStatsDescription')
     },
     {
       id: STATS_TABS.PLAYER,
-      label: 'Player Match Stats',
+      label: tStats('screen.tabs.playerMatchStats'),
       icon: Users,
-      description: 'Individual player match statistics'
+      description: tStats('screen.tabs.playerMatchStatsDescription')
     },
     {
       id: STATS_TABS.ATTENDANCE,
-      label: 'Attendance Stats',
+      label: tStats('screen.tabs.attendanceStats'),
       icon: Calendar,
-      description: 'Practice attendance tracking'
+      description: tStats('screen.tabs.attendanceStatsDescription')
     },
     {
       id: STATS_TABS.HISTORY,
-      label: 'Match History',
+      label: tStats('screen.tabs.matchHistory'),
       icon: History,
-      description: 'Complete match history'
+      description: tStats('screen.tabs.matchHistoryDescription')
     }
   ];
 
@@ -254,10 +257,10 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
           variant="secondary"
           size="md"
         >
-          Back
+          {t('back')}
         </Button>
         <div>
-          <h2 className="text-2xl font-bold text-sky-400">Statistics</h2>
+          <h2 className="text-2xl font-bold text-sky-400">{tStats('screen.title')}</h2>
           {subtitle && (
             <p className="text-slate-400 text-sm">{subtitle}</p>
           )}
@@ -280,17 +283,17 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
             variant="secondary"
             size="md"
           >
-            Back
+            {t('back')}
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-sky-400">Statistics</h2>
-            <p className="text-slate-400 text-sm">Loading statistics...</p>
+            <h2 className="text-2xl font-bold text-sky-400">{tStats('screen.title')}</h2>
+            <p className="text-slate-400 text-sm">{tStats('screen.loadingSubtitle')}</p>
           </div>
         </div>
         <div className="flex justify-center py-10">
           <div className="flex items-center space-x-3 text-slate-400">
             <div className="h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-            <span>Fetching the latest data...</span>
+            <span>{tStats('screen.fetchingData')}</span>
           </div>
         </div>
       </div>
@@ -299,17 +302,17 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
 
   if (!isAuthenticated) {
     return renderAccessState(
-      'Stay close to the action',
-      'Sign in with your parent account to explore match history, player stats, and team trends.',
+      tStats('screen.signInSubtitle'),
+      tStats('screen.signInBody'),
       <div className="flex flex-col sm:flex-row justify-center gap-3">
         <Button onClick={() => authModal.openLogin?.()}>
-          Sign In
+          {tStats('screen.signIn')}
         </Button>
         <Button
           variant="secondary"
           onClick={() => authModal.openSignup?.()}
         >
-          Create Account
+          {tStats('screen.createAccount')}
         </Button>
       </div>
     );
@@ -318,13 +321,13 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
   if (!currentTeam) {
     const hasTeamMembership = Array.isArray(userTeams) && userTeams.length > 0;
     return renderAccessState(
-      hasTeamMembership ? 'Select a team to continue' : 'No team membership detected',
+      hasTeamMembership ? tStats('screen.selectTeamSubtitle') : tStats('screen.noTeamSubtitle'),
       hasTeamMembership
-        ? 'Choose a team from the main dashboard to view its statistics.'
-        : 'You need a team membership before you can view statistics. Ask a coach or admin to add you to the team.',
+        ? tStats('screen.selectTeamBody')
+        : tStats('screen.noTeamBody'),
       <div className="flex justify-center">
         <Button variant="secondary" onClick={onNavigateBack}>
-          Return to app
+          {t('return.toApp')}
         </Button>
       </div>
     );
@@ -332,11 +335,11 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
 
   if (!canViewStatistics) {
     return renderAccessState(
-      'Role update required',
-      'Statistics are available for parent accounts. Ask your team administrator to upgrade your access.',
+      tStats('screen.roleUpdateSubtitle'),
+      tStats('screen.roleUpdateBody'),
       <div className="flex justify-center">
         <Button variant="secondary" onClick={onNavigateBack}>
-          Go back
+          {t('back')}
         </Button>
       </div>
     );
@@ -356,10 +359,10 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
               variant="secondary"
               size="md"
             >
-              Back
+              {t('back')}
             </Button>
             <div>
-              <h2 className="text-2xl font-bold text-sky-400">Statistics</h2>
+              <h2 className="text-2xl font-bold text-sky-400">{tStats('screen.title')}</h2>
               {currentTab && (
                 <p className="text-slate-400 text-sm">{currentTab.description}</p>
               )}
