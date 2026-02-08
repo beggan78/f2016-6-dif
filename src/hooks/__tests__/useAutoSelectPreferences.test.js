@@ -145,4 +145,97 @@ describe('useAutoSelectPreferences', () => {
     const updater = setPreferences.mock.calls[0][0];
     expect(updater(currentPreferences)).toBe(currentPreferences);
   });
+
+  describe('lastSquadSize', () => {
+    it('returns null when no lastSquadSize is stored', () => {
+      currentPreferences = {
+        ensureCoverage: true,
+        metric: AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: {}
+      };
+
+      const { result } = renderHook(() => useAutoSelectPreferences('team-1'));
+      expect(result.current.lastSquadSize).toBeNull();
+    });
+
+    it('returns null when lastSquadSize is invalid', () => {
+      currentPreferences = {
+        ensureCoverage: true,
+        metric: AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: {},
+        lastSquadSize: 'abc'
+      };
+
+      const { result } = renderHook(() => useAutoSelectPreferences('team-1'));
+      expect(result.current.lastSquadSize).toBeNull();
+    });
+
+    it('returns null when lastSquadSize is zero', () => {
+      currentPreferences = {
+        ensureCoverage: true,
+        metric: AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: {},
+        lastSquadSize: 0
+      };
+
+      const { result } = renderHook(() => useAutoSelectPreferences('team-1'));
+      expect(result.current.lastSquadSize).toBeNull();
+    });
+
+    it('returns stored lastSquadSize when valid', () => {
+      currentPreferences = {
+        ensureCoverage: true,
+        metric: AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: {},
+        lastSquadSize: 8
+      };
+
+      const { result } = renderHook(() => useAutoSelectPreferences('team-1'));
+      expect(result.current.lastSquadSize).toBe(8);
+    });
+
+    it('persists lastSquadSize via setLastSquadSize', () => {
+      currentPreferences = {
+        ensureCoverage: true,
+        metric: AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: {},
+        lastSquadSize: null
+      };
+
+      const { result } = renderHook(() => useAutoSelectPreferences('team-1'));
+      setPreferences.mockClear();
+
+      act(() => {
+        result.current.setLastSquadSize(7);
+      });
+
+      const updater = setPreferences.mock.calls[0][0];
+      const nextState = updater(currentPreferences);
+
+      expect(nextState).toEqual({
+        ...currentPreferences,
+        teamId: 'team-1',
+        lastSquadSize: 7
+      });
+    });
+
+    it('skips update when lastSquadSize is unchanged', () => {
+      currentPreferences = {
+        ensureCoverage: true,
+        metric: AUTO_SELECT_STRATEGY.PRACTICES,
+        targetCounts: {},
+        lastSquadSize: 8
+      };
+
+      const { result } = renderHook(() => useAutoSelectPreferences('team-1'));
+      setPreferences.mockClear();
+
+      act(() => {
+        result.current.setLastSquadSize(8);
+      });
+
+      const updater = setPreferences.mock.calls[0][0];
+      expect(updater(currentPreferences)).toBe(currentPreferences);
+    });
+  });
 });

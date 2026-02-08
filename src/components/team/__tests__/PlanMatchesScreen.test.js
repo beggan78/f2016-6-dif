@@ -24,6 +24,8 @@ jest.mock('../../../services/matchPlanningService', () => ({
   planUpcomingMatch: jest.fn()
 }));
 
+const STORAGE_KEY = 'sport-wizard-plan-match-auto-select-settings';
+
 describe('PlanMatchesScreen', () => {
   let defaultProps;
   let mockUseTeam;
@@ -175,5 +177,105 @@ describe('PlanMatchesScreen', () => {
       selectedSquadIds: ['p1'],
       upcomingMatch: matchesToPlan[0]
     }));
+  });
+
+  describe('squad size defaults', () => {
+    const makeLargeRoster = (count) =>
+      Array.from({ length: count }, (_, i) => ({
+        id: `p${i + 1}`,
+        display_name: `Player ${i + 1}`,
+        first_name: `Player`,
+        last_name: `${i + 1}`,
+        jersey_number: i + 1,
+        on_roster: true
+      }));
+
+    const makeLargeStats = (count) =>
+      Array.from({ length: count }, (_, i) => ({
+        playerId: `p${i + 1}`,
+        practicesPerMatch: 1.0,
+        attendanceRate: 80
+      }));
+
+    it('should default squad size to minimumPlayers + 2 when no lastSquadSize is stored', () => {
+      const largeRoster = makeLargeRoster(12);
+      mockUseTeam.mockReturnValue({
+        currentTeam: mockTeam,
+        teamPlayers: largeRoster,
+        loadTeamPreferences: jest.fn()
+      });
+      mockUseAttendanceStats.mockReturnValue({
+        attendanceStats: makeLargeStats(12),
+        statsLoading: false,
+        statsError: null
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      fireEvent.click(screen.getByText('Recommend'));
+
+      // 5v5 minimum is 5 (4 field + 1 goalie), so default = 5 + 2 = 7
+      const squadInput = screen.getByDisplayValue('7');
+      expect(squadInput).toBeInTheDocument();
+    });
+
+    it('should use stored lastSquadSize when available', () => {
+      const largeRoster = makeLargeRoster(12);
+      mockUseTeam.mockReturnValue({
+        currentTeam: mockTeam,
+        teamPlayers: largeRoster,
+        loadTeamPreferences: jest.fn()
+      });
+      mockUseAttendanceStats.mockReturnValue({
+        attendanceStats: makeLargeStats(12),
+        statsLoading: false,
+        statsError: null
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        teamId: 'team-1',
+        ensureCoverage: true,
+        metric: 'practices',
+        targetCounts: {},
+        lastSquadSize: 9
+      }));
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      fireEvent.click(screen.getByText('Recommend'));
+
+      const squadInput = screen.getByDisplayValue('9');
+      expect(squadInput).toBeInTheDocument();
+    });
+
+    it('should cap lastSquadSize to roster count', () => {
+      const smallRoster = makeLargeRoster(4);
+      mockUseTeam.mockReturnValue({
+        currentTeam: mockTeam,
+        teamPlayers: smallRoster,
+        loadTeamPreferences: jest.fn()
+      });
+      mockUseAttendanceStats.mockReturnValue({
+        attendanceStats: makeLargeStats(4),
+        statsLoading: false,
+        statsError: null
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        teamId: 'team-1',
+        ensureCoverage: true,
+        metric: 'practices',
+        targetCounts: {},
+        lastSquadSize: 10
+      }));
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      fireEvent.click(screen.getByText('Recommend'));
+
+      // lastSquadSize is 10, but roster is only 4, so capped to 4
+      const squadInput = screen.getByDisplayValue('4');
+      expect(squadInput).toBeInTheDocument();
+    });
   });
 });

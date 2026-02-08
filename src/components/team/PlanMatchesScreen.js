@@ -9,6 +9,7 @@ import { useAttendanceStats } from '../../hooks/useAttendanceStats';
 import { usePlanProgress } from '../../hooks/usePlanProgress';
 import { usePlanningDefaults } from '../../hooks/usePlanningDefaults';
 import { useUnavailablePlayersByMatch } from '../../hooks/useUnavailablePlayersByMatch';
+import { useCrossMatchDrag } from '../../hooks/useCrossMatchDrag';
 import { MatchCard } from './planMatches/MatchCard';
 import { AutoSelectModal } from './planMatches/AutoSelectModal';
 import { PlanMatchesToolbar } from './planMatches/PlanMatchesToolbar';
@@ -29,7 +30,7 @@ export function PlanMatchesScreen({
   const [autoSelectMatchId, setAutoSelectMatchId] = useState(null);
 
   const { unavailablePlayersByMatch, setUnavailablePlayersByMatch } = useUnavailablePlayersByMatch(currentTeam?.id);
-  const { autoSelectSettings, targetCounts, setAutoSelectSettings, setTargetCounts } = useAutoSelectPreferences(
+  const { autoSelectSettings, targetCounts, lastSquadSize, setAutoSelectSettings, setTargetCounts, setLastSquadSize } = useAutoSelectPreferences(
     currentTeam?.id
   );
   const {
@@ -119,7 +120,11 @@ export function PlanMatchesScreen({
 
     const minimumPlayers = Math.max(0, getMinimumPlayersForFormat(defaults.format));
     const rosterCount = rosterPlayers.length;
-    const defaultTarget = rosterCount > 0 ? Math.min(rosterCount, minimumPlayers) : 0;
+    const defaultTarget = rosterCount > 0
+      ? (typeof lastSquadSize === 'number' && lastSquadSize > 0
+        ? Math.min(rosterCount, lastSquadSize)
+        : Math.min(rosterCount, minimumPlayers + 2))
+      : 0;
 
     if (DEBUG_ENABLED) {
       console.debug('[PlanMatchesScreen] ensure targetCounts', {
@@ -140,7 +145,7 @@ export function PlanMatchesScreen({
       });
       return didChange ? next : prev;
     });
-  }, [defaults, matches, rosterPlayers.length, setTargetCounts]);
+  }, [defaults, matches, rosterPlayers.length, lastSquadSize, setTargetCounts]);
 
   const statsByPlayerId = useMemo(() => {
     const map = new Map();
@@ -240,6 +245,25 @@ export function PlanMatchesScreen({
     }));
   }, [setSelectedPlayersByMatch]);
 
+  const handleSwapPlayers = useCallback((sourceMatchId, sourcePlayerId, targetMatchId, targetPlayerId) => {
+    setSelectedPlayersByMatch(prev => {
+      const sourceList = [...(prev[sourceMatchId] || [])];
+      const targetList = [...(prev[targetMatchId] || [])];
+      const si = sourceList.indexOf(sourcePlayerId);
+      const ti = targetList.indexOf(targetPlayerId);
+      if (si === -1 || ti === -1) return prev;
+      sourceList[si] = targetPlayerId;
+      targetList[ti] = sourcePlayerId;
+      return { ...prev, [sourceMatchId]: sourceList, [targetMatchId]: targetList };
+    });
+  }, [setSelectedPlayersByMatch]);
+
+  const { registerContainer, handleDragMove, handleDragEnd, crossMatchState, swapAnimation, slideInAnimation } = useCrossMatchDrag({
+    selectedPlayersByMatch,
+    unavailablePlayersByMatch,
+    onSwapPlayers: handleSwapPlayers
+  });
+
   const updateTargetCount = (matchId, value) => {
     const parsed = Number(value);
     const safeValue = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
@@ -248,6 +272,7 @@ export function PlanMatchesScreen({
       ...prev,
       [matchId]: capped
     }));
+    setLastSquadSize(capped);
   };
 
   const runAutoSelectSingleMatch = useCallback((matchId, metric) => {
@@ -465,6 +490,8 @@ export function PlanMatchesScreen({
             <MatchCard
               key={match.id}
               match={match}
+              matchId={match.id}
+              matchCount={matches.length}
               roster={sortedRoster}
               rosterById={rosterById}
               selectedIds={selectedIds}
@@ -479,6 +506,12 @@ export function PlanMatchesScreen({
               isSelectedAndOnlyAvailableHere={(playerId) => isPlayerSelectedAndOnlyAvailableHere(match.id, playerId)}
               isPlayerInMultipleMatches={isPlayerInMultipleMatches}
               onReorderSelectedPlayers={handleReorderSelectedPlayers}
+              registerContainer={registerContainer}
+              onCrossDragMove={handleDragMove}
+              onCrossDragEnd={handleDragEnd}
+              crossMatchState={crossMatchState}
+              swapAnimation={swapAnimation}
+              slideInAnimation={slideInAnimation}
             />
           );
         })}

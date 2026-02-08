@@ -8,7 +8,8 @@ const AUTO_SELECT_DEFAULT_STATE = {
   teamId: null,
   ensureCoverage: true,
   metric: AUTO_SELECT_STRATEGY.PRACTICES,
-  targetCounts: {}
+  targetCounts: {},
+  lastSquadSize: null
 };
 
 export const useAutoSelectPreferences = (teamId) => {
@@ -64,6 +65,26 @@ export const useAutoSelectPreferences = (teamId) => {
     });
   }, [teamId, setAutoSelectPreferences]);
 
+  const lastSquadSize = useMemo(() => {
+    const stored = autoSelectPreferences?.lastSquadSize;
+    return typeof stored === 'number' && stored > 0 ? stored : null;
+  }, [autoSelectPreferences?.lastSquadSize]);
+
+  const setLastSquadSize = useCallback((size) => {
+    setAutoSelectPreferences((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : AUTO_SELECT_DEFAULT_STATE;
+      const prevSize = typeof base.lastSquadSize === 'number' && base.lastSquadSize > 0 ? base.lastSquadSize : null;
+      if (size === prevSize) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: teamId ?? null,
+        lastSquadSize: size
+      };
+    });
+  }, [teamId, setAutoSelectPreferences]);
+
   const setTargetCounts = useCallback((updater) => {
     setAutoSelectPreferences((prev) => {
       const base = prev && typeof prev === 'object' ? prev : AUTO_SELECT_DEFAULT_STATE;
@@ -87,7 +108,9 @@ export const useAutoSelectPreferences = (teamId) => {
   return {
     autoSelectSettings,
     targetCounts,
+    lastSquadSize,
     setAutoSelectSettings,
-    setTargetCounts
+    setTargetCounts,
+    setLastSquadSize
   };
 };

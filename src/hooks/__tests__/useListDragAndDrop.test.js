@@ -1312,4 +1312,261 @@ describe('useListDragAndDrop', () => {
       expect(reorderedIds[0]).toBe('4');
     });
   });
+
+  describe('Lifecycle Callbacks', () => {
+    it('should call onDragMove during active drag with move data', () => {
+      const mockOnDragMove = jest.fn();
+
+      const { result } = renderHook(() =>
+        useListDragAndDrop({
+          items: mockItems,
+          onReorder: mockOnReorder,
+          containerRef: mockContainerRef,
+          onDragMove: mockOnDragMove
+        })
+      );
+
+      const mockEvent = {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 200,
+        clientY: 150,
+        currentTarget: document.createElement('div'),
+        preventDefault: jest.fn()
+      };
+
+      act(() => {
+        result.current.handlePointerStart('2', mockEvent);
+        jest.advanceTimersByTime(300);
+      });
+
+      const moveEvent = new PointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 250,
+        clientY: 200,
+        cancelable: true
+      });
+
+      act(() => {
+        window.dispatchEvent(moveEvent);
+      });
+
+      expect(mockOnDragMove).toHaveBeenCalledWith({
+        itemId: '2',
+        clientX: 250,
+        clientY: 200
+      });
+    });
+
+    it('should not call onDragMove before drag is started', () => {
+      const mockOnDragMove = jest.fn();
+
+      const { result } = renderHook(() =>
+        useListDragAndDrop({
+          items: mockItems,
+          onReorder: mockOnReorder,
+          containerRef: mockContainerRef,
+          onDragMove: mockOnDragMove,
+          activationThreshold: { time: 300, distance: 100 }
+        })
+      );
+
+      const mockEvent = {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 200,
+        clientY: 200,
+        currentTarget: document.createElement('div'),
+        preventDefault: jest.fn()
+      };
+
+      act(() => {
+        result.current.handlePointerStart('1', mockEvent);
+      });
+
+      // Move but below distance threshold
+      const moveEvent = new PointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 205,
+        clientY: 200,
+        cancelable: true
+      });
+
+      act(() => {
+        window.dispatchEvent(moveEvent);
+      });
+
+      expect(mockOnDragMove).not.toHaveBeenCalled();
+    });
+
+    it('should call onDragEnd with cancelled: false on pointer up', () => {
+      const mockOnDragEnd = jest.fn();
+
+      const { result } = renderHook(() =>
+        useListDragAndDrop({
+          items: mockItems,
+          onReorder: mockOnReorder,
+          containerRef: mockContainerRef,
+          onDragEnd: mockOnDragEnd
+        })
+      );
+
+      const mockEvent = {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 200,
+        clientY: 150,
+        currentTarget: document.createElement('div'),
+        preventDefault: jest.fn()
+      };
+
+      act(() => {
+        result.current.handlePointerStart('2', mockEvent);
+        jest.advanceTimersByTime(300);
+      });
+
+      const upEvent = new PointerEvent('pointerup', {
+        pointerId: 1,
+        clientX: 200,
+        clientY: 200,
+        cancelable: true
+      });
+
+      act(() => {
+        window.dispatchEvent(upEvent);
+      });
+
+      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: false, clientX: 200, clientY: 200 });
+    });
+
+    it('should call onDragEnd with cancelled: true on pointer cancel', () => {
+      const mockOnDragEnd = jest.fn();
+
+      const { result } = renderHook(() =>
+        useListDragAndDrop({
+          items: mockItems,
+          onReorder: mockOnReorder,
+          containerRef: mockContainerRef,
+          onDragEnd: mockOnDragEnd
+        })
+      );
+
+      const mockEvent = {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 200,
+        clientY: 200,
+        currentTarget: document.createElement('div'),
+        preventDefault: jest.fn()
+      };
+
+      act(() => {
+        result.current.handlePointerStart('1', mockEvent);
+        jest.advanceTimersByTime(300);
+      });
+
+      const cancelEvent = new PointerEvent('pointercancel', {
+        pointerId: 1
+      });
+
+      act(() => {
+        window.dispatchEvent(cancelEvent);
+      });
+
+      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: true, clientX: 0, clientY: 0 });
+    });
+
+    it('should call onDragEnd with cancelled: true on Escape key', () => {
+      const mockOnDragEnd = jest.fn();
+
+      const { result } = renderHook(() =>
+        useListDragAndDrop({
+          items: mockItems,
+          onReorder: mockOnReorder,
+          containerRef: mockContainerRef,
+          onDragEnd: mockOnDragEnd
+        })
+      );
+
+      const mockEvent = {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 200,
+        clientY: 200,
+        currentTarget: document.createElement('div'),
+        preventDefault: jest.fn()
+      };
+
+      act(() => {
+        result.current.handlePointerStart('1', mockEvent);
+        jest.advanceTimersByTime(300);
+      });
+
+      const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true
+      });
+
+      act(() => {
+        window.dispatchEvent(escapeEvent);
+      });
+
+      expect(mockOnDragEnd).toHaveBeenCalledWith({ cancelled: true });
+    });
+
+    it('should work correctly without lifecycle callbacks (optional)', () => {
+      const { result } = renderHook(() =>
+        useListDragAndDrop({
+          items: mockItems,
+          onReorder: mockOnReorder,
+          containerRef: mockContainerRef
+        })
+      );
+
+      const mockEvent = {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: 200,
+        clientY: 150,
+        currentTarget: document.createElement('div'),
+        preventDefault: jest.fn()
+      };
+
+      act(() => {
+        result.current.handlePointerStart('2', mockEvent);
+        jest.advanceTimersByTime(300);
+      });
+
+      // Move and end should not crash without callbacks
+      const moveEvent = new PointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 250,
+        clientY: 200,
+        cancelable: true
+      });
+
+      act(() => {
+        window.dispatchEvent(moveEvent);
+      });
+
+      const upEvent = new PointerEvent('pointerup', {
+        pointerId: 1,
+        clientX: 200,
+        clientY: 200,
+        cancelable: true
+      });
+
+      act(() => {
+        window.dispatchEvent(upEvent);
+      });
+
+      expect(result.current.isDragging).toBe(false);
+    });
+  });
 });

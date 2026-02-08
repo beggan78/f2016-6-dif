@@ -35,7 +35,9 @@ export function useListDragAndDrop({
   items = [],
   onReorder,
   containerRef,
-  activationThreshold = DEFAULT_ACTIVATION
+  activationThreshold = DEFAULT_ACTIVATION,
+  onDragMove,
+  onDragEnd
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [draggedItemId, setDraggedItemId] = useState(null);
@@ -58,10 +60,12 @@ export function useListDragAndDrop({
   const keydownListenerRef = useRef(null);
   const lastPointerPosRef = useRef(null);
   const suppressClickRef = useRef({ itemId: null, until: 0 });
+  const onDragMoveRef = useRef(onDragMove);
+  const onDragEndRef = useRef(onDragEnd);
 
-  useEffect(() => {
-    itemsRef.current = items;
-  }, [items]);
+  itemsRef.current = items;
+  onDragMoveRef.current = onDragMove;
+  onDragEndRef.current = onDragEnd;
 
   const clearActivationTimers = useCallback(() => {
     if (activationTimerRef.current) {
@@ -308,6 +312,9 @@ export function useListDragAndDrop({
     keydownListenerRef.current = (keyEvent) => {
       if (keyEvent.key === 'Escape') {
         keyEvent.preventDefault();
+        if (onDragEndRef.current) {
+          onDragEndRef.current({ cancelled: true });
+        }
         cancelDrag();
       }
     };
@@ -420,6 +427,10 @@ export function useListDragAndDrop({
 
         scheduleGhostPositionUpdate(moveEvent.clientX, moveEvent.clientY);
         updateDropIndex(moveEvent.clientX, moveEvent.clientY);
+
+        if (onDragMoveRef.current) {
+          onDragMoveRef.current({ itemId: session.itemId, clientX: moveEvent.clientX, clientY: moveEvent.clientY });
+        }
       };
 
       const handleEnd = (endEvent) => {
@@ -459,6 +470,9 @@ export function useListDragAndDrop({
           }
         }
 
+        if (onDragEndRef.current) {
+          onDragEndRef.current({ cancelled: false, clientX: endEvent.clientX, clientY: endEvent.clientY });
+        }
         markSuppressClick(session.itemId);
         cancelDrag();
       };
@@ -469,6 +483,9 @@ export function useListDragAndDrop({
         }
 
         clearActivationTimers();
+        if (onDragEndRef.current) {
+          onDragEndRef.current({ cancelled: true, clientX: cancelEvent.clientX, clientY: cancelEvent.clientY });
+        }
         cancelDrag();
       };
 
