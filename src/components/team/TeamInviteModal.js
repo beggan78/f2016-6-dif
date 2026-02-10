@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput, isValidMessageInput } from '../../utils/inputSanitization';
@@ -319,21 +322,13 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
           <div className="space-y-6">
             {/* Error Message */}
             {getErrorMessage() && (
-              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-                </div>
-              </div>
+              <Alert variant="error" icon={AlertTriangle}>{getErrorMessage()}</Alert>
             )}
 
             {/* Invitation Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Input */}
-              <div>
-                <label htmlFor="invite-email" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('inviteModal.form.labels.email')}
-                </label>
+              <FormGroup label={t('inviteModal.form.labels.email')} htmlFor="invite-email" error={errors.email}>
                 <Input
                   id="invite-email"
                   type="email"
@@ -351,16 +346,10 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   disabled={loading}
                   className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
-                {errors.email && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.email}</p>
-                )}
-              </div>
+              </FormGroup>
 
               {/* Role Selection */}
-              <div>
-                <label htmlFor="invite-role" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('inviteModal.form.labels.role')}
-                </label>
+              <FormGroup label={t('inviteModal.form.labels.role')} htmlFor="invite-role" error={errors.role}>
                 <Select
                   id="invite-role"
                   value={formData.role}
@@ -383,19 +372,17 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   disabled={loading}
                   className={errors.role ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
-                {errors.role && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.role}</p>
-                )}
                 <p className="text-slate-500 text-xs mt-1">
                   {t('inviteModal.form.hints.role')}
                 </p>
-              </div>
+              </FormGroup>
 
               {/* Personal Message */}
-              <div>
-                <label htmlFor="invite-message" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('inviteModal.form.labels.message')} <span className="text-slate-500">{t('inviteModal.form.hints.messageOptional')}</span>
-                </label>
+              <FormGroup
+                label={<>{t('inviteModal.form.labels.message')} <span className="text-slate-500">{t('inviteModal.form.hints.messageOptional')}</span></>}
+                htmlFor="invite-message"
+                error={errors.message}
+              >
                 <textarea
                   id="invite-message"
                   value={formData.message}
@@ -416,13 +403,10 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   maxLength={500}
                   disabled={loading}
                 />
-                {errors.message && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.message}</p>
-                )}
                 <p className="text-slate-500 text-xs mt-1">
                   {t('inviteModal.form.hints.characterCount', { count: formData.message.length })}
                 </p>
-              </div>
+              </FormGroup>
 
               {/* Submit Button */}
               <Button
@@ -455,10 +439,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 </div>
 
                 {loadingInvitations ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-400"></div>
-                    <span className="ml-2 text-slate-400 text-sm">{t('inviteModal.invitations.loading')}</span>
-                  </div>
+                  <LoadingSpinner size="md" message={t('inviteModal.invitations.loading')} className="py-4" />
                 ) : pendingInvitations.length === 0 ? (
                   <div className="text-center py-4 text-slate-400">
                     <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />

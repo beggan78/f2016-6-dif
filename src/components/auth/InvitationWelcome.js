@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { getInvitationContext, getInvitationStatus, needsAccountCompletion, storePendingInvitation } from '../../utils/invitationUtils';
 import { validatePassword } from '../../utils/authValidation';
 import { supabase } from '../../lib/supabase';
-import { 
-  Mail, 
-  Users, 
-  Shield, 
-  CheckCircle, 
+import {
+  Mail,
+  Users,
+  Shield,
+  CheckCircle,
   AlertTriangle,
   UserPlus
 } from 'lucide-react';
@@ -202,7 +205,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
 
         {/* Invitation Details */}
         {invitationContext && (
-          <div className="bg-slate-700 rounded-lg p-4 mb-6">
+          <Card className="mb-6">
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Users className="w-5 h-5 text-sky-400" />
@@ -220,7 +223,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Status-specific content */}
@@ -269,10 +272,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
             </div>
 
             <form onSubmit={handlePasswordSetup} className="space-y-4">
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('invitation.accountSetup.passwordLabel')}
-                </label>
+              <FormGroup label={t('invitation.accountSetup.passwordLabel')} htmlFor="password">
                 <Input
                   id="password"
                   type="password"
@@ -284,12 +284,9 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
                 <p className="text-slate-500 text-xs mt-1">
                   {t('invitation.accountSetup.passwordRequirements')}
                 </p>
-              </div>
+              </FormGroup>
 
-              <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('invitation.accountSetup.confirmLabel')}
-                </label>
+              <FormGroup label={t('invitation.accountSetup.confirmLabel')} htmlFor="confirm-password">
                 <Input
                   id="confirm-password"
                   type="password"
@@ -298,15 +295,10 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
                   placeholder={t('invitation.accountSetup.confirmPlaceholder')}
                   disabled={isProcessing}
                 />
-              </div>
+              </FormGroup>
 
               {passwordError && (
-                <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                  <div className="flex items-start space-x-2">
-                    <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                    <p className="text-rose-200 text-sm">{passwordError}</p>
-                  </div>
-                </div>
+                <Alert variant="error" icon={AlertTriangle}>{passwordError}</Alert>
               )}
 
               <Button
@@ -335,12 +327,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
             </div>
 
             {error && (
-              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-rose-200 text-sm">{error}</p>
-                </div>
-              </div>
+              <Alert variant="error" icon={AlertTriangle}>{error}</Alert>
             )}
 
             <Button
@@ -357,11 +344,11 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
 
         {invitationStatus.type === 'sign_in_required' && (
           <div className="space-y-4">
-            <div className="bg-slate-700 rounded-lg p-4">
+            <Card>
               <p className="text-slate-300 text-sm text-center">
                 {t('invitation.signInRequired.message')}
               </p>
-            </div>
+            </Card>
 
             <div className="text-center text-xs text-slate-500">
               {t('invitation.signInRequired.closeInstruction')}

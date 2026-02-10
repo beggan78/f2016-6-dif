@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -212,18 +213,11 @@ export function TeamRoleManagementModal({
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {/* Messages */}
           {error && (
-            <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-              <p className="text-rose-200 text-sm flex items-center">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                {error}
-              </p>
-            </div>
+            <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
           )}
 
           {successMessage && (
-            <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">{successMessage}</p>
-            </div>
+            <Alert variant="success" className="mb-4">{successMessage}</Alert>
           )}
 
           {/* Team Info */}

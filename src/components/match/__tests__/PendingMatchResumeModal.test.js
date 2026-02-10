@@ -534,8 +534,10 @@ describe('PendingMatchResumeModal', () => {
       const errorMessage = 'Test error message';
       render(<PendingMatchResumeModal {...defaultProps} error={errorMessage} />);
 
-      const errorContainer = screen.getByText(errorMessage).closest('div');
-      expect(errorContainer).toHaveClass('bg-rose-900/20', 'border-rose-600');
+      // Alert component wraps error text in nested divs; find the outer Alert container
+      const errorText = screen.getByText(errorMessage);
+      const alertContainer = errorText.closest('.rounded-lg.border');
+      expect(alertContainer).toHaveClass('bg-rose-900/30', 'border-rose-600/50', 'text-rose-300');
     });
 
     it('should still show matches when error is present', () => {

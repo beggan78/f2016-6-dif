@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
 import { ClubAutocomplete } from './ClubAutocomplete';
 import { ClubJoinModal } from './ClubJoinModal';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
@@ -289,10 +291,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         </p>
       </div>
 
-      <div>
-        <label htmlFor="clubLongName" className="block text-sm font-medium text-slate-300 mb-2">
-          {t('wizard.clubCreation.fullNameLabel')}
-        </label>
+      <FormGroup label={t('wizard.clubCreation.fullNameLabel')} htmlFor="clubLongName" error={errors.clubLongName}>
         <Input
           id="clubLongName"
           value={clubForm.longName}
@@ -300,15 +299,9 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           placeholder={t('wizard.clubCreation.fullNamePlaceholder')}
           className={errors.clubLongName ? 'border-rose-500' : ''}
         />
-        {errors.clubLongName && (
-          <p className="text-rose-400 text-sm mt-1">{errors.clubLongName}</p>
-        )}
-      </div>
+      </FormGroup>
 
-      <div>
-        <label htmlFor="clubName" className="block text-sm font-medium text-slate-300 mb-2">
-          {t('wizard.clubCreation.displayNameLabel')}
-        </label>
+      <FormGroup label={t('wizard.clubCreation.displayNameLabel')} htmlFor="clubName" error={errors.clubName}>
         <Input
           id="clubName"
           value={clubForm.name}
@@ -316,15 +309,9 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           placeholder={t('wizard.clubCreation.displayNamePlaceholder')}
           className={errors.clubName ? 'border-rose-500' : ''}
         />
-        {errors.clubName && (
-          <p className="text-rose-400 text-sm mt-1">{errors.clubName}</p>
-        )}
-      </div>
+      </FormGroup>
 
-      <div>
-        <label htmlFor="clubShortName" className="block text-sm font-medium text-slate-300 mb-2">
-          {t('wizard.clubCreation.shortNameLabel')}
-        </label>
+      <FormGroup label={t('wizard.clubCreation.shortNameLabel')} htmlFor="clubShortName">
         <Input
           id="clubShortName"
           value={clubForm.shortName}
@@ -332,7 +319,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           placeholder={t('wizard.clubCreation.shortNamePlaceholder')}
         />
         <p className="text-slate-500 text-xs mt-1">{t('wizard.clubCreation.shortNameHelper')}</p>
-      </div>
+      </FormGroup>
 
       <div className="flex justify-end">
         <Button
@@ -418,10 +405,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           </p>
         </div>
 
-        <div>
-          <label htmlFor="teamName" className="block text-sm font-medium text-slate-300 mb-2">
-            {t('wizard.teamCreation.teamNameLabel')}
-          </label>
+        <FormGroup label={t('wizard.teamCreation.teamNameLabel')} htmlFor="teamName" error={errors.teamName}>
           <Input
             id="teamName"
             value={teamForm.name}
@@ -429,11 +413,8 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
             placeholder={t('wizard.teamCreation.teamNamePlaceholder')}
             className={errors.teamName ? 'border-rose-500' : ''}
           />
-          {errors.teamName && (
-            <p className="text-rose-400 text-sm mt-1">{errors.teamName}</p>
-          )}
           <p className="text-slate-500 text-xs mt-1">{t('wizard.teamCreation.teamNameHelper')}</p>
-        </div>
+        </FormGroup>
 
         <div className="flex justify-end">
           <Button
@@ -572,16 +553,12 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
     <>
       <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
         {error && (
-          <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-            <p className="text-rose-200 text-sm">{error}</p>
-          </div>
+          <Alert variant="error" className="mb-4">{error}</Alert>
         )}
-        
+
         {/* Success Message Banner */}
         {successMessage && (
-          <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-            <p className="text-emerald-200 text-sm">{successMessage}</p>
-          </div>
+          <Alert variant="success" className="mb-4">{successMessage}</Alert>
         )}
         
         {renderCurrentStep()}

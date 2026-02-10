@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Card } from '../shared/Card';
 import { VIEWS } from '../../constants/viewConstants';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -45,7 +46,7 @@ export function ProfileCompletionPrompt({ setView, onClose }) {
         </div>
 
         {/* Benefits */}
-        <div className="bg-slate-700 rounded-lg p-4 mb-6">
+        <Card className="mb-6">
           <h3 className="text-sm font-semibold text-slate-300 mb-3">{t('profileCompletion.benefitsTitle')}</h3>
           <ul className="space-y-2 text-sm text-slate-400">
             <li className="flex items-center space-x-2">
@@ -67,7 +68,7 @@ export function ProfileCompletionPrompt({ setView, onClose }) {
               <span>{t('profileCompletion.benefits.preferences')}</span>
             </li>
           </ul>
-        </div>
+        </Card>
 
         {/* Action Buttons */}
         <div className="space-y-3">

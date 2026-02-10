@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Share2, AlertCircle, Eye, Play, Trash2 } from 'lucide-react';
 import { Button, NotificationModal } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { EmptyState } from '../shared/EmptyState';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { useRealtimeTeamMatches } from '../../hooks/useRealtimeTeamMatches';
@@ -256,10 +259,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
         </div>
 
         <div className="bg-slate-700 rounded-lg border border-slate-600 p-8">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-            <span className="text-slate-300">{t('teamMatches.loading')}</span>
-          </div>
+          <LoadingSpinner size="sm" message={t('teamMatches.loading')} />
         </div>
       </div>
     );
@@ -276,18 +276,15 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           </Button>
         </div>
 
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-rose-200 font-medium">{t('teamMatches.error.loadFailed')}</p>
-              <p className="text-rose-300 text-sm mt-1">{errorMessage}</p>
-              <Button onClick={handleRetry} variant="secondary" size="sm" className="mt-3">
-                {t('teamMatches.error.tryAgain')}
-              </Button>
-            </div>
+        <Alert variant="error" icon={AlertCircle}>
+          <div>
+            <p className="text-rose-200 font-medium">{t('teamMatches.error.loadFailed')}</p>
+            <p className="text-rose-300 text-sm mt-1">{errorMessage}</p>
+            <Button onClick={handleRetry} variant="secondary" size="sm" className="mt-3">
+              {t('teamMatches.error.tryAgain')}
+            </Button>
           </div>
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -303,15 +300,11 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           </Button>
         </div>
 
-        <div className="bg-slate-700 rounded-lg border border-slate-600 p-8">
-          <div className="text-center">
-            <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-400 opacity-50" />
-            <p className="text-lg font-medium text-slate-300 mb-2">{t('teamMatches.empty.title')}</p>
-            <p className="text-sm text-slate-400">
-              {t('teamMatches.empty.description')}
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title={t('teamMatches.empty.title')}
+          message={t('teamMatches.empty.description')}
+        />
       </div>
     );
   }

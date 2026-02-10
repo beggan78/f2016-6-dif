@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Card } from '../shared/Card';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
 import { AuthButtonPair } from './AuthButtons';
 
@@ -90,7 +91,7 @@ export function AnonymousAlert({
 
   // Default card variant - full-featured prompt
   return (
-    <div className="bg-slate-700 rounded-lg border border-slate-600 p-6">
+    <Card padding="lg">
       <div className="text-center">
         {/* Icon */}
         <div className="mx-auto w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center mb-4">
@@ -144,7 +145,7 @@ export function AnonymousAlert({
           {t('anonymousAlert.finePrint')}
         </p>
       </div>
-    </div>
+    </Card>
   );
 }
 

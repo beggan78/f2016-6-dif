@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, ConfirmationModal, Input } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
@@ -391,16 +393,12 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
 
       {/* Success Message */}
       {successMessage && (
-        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {/* Error Message */}
       {getErrorMessage() && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-          <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-        </div>
+        <Alert variant="error">{getErrorMessage()}</Alert>
       )}
 
       {/* Profile Card */}
@@ -604,9 +602,9 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
             <h3 className="text-lg font-semibold text-slate-200 mb-4">{t('teamManagement.title')}</h3>
 
             {teamLoading ? (
-              <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+              <Card variant="dark">
                 <p className="text-slate-400 text-sm text-center">{t('teamManagement.loading')}</p>
-              </div>
+              </Card>
             ) : !hasClubs ? (
               <div className="bg-slate-800 rounded-lg p-6 border border-slate-600 text-center">
                 <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -634,9 +632,9 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                   <h4 className="font-medium text-slate-300 mb-3">{t('teamManagement.yourClubs', { count: clubMemberships.length })}</h4>
                   <div className="space-y-2">
                     {clubMemberships.map((membership) => (
-                      <div
+                      <Card
                         key={membership.id}
-                        className="bg-slate-800 border border-slate-600 rounded-lg p-4"
+                        variant="dark"
                       >
                         <div className="flex items-center justify-between gap-4">
                           <div className="flex-1 text-left">
@@ -656,7 +654,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                             {leavingClubId === membership.id ? t('teamManagement.leaving') : t('teamManagement.leave')}
                           </Button>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 </div>

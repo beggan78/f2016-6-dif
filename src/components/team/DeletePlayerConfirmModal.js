@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../shared/UI';
+import { Card } from '../shared/Card';
 import { Trash2, AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +40,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
         {/* Content */}
         <div className="p-6">
           {/* Player Info */}
-          <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+          <Card padding="md" className="mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-lg">
@@ -61,7 +62,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Warning Message */}
           <div className="bg-rose-900/20 border border-rose-600 rounded-lg p-4 mb-4">
@@ -87,24 +88,24 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
 
           {/* Additional info for permanent delete path */}
           {willBeDeleted && (
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+            <Card padding="md" className="mb-6">
               <p className="text-slate-200 font-medium mb-2">{t('deletePlayerModal.whatHappensNext')}</p>
               <ul className="text-slate-300 text-sm space-y-1">
                 <li>{t('deletePlayerModal.deleteConsequences.jerseyAvailable')}</li>
               </ul>
-            </div>
+            </Card>
           )}
 
           {/* Reassurance for deactivation path */}
           {!willBeDeleted && (
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+            <Card padding="md" className="mb-6">
               <p className="text-slate-200 font-medium mb-2">{t('deletePlayerModal.whatHappensNext')}</p>
               <ul className="text-slate-300 text-sm space-y-1">
                 <li>{t('deletePlayerModal.deactivateConsequences.statsPreserved')}</li>
                 <li>{t('deletePlayerModal.deactivateConsequences.jerseyAvailable')}</li>
                 <li>{t('deletePlayerModal.deactivateConsequences.canReactivate')}</li>
               </ul>
-            </div>
+            </Card>
           )}
 
           {/* Actions */}

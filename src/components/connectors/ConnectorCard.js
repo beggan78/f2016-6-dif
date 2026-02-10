@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { StatusBadge } from '../shared/StatusBadge';
+import { Card } from '../shared/Card';
+import { Alert } from '../shared/Alert';
 import {
   CheckCircle,
   XCircle,
@@ -77,7 +79,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
   const hasError = connector.status === CONNECTOR_STATUS.ERROR;
 
   return (
-    <div className="bg-slate-700 rounded-lg border border-slate-600 p-4">
+    <Card>
       {/* Provider Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -144,15 +146,10 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
 
       {/* Error Display */}
       {hasError && connector.last_error && (
-        <div className="bg-rose-900/20 border border-rose-600 rounded-lg p-3 mb-4">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-rose-200 text-sm font-medium">{t('connectorCard.connectionError')}</p>
-              <p className="text-rose-300 text-xs mt-1">{connector.last_error}</p>
-            </div>
-          </div>
-        </div>
+        <Alert variant="error" icon={AlertCircle} className="mb-4">
+          <p className="font-medium">{t('connectorCard.connectionError')}</p>
+          <p className="text-xs mt-1 opacity-80">{connector.last_error}</p>
+        </Alert>
       )}
 
       {/* Action Buttons */}
@@ -192,6 +189,6 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
         </Button>
       </div>
 
-    </div>
+    </Card>
   );
 }

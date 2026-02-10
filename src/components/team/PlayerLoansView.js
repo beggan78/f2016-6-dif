@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, ChevronDown, ChevronUp, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, ConfirmationModal, MultiSelect, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { SectionHeader } from '../shared/SectionHeader';
 import { PlayerLoanModal } from './PlayerLoanModal';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { useTeam } from '../../contexts/TeamContext';
@@ -465,10 +467,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center space-x-2">
-          <Repeat className="h-5 w-5 text-sky-400" />
-          <h3 className="text-lg font-semibold text-sky-300">{t('loansView.header.title')}</h3>
-        </div>
+        <SectionHeader title={t('loansView.header.title')} icon={Repeat} />
         {canManageTeam && (
         <Button onClick={handleOpenLoanModal} Icon={PlusCircle} size="sm">
           {t('loansView.header.newLoanButton')}
@@ -569,18 +568,18 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       </div>
 
       {error && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3 flex items-center justify-between gap-4">
-          <p className="text-rose-200 text-sm">{error}</p>
-          <Button onClick={handleRetry} variant="secondary" size="sm">
-            {t('loansView.messages.retry')}
-          </Button>
-        </div>
+        <Alert variant="error">
+          <div className="flex items-center justify-between gap-4">
+            <span>{error}</span>
+            <Button onClick={handleRetry} variant="secondary" size="sm">
+              {t('loansView.messages.retry')}
+            </Button>
+          </div>
+        </Alert>
       )}
 
       {successMessage && (
-        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {loading ? (

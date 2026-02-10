@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
+import { Alert } from '../shared/Alert';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, getAlertOptions } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
@@ -1879,28 +1880,20 @@ export function ConfigurationScreen({
 
           {/* Sync Status Messages */}
           {syncStatus.message && (
-            <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">✓ {syncStatus.message}</p>
-            </div>
+            <Alert variant="success">✓ {syncStatus.message}</Alert>
           )}
 
           {syncStatus.error && (
-            <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
-              <p className="text-rose-200 text-sm">❌ {syncStatus.error}</p>
-            </div>
+            <Alert variant="error">{syncStatus.error}</Alert>
           )}
 
           {/* Save Configuration Status Messages */}
           {saveConfigStatus.message && (
-            <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">{saveConfigStatus.message}</p>
-            </div>
+            <Alert variant="success">{saveConfigStatus.message}</Alert>
           )}
 
           {saveConfigStatus.error && (
-            <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
-              <p className="text-rose-200 text-sm">❌ {saveConfigStatus.error}</p>
-            </div>
+            <Alert variant="error">{saveConfigStatus.error}</Alert>
           )}
         </div>
       ) : (

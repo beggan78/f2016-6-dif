@@ -1,5 +1,6 @@
 import React from 'react';
 import { COLUMN_SHIFT_PX } from '../../../hooks/useColumnDragDrop';
+import { Card } from '../../shared/Card';
 
 /**
  * SortableStatsTable Component
@@ -46,7 +47,7 @@ export function SortableStatsTable({
   } = dragDropHandlers;
 
   return (
-    <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
+    <Card padding="sm" className="overflow-hidden">
       {/* Table Header */}
       <div className="p-4 border-b border-slate-600">
         <h3 className="text-lg font-semibold text-sky-400 flex items-center space-x-2">
@@ -176,6 +177,6 @@ export function SortableStatsTable({
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }

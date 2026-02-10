@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Input } from '../shared/UI';
+import { SectionHeader } from '../shared/SectionHeader';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { Users, Building2, UserPlus, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
@@ -85,12 +86,7 @@ export function ClubMembershipManager() {
 
   const renderMyClubs = () => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-sky-300 flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          {t('clubMembership.myClubs.title')}
-        </h3>
-      </div>
+      <SectionHeader title={t('clubMembership.myClubs.title')} icon={Building2} />
 
       {myClubs.length === 0 ? (
         <Card className="text-center py-8">
@@ -140,12 +136,7 @@ export function ClubMembershipManager() {
 
   const renderClubSearch = () => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-sky-300 flex items-center gap-2">
-          <Search className="h-5 w-5" />
-          {t('clubMembership.search.title')}
-        </h3>
-      </div>
+      <SectionHeader title={t('clubMembership.search.title')} icon={Search} />
 
       <div className="flex gap-2">
         <Input
@@ -213,17 +204,15 @@ export function ClubMembershipManager() {
 
   const renderPendingRequests = () => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-sky-300 flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          {t('clubMembership.requests.title')}
-          {pendingRequests.length > 0 && (
-            <span className="bg-amber-500 text-amber-900 text-xs px-2 py-1 rounded-full">
-              {pendingRequests.length}
-            </span>
-          )}
-        </h3>
-      </div>
+      <SectionHeader
+        title={t('clubMembership.requests.title')}
+        icon={Clock}
+        actions={pendingRequests.length > 0 && (
+          <span className="bg-amber-500 text-amber-900 text-xs px-2 py-1 rounded-full">
+            {pendingRequests.length}
+          </span>
+        )}
+      />
 
       {pendingRequests.length === 0 ? (
         <Card className="text-center py-8">

@@ -7,7 +7,7 @@ A mobile-first web application designed for coaching youth soccer teams. This ap
 Sport Wizard is built for managing youth soccer teams with flexible squad sizes (5-15 players) and multiple tactical formations. The app uses a modern composite configuration system combining format (5v5 or 7v7), squad size, formation (2-2, 1-2-1, 2-2-2, or 2-3-1), and individual substitution management to create customized team management experiences with intelligent rotation systems that ensure fair playing time distribution.
 
 ### Key Features
-
+    
 #### Core Game Management
 - **Smart Player Selection**: Choose players from flexible squad sizes (5-15 players supported)
 - **Multiple Formations**: Support for 2-2 (classic), 1-2-1 (tactical), 2-2-2, and 2-3-1 formations with role-aware time tracking

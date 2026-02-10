@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ListChecks, PlusCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { formatPlayerName } from '../../utils/formatUtils';
@@ -367,7 +369,7 @@ export function GameFinishedScreen({
       </div>
 
       {/* Match Summary */}
-      <div className="p-4 bg-slate-700 rounded-lg">
+      <Card>
         <MatchSummaryHeader
           ownTeamName={ownTeamName}
           opponentTeam={opponentTeam || t('stats.opponent')}
@@ -378,7 +380,7 @@ export function GameFinishedScreen({
           totalPeriods={totalPeriods}
           periodDurationMinutes={periodDurationMinutes}
         />
-      </div>
+      </Card>
 
       {/* Fair Play Award Selection */}
       {shouldShowFairPlayAward && (
@@ -427,9 +429,7 @@ export function GameFinishedScreen({
           </div>
 
           {saveError && (
-            <div className="mt-3 p-2 bg-rose-900/20 border border-rose-600 rounded text-rose-200 text-sm">
-              ❌ {saveError}
-            </div>
+            <Alert variant="error" className="mt-3">{saveError}</Alert>
           )}
         </div>
       )}

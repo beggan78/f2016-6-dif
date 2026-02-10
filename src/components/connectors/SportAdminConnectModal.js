@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
+import { Alert } from '../shared/Alert';
 import { Link, X, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
@@ -114,25 +115,16 @@ export function SportAdminConnectModal({ isOpen, onClose, team, onConnected }) {
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6">
           {/* Info Message */}
-          <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4 mb-6">
-            <div className="flex items-start space-x-3">
-              <ShieldCheck className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
-              <div className="space-y-1">
-                <p className="text-sky-200 text-sm">
-                  {t('sportAdminConnect.info.description')}
-                </p>
-                <p className="text-sky-300 text-xs">
-                  {t('sportAdminConnect.info.security')}
-                </p>
-              </div>
+          <Alert variant="info" icon={ShieldCheck} className="mb-6">
+            <div className="space-y-1">
+              <p>{t('sportAdminConnect.info.description')}</p>
+              <p className="text-xs opacity-80">{t('sportAdminConnect.info.security')}</p>
             </div>
-          </div>
+          </Alert>
 
           {/* General Error */}
           {generalError && (
-            <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3 mb-4">
-              <p className="text-rose-200 text-sm">{generalError}</p>
-            </div>
+            <Alert variant="error" className="mb-4">{generalError}</Alert>
           )}
 
           {/* Username Field */}

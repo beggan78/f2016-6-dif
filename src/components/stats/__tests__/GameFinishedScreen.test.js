@@ -488,7 +488,7 @@ describe('GameFinishedScreen', () => {
       await selectFairPlayAward(firstPlayer.displayName);
 
       await waitFor(() => {
-        expect(screen.getByText('❌ errors.matchNotFinished')).toBeInTheDocument();
+        expect(screen.getByText('errors.matchNotFinished')).toBeInTheDocument();
       });
     });
 
