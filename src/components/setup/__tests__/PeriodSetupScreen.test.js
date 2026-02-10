@@ -536,9 +536,9 @@ describe('PeriodSetupScreen', () => {
       // Should render without errors when formation is complete
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
 
-      // Should show grouped position cards
-      expect(screen.queryByText('Left')).not.toBeInTheDocument();
-      expect(screen.queryByText('Right')).not.toBeInTheDocument();
+      // Should show grouped position cards with role group headers
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.getByText('Offence')).toBeInTheDocument();
       // Should show grouped substitutes header
       expect(screen.getByText('Substitutes')).toBeInTheDocument();
     });
