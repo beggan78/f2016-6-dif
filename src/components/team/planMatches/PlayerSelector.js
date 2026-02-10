@@ -34,6 +34,7 @@ export function PlayerSelector({
       {players.map((player) => {
         const isUnavailable = unavailableSet.has(player.id);
         const isProviderUnavailable = providerUnavailableSet.has(player.id);
+        const isProviderOverrideActive = isProviderUnavailable && !isUnavailable;
         const isSelected = selectedSet.has(player.id);
         const isSelectedElsewhere = isSelectedInOtherMatch ? isSelectedInOtherMatch(player.id) : false;
 
@@ -75,14 +76,26 @@ export function PlayerSelector({
               }
               {onToggleUnavailable && (
                 isProviderUnavailable ? (
-                  <span
-                    className="rounded p-1 inline-flex items-center text-rose-200 cursor-not-allowed"
-                    title={t('planMatches.playerSelector.providerUnavailable')}
-                    aria-label={t('planMatches.playerSelector.providerUnavailable')}
-                    onClick={(event) => event.stopPropagation()}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleUnavailable(player.id);
+                    }}
+                    className={`rounded p-1 inline-flex items-center ${
+                      isProviderOverrideActive
+                        ? 'text-amber-300 hover:text-amber-200'
+                        : 'text-rose-200 hover:text-rose-100'
+                    }`}
+                    title={isProviderOverrideActive
+                      ? t('planMatches.playerSelector.markUnavailable')
+                      : t('planMatches.playerSelector.markAvailable')}
+                    aria-label={isProviderOverrideActive
+                      ? t('planMatches.playerSelector.markUnavailable')
+                      : t('planMatches.playerSelector.markAvailable')}
                   >
                     <Ban className="h-3.5 w-3.5" />
-                  </span>
+                  </button>
                 ) : (
                   <button
                     type="button"

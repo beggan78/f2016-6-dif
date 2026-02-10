@@ -29,6 +29,7 @@ jest.mock('../../../services/matchPlanningService', () => ({
 }));
 
 const STORAGE_KEY = 'sport-wizard-plan-match-auto-select-settings';
+const UNAVAILABLE_STORAGE_KEY = 'sport-wizard-plan-match-unavailable-players';
 
 describe('PlanMatchesScreen', () => {
   let defaultProps;
@@ -162,7 +163,7 @@ describe('PlanMatchesScreen', () => {
     expect(screen.getAllByText('Alex Player').length).toBe(1);
   });
 
-  it('should keep provider unavailable players non-toggleable and unselectable', () => {
+  it('should allow overriding provider unavailable players and persist override locally', async () => {
     mockUseProviderAvailability.mockReturnValue({
       providerUnavailableByMatch: {
         'match-1': ['p1']
@@ -172,13 +173,38 @@ describe('PlanMatchesScreen', () => {
 
     render(<PlanMatchesScreen {...defaultProps} />);
 
-    const alexRow = screen.getByText('Alex Player').closest('[role="button"]');
-    if (!alexRow) {
-      throw new Error('Expected Alex Player row to be present.');
-    }
+    const getAlexRosterRow = () => {
+      const row = screen
+        .getAllByText('Alex Player')
+        .map((node) => node.closest('[role="button"]'))
+        .filter(Boolean)
+        .find((candidate) => (
+          within(candidate).queryByLabelText('Mark available')
+          || within(candidate).queryByLabelText('Mark unavailable')
+        ));
 
-    expect(within(alexRow).queryByLabelText('Mark available')).not.toBeInTheDocument();
-    expect(within(alexRow).getByLabelText('Unavailable (reported)')).toBeInTheDocument();
+      if (!row) {
+        throw new Error('Expected Alex Player roster row to be present.');
+      }
+
+      return row;
+    };
+
+    const alexRow = getAlexRosterRow();
+    const markAvailableButton = within(alexRow).getByLabelText('Mark available');
+    fireEvent.click(markAvailableButton);
+
+    fireEvent.click(screen.getByText('Alex Player'));
+
+    expect(screen.getAllByText('Alex Player').length).toBe(2);
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem(UNAVAILABLE_STORAGE_KEY));
+      expect(stored.providerAvailableOverridesByMatch['match-1']).toEqual(['p1']);
+    });
+
+    const updatedAlexRow = getAlexRosterRow();
+    fireEvent.click(within(updatedAlexRow).getByLabelText('Mark unavailable'));
 
     fireEvent.click(screen.getByText('Alex Player'));
 

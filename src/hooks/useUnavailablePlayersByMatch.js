@@ -5,7 +5,8 @@ import { areSelectionMapsEqual } from '../utils/comparisonUtils';
 
 const UNAVAILABLE_DEFAULT_STATE = {
   teamId: null,
-  matches: {}
+  matches: {},
+  providerAvailableOverridesByMatch: {}
 };
 
 export const useUnavailablePlayersByMatch = (teamId) => {
@@ -21,6 +22,16 @@ export const useUnavailablePlayersByMatch = (teamId) => {
     }
     return {};
   }, [unavailableState?.matches]);
+
+  const providerAvailableOverridesByMatch = useMemo(() => {
+    if (
+      unavailableState?.providerAvailableOverridesByMatch
+      && typeof unavailableState.providerAvailableOverridesByMatch === 'object'
+    ) {
+      return unavailableState.providerAvailableOverridesByMatch;
+    }
+    return {};
+  }, [unavailableState?.providerAvailableOverridesByMatch]);
 
   const setUnavailablePlayersByMatch = useCallback((updater) => {
     setUnavailableState((prev) => {
@@ -38,5 +49,29 @@ export const useUnavailablePlayersByMatch = (teamId) => {
     });
   }, [teamId, setUnavailableState]);
 
-  return { unavailablePlayersByMatch, setUnavailablePlayersByMatch };
+  const setProviderAvailableOverridesByMatch = useCallback((updater) => {
+    setUnavailableState((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : UNAVAILABLE_DEFAULT_STATE;
+      const prevOverrides = base.providerAvailableOverridesByMatch
+        && typeof base.providerAvailableOverridesByMatch === 'object'
+        ? base.providerAvailableOverridesByMatch
+        : {};
+      const nextOverrides = typeof updater === 'function' ? updater(prevOverrides) : updater;
+      if (areSelectionMapsEqual(prevOverrides, nextOverrides)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: teamId ?? null,
+        providerAvailableOverridesByMatch: nextOverrides
+      };
+    });
+  }, [teamId, setUnavailableState]);
+
+  return {
+    unavailablePlayersByMatch,
+    providerAvailableOverridesByMatch,
+    setUnavailablePlayersByMatch,
+    setProviderAvailableOverridesByMatch
+  };
 };

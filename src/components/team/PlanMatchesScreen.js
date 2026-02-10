@@ -30,7 +30,12 @@ export function PlanMatchesScreen({
   const [showAutoSelectModal, setShowAutoSelectModal] = useState(false);
   const [autoSelectMatchId, setAutoSelectMatchId] = useState(null);
 
-  const { unavailablePlayersByMatch, setUnavailablePlayersByMatch } = useUnavailablePlayersByMatch(currentTeam?.id);
+  const {
+    unavailablePlayersByMatch,
+    providerAvailableOverridesByMatch,
+    setUnavailablePlayersByMatch,
+    setProviderAvailableOverridesByMatch
+  } = useUnavailablePlayersByMatch(currentTeam?.id);
   const { autoSelectSettings, targetCounts, lastSquadSize, setAutoSelectSettings, setTargetCounts, setLastSquadSize } = useAutoSelectPreferences(
     currentTeam?.id
   );
@@ -62,6 +67,7 @@ export function PlanMatchesScreen({
     const merged = {};
     const allMatchIds = new Set([
       ...Object.keys(unavailablePlayersByMatch || {}),
+      ...Object.keys(providerAvailableOverridesByMatch || {}),
       ...Object.keys(providerUnavailableByMatch || {}),
       ...matches.map((match) => String(match.id))
     ]);
@@ -69,14 +75,16 @@ export function PlanMatchesScreen({
     allMatchIds.forEach((matchId) => {
       const manualIds = unavailablePlayersByMatch[matchId] || [];
       const providerIds = providerUnavailableByMatch[matchId] || [];
-      const uniqueIds = Array.from(new Set([...manualIds, ...providerIds]));
+      const providerOverrideSet = new Set(providerAvailableOverridesByMatch[matchId] || []);
+      const effectiveProviderIds = providerIds.filter((playerId) => !providerOverrideSet.has(playerId));
+      const uniqueIds = Array.from(new Set([...manualIds, ...effectiveProviderIds]));
       if (uniqueIds.length > 0) {
         merged[matchId] = uniqueIds;
       }
     });
 
     return merged;
-  }, [matches, providerUnavailableByMatch, unavailablePlayersByMatch]);
+  }, [matches, providerAvailableOverridesByMatch, providerUnavailableByMatch, unavailablePlayersByMatch]);
 
   const endDate = useMemo(() => new Date(), []);
   const startDate = useMemo(() => {
@@ -230,7 +238,52 @@ export function PlanMatchesScreen({
 
   const togglePlayerUnavailable = useCallback((matchId, playerId) => {
     const providerUnavailableSet = new Set(providerUnavailableByMatch[matchId] || []);
+    const providerOverrideSet = new Set(providerAvailableOverridesByMatch[matchId] || []);
+
     if (providerUnavailableSet.has(playerId)) {
+      const isOverrideActive = providerOverrideSet.has(playerId);
+
+      setProviderAvailableOverridesByMatch((prev) => {
+        const current = new Set(prev[matchId] || []);
+        if (isOverrideActive) {
+          current.delete(playerId);
+        } else {
+          current.add(playerId);
+        }
+        return {
+          ...prev,
+          [matchId]: Array.from(current)
+        };
+      });
+
+      if (!isOverrideActive) {
+        setUnavailablePlayersByMatch((prev) => {
+          const current = new Set(prev[matchId] || []);
+          if (!current.has(playerId)) {
+            return prev;
+          }
+          current.delete(playerId);
+          return {
+            ...prev,
+            [matchId]: Array.from(current)
+          };
+        });
+      }
+
+      if (isOverrideActive) {
+        setSelectedPlayersByMatch((prev) => {
+          const current = new Set(prev[matchId] || []);
+          if (current.has(playerId)) {
+            current.delete(playerId);
+            return {
+              ...prev,
+              [matchId]: Array.from(current)
+            };
+          }
+          return prev;
+        });
+      }
+
       return;
     }
 
@@ -262,7 +315,14 @@ export function PlanMatchesScreen({
         return prev;
       });
     }
-  }, [providerUnavailableByMatch, setSelectedPlayersByMatch, setUnavailablePlayersByMatch, unavailablePlayersByMatch]);
+  }, [
+    providerAvailableOverridesByMatch,
+    providerUnavailableByMatch,
+    setProviderAvailableOverridesByMatch,
+    setSelectedPlayersByMatch,
+    setUnavailablePlayersByMatch,
+    unavailablePlayersByMatch
+  ]);
 
   const handleReorderSelectedPlayers = useCallback((matchId, newOrderedIds) => {
     setSelectedPlayersByMatch((prev) => ({
