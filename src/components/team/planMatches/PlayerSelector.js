@@ -75,21 +75,14 @@ export function PlayerSelector({
               }
               {onToggleUnavailable && (
                 isProviderUnavailable ? (
-                  <Tooltip
-                    content={t('planMatches.playerSelector.providerUnavailable')}
-                    position="top"
-                    trigger="hover"
-                    className="inline-flex"
+                  <span
+                    className="rounded p-1 inline-flex items-center text-rose-200 cursor-not-allowed"
+                    title={t('planMatches.playerSelector.providerUnavailable')}
+                    aria-label={t('planMatches.playerSelector.providerUnavailable')}
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    <span
-                      className="rounded p-1 text-rose-200 cursor-not-allowed"
-                      title={t('planMatches.playerSelector.providerUnavailable')}
-                      aria-label={t('planMatches.playerSelector.providerUnavailable')}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <Ban className="h-3.5 w-3.5" />
-                    </span>
-                  </Tooltip>
+                    <Ban className="h-3.5 w-3.5" />
+                  </span>
                 ) : (
                   <button
                     type="button"
