@@ -30,7 +30,8 @@ export function MatchCard({
   onCrossDragEnd,
   crossMatchState,
   swapAnimation,
-  slideInAnimation
+  slideInAnimation,
+  sortMetric
 }) {
   const { t } = useTranslation('team');
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
@@ -265,7 +266,7 @@ export function MatchCard({
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}
             isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere}
-
+            sortMetric={sortMetric}
           />
         </div>
 
@@ -298,6 +299,7 @@ export function MatchCard({
                   && String(swapAnimation.sourcePlayerId) === String(player.id)
                 }
                 isBeingDisplaced={isBeingDisplaced(player.id)}
+                sortMetric={sortMetric}
               />
             ))}
             {selectedPlayers.length === 0 && (
@@ -322,6 +324,7 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(ghostPlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(ghostPlayer.id)}
+                    sortMetric={sortMetric}
                   />
                 </div>
               </Portal>
@@ -339,6 +342,7 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(slideInSourcePlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(slideInSourcePlayer.id)}
+                    sortMetric={sortMetric}
                   />
                 </div>
               </Portal>

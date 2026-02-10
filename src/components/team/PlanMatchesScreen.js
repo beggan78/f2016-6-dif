@@ -496,6 +496,7 @@ export function PlanMatchesScreen({
               rosterById={rosterById}
               selectedIds={selectedIds}
               unavailableIds={unavailableIds}
+              sortMetric={sortMetric}
               planningStatus={planningStatus[match.id]}
               canPlan={Boolean(defaults)}
               onPlanMatch={() => handlePlanMatch(match)}

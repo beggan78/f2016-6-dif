@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tooltip } from '../../shared';
 import { useTranslation } from 'react-i18next';
+import { AUTO_SELECT_STRATEGY } from '../../../constants/planMatchesConstants';
 
 const DraggablePlayerCardComponent = ({
   player,
@@ -13,7 +14,8 @@ const DraggablePlayerCardComponent = ({
   isDragActivating,
   isSwapTarget,
   isSwapLanding,
-  isBeingDisplaced
+  isBeingDisplaced,
+  sortMetric
 }) => {
   const { t } = useTranslation('team');
 
@@ -61,10 +63,12 @@ const DraggablePlayerCardComponent = ({
         )}
       </div>
       <div className="flex items-center gap-2 text-[10px] font-mono text-sky-100/80">
-        <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
-          <span>{player.practicesPerMatch.toFixed(2)}</span>
-        </Tooltip>
-        <span>{player.attendanceRate.toFixed(1)}%</span>
+        {sortMetric === AUTO_SELECT_STRATEGY.ATTENDANCE
+          ? <span>{player.attendanceRate.toFixed(0)}%</span>
+          : <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
+              <span>{player.practicesPerMatch.toFixed(2)}</span>
+            </Tooltip>
+        }
       </div>
     </div>
   );
@@ -85,5 +89,6 @@ export const DraggablePlayerCard = React.memo(
     prevProps.player?.displayName === nextProps.player?.displayName &&
     prevProps.player?.jerseyNumber === nextProps.player?.jerseyNumber &&
     prevProps.player?.practicesPerMatch === nextProps.player?.practicesPerMatch &&
-    prevProps.player?.attendanceRate === nextProps.player?.attendanceRate
+    prevProps.player?.attendanceRate === nextProps.player?.attendanceRate &&
+    prevProps.sortMetric === nextProps.sortMetric
 );

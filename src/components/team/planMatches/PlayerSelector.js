@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Ban } from 'lucide-react';
 import { Tooltip } from '../../shared';
 import { useTranslation } from 'react-i18next';
+import { AUTO_SELECT_STRATEGY } from '../../../constants/planMatchesConstants';
 
 export function PlayerSelector({
   players,
@@ -11,7 +12,8 @@ export function PlayerSelector({
   onToggleUnavailable,
   isSelectedInOtherMatch,
   isSelectedAndOnlyAvailableHere,
-  emptyMessage
+  emptyMessage,
+  sortMetric
 }) {
   const { t } = useTranslation('team');
   const selectedSet = useMemo(() => new Set(selectedIds || []), [selectedIds]);
@@ -62,10 +64,12 @@ export function PlayerSelector({
             </div>
 
             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-300">
-              <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
-                <span>{player.practicesPerMatch.toFixed(2)}</span>
-              </Tooltip>
-              <span>{player.attendanceRate.toFixed(1)}%</span>
+              {sortMetric === AUTO_SELECT_STRATEGY.ATTENDANCE
+                ? <span>{player.attendanceRate.toFixed(0)}%</span>
+                : <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
+                    <span>{player.practicesPerMatch.toFixed(2)}</span>
+                  </Tooltip>
+              }
               {onToggleUnavailable && (
                 <button
                   type="button"

@@ -56,7 +56,6 @@ describe('DraggablePlayerCard', () => {
       expect(screen.getByText('Test Player')).toBeInTheDocument();
       expect(screen.getByText('#10')).toBeInTheDocument();
       expect(screen.getByText('3.45')).toBeInTheDocument();
-      expect(screen.getByText('85.5%')).toBeInTheDocument();
     });
 
     it('should render without jersey number', () => {
@@ -393,14 +392,14 @@ describe('DraggablePlayerCard', () => {
       expect(screen.getByText('3.46')).toBeInTheDocument();
     });
 
-    it('should format attendance rate with 1 decimal place', () => {
+    it('should format attendance rate with 0 decimal places when sortMetric is attendance', () => {
       const player = {
         ...mockPlayer,
         attendanceRate: 85.56789
       };
-      render(<DraggablePlayerCard {...defaultProps} player={player} />);
+      render(<DraggablePlayerCard {...defaultProps} player={player} sortMetric="attendance" />);
 
-      expect(screen.getByText('85.6%')).toBeInTheDocument();
+      expect(screen.getByText('86%')).toBeInTheDocument();
     });
 
     it('should handle zero practices per match', () => {
@@ -413,14 +412,14 @@ describe('DraggablePlayerCard', () => {
       expect(screen.getByText('0.00')).toBeInTheDocument();
     });
 
-    it('should handle zero attendance rate', () => {
+    it('should handle zero attendance rate when sortMetric is attendance', () => {
       const player = {
         ...mockPlayer,
         attendanceRate: 0
       };
-      render(<DraggablePlayerCard {...defaultProps} player={player} />);
+      render(<DraggablePlayerCard {...defaultProps} player={player} sortMetric="attendance" />);
 
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      expect(screen.getByText('0%')).toBeInTheDocument();
     });
 
     it('should handle very long player names with truncation', () => {
@@ -649,7 +648,6 @@ describe('DraggablePlayerCard', () => {
 
       expect(screen.getByText('Minimal Player')).toBeInTheDocument();
       expect(screen.getByText('0.00')).toBeInTheDocument();
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
     });
   });
 });
