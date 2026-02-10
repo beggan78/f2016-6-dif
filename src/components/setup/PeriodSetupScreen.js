@@ -55,7 +55,35 @@ const ROLE_GROUP_KEYS = {
   [PLAYER_ROLES.DEFENDER]: 'defence'
 };
 
+function PositionSelect({ position, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t, showLabel = false }) {
+  const config = getPositionConfig(position);
+  const displayTitle = getTranslatedPositionTitle(position, config, t);
+  const availableOptions = getAvailableOptions(config.position);
+
+  const select = (
+    <Select
+      value={formation[position] || ""}
+      onChange={value => onPlayerAssign(config.position, value)}
+      options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
+      placeholder={t('periodSetup.fallbacks.selectPosition', { title: displayTitle })}
+    />
+  );
+
+  if (showLabel) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-sky-300 w-16 shrink-0">{displayTitle}</span>
+        <div className="flex-1">{select}</div>
+      </div>
+    );
+  }
+
+  return <div>{select}</div>;
+}
+
 function GroupedPositionCards({ fieldGroups, substitutePositions, formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t }) {
+  const selectProps = { formation, onPlayerAssign, getAvailableOptions, currentPeriodNumber, t };
+
   return (
     <>
       {fieldGroups.map(({ role, positions }) => {
@@ -65,25 +93,9 @@ function GroupedPositionCards({ fieldGroups, substitutePositions, formation, onP
         return (
           <div key={role} className="p-2 bg-sky-700 rounded-md space-y-1.5">
             <h3 className="text-sm font-medium text-sky-200">{groupLabel}</h3>
-            {positions.map(position => {
-              const config = getPositionConfig(position);
-              const displayTitle = getTranslatedPositionTitle(position, config, t);
-              const availableOptions = getAvailableOptions(config.position);
-
-              return (
-                <div key={position} className="flex items-center gap-2">
-                  <span className="text-xs text-sky-300 w-16 shrink-0">{displayTitle}</span>
-                  <div className="flex-1">
-                    <Select
-                      value={formation[position] || ""}
-                      onChange={value => onPlayerAssign(config.position, value)}
-                      options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-                      placeholder={t('periodSetup.fallbacks.selectPosition', { title: displayTitle })}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+            {positions.map(position => (
+              <PositionSelect key={position} position={position} showLabel {...selectProps} />
+            ))}
           </div>
         );
       })}
@@ -91,22 +103,9 @@ function GroupedPositionCards({ fieldGroups, substitutePositions, formation, onP
       {substitutePositions.length > 0 && (
         <div className="p-2 bg-slate-700 rounded-md space-y-1.5">
           <h3 className="text-sm font-medium text-slate-200">{t('periodSetup.roleGroups.substitutes')}</h3>
-          {substitutePositions.map(position => {
-            const config = getPositionConfig(position);
-            const displayTitle = getTranslatedPositionTitle(position, config, t);
-            const availableOptions = getAvailableOptions(config.position);
-
-            return (
-              <div key={position}>
-                <Select
-                  value={formation[position] || ""}
-                  onChange={value => onPlayerAssign(config.position, value)}
-                  options={availableOptions.map(p => ({ value: p.id, label: getPlayerLabel(p, currentPeriodNumber) }))}
-                  placeholder={t('periodSetup.fallbacks.selectPosition', { title: displayTitle })}
-                />
-              </div>
-            );
-          })}
+          {substitutePositions.map(position => (
+            <PositionSelect key={position} position={position} {...selectProps} />
+          ))}
         </div>
       )}
     </>
