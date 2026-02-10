@@ -287,7 +287,8 @@ describe('PeriodSetupScreen', () => {
 
       render(<PeriodSetupScreen {...props} />);
 
-      expect(screen.getAllByText('Substitute')).toHaveLength(substitutePositions.length);
+      // Substitutes are grouped under one "Substitutes" header
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
       expect(screen.getAllByTestId('select')).toHaveLength(1 + fieldPositions.length + substitutePositions.length);
     });
   });
@@ -535,11 +536,11 @@ describe('PeriodSetupScreen', () => {
       // Should render without errors when formation is complete
       expect(screen.getByText('Period 1 Team Selection')).toBeInTheDocument();
 
-      // Should show individual position cards
-      expect(screen.queryByText('Left')).not.toBeInTheDocument();
-      expect(screen.queryByText('Right')).not.toBeInTheDocument();
-      // Should show substitute positions (multiple)
-      expect(screen.getAllByText('Substitute').length).toBeGreaterThan(0);
+      // Should show grouped position cards with role group headers
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      // Should show grouped substitutes header
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
     });
 
     it('should enable start button when formation is complete', () => {
@@ -886,6 +887,78 @@ describe('PeriodSetupScreen', () => {
 
       // Save Configuration button should not be visible
       expect(screen.queryByText('Save Configuration')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Grouped Position Cards', () => {
+    it('should render Offence and Defence group headers for 2-2 formation', () => {
+      const completeFormation = {
+        goalie: '7',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
+      };
+
+      const props = { ...mockProps, formation: completeFormation };
+      render(<PeriodSetupScreen {...props} />);
+
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.queryByText('Midfield')).not.toBeInTheDocument();
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+    });
+
+    it('should render Offence, Midfield, and Defence group headers for 1-2-1 formation', () => {
+      const teamConfig = {
+        format: FORMATS.FORMAT_5V5,
+        squadSize: 7,
+        formation: FORMATIONS.FORMATION_1_2_1
+      };
+
+      const formation121 = {
+        goalie: '7',
+        defender: '1',
+        left: '2',
+        right: '3',
+        attacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
+      };
+
+      const props = {
+        ...mockProps,
+        teamConfig,
+        selectedFormation: '1-2-1',
+        formation: formation121
+      };
+
+      render(<PeriodSetupScreen {...props} />);
+
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.getByText('Midfield')).toBeInTheDocument();
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+    });
+
+    it('should render correct total number of selects for 2-2 formation', () => {
+      const completeFormation = {
+        goalie: '7',
+        leftDefender: '1',
+        rightDefender: '2',
+        leftAttacker: '3',
+        rightAttacker: '4',
+        substitute_1: '5',
+        substitute_2: '6'
+      };
+
+      const props = { ...mockProps, formation: completeFormation };
+      render(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 4 field + 2 substitute = 7 selects
+      expect(screen.getAllByTestId('select')).toHaveLength(7);
     });
   });
 });
