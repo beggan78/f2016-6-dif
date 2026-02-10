@@ -9,6 +9,7 @@ import { useAttendanceStats } from '../../hooks/useAttendanceStats';
 import { usePlanProgress } from '../../hooks/usePlanProgress';
 import { usePlanningDefaults } from '../../hooks/usePlanningDefaults';
 import { useUnavailablePlayersByMatch } from '../../hooks/useUnavailablePlayersByMatch';
+import { useProviderAvailability } from '../../hooks/useProviderAvailability';
 import { useCrossMatchDrag } from '../../hooks/useCrossMatchDrag';
 import { MatchCard } from './planMatches/MatchCard';
 import { AutoSelectModal } from './planMatches/AutoSelectModal';
@@ -56,6 +57,26 @@ export function PlanMatchesScreen({
     }
     return matches;
   }, [autoSelectMatchId, matches]);
+  const { providerUnavailableByMatch } = useProviderAvailability(matches);
+  const mergedUnavailableByMatch = useMemo(() => {
+    const merged = {};
+    const allMatchIds = new Set([
+      ...Object.keys(unavailablePlayersByMatch || {}),
+      ...Object.keys(providerUnavailableByMatch || {}),
+      ...matches.map((match) => String(match.id))
+    ]);
+
+    allMatchIds.forEach((matchId) => {
+      const manualIds = unavailablePlayersByMatch[matchId] || [];
+      const providerIds = providerUnavailableByMatch[matchId] || [];
+      const uniqueIds = Array.from(new Set([...manualIds, ...providerIds]));
+      if (uniqueIds.length > 0) {
+        merged[matchId] = uniqueIds;
+      }
+    });
+
+    return merged;
+  }, [matches, providerUnavailableByMatch, unavailablePlayersByMatch]);
 
   const endDate = useMemo(() => new Date(), []);
   const startDate = useMemo(() => {
@@ -185,7 +206,7 @@ export function PlanMatchesScreen({
     return `${matchDate} ${trimmed}`;
   };
 
-  const getUnavailableSet = useCallback((matchId) => new Set(unavailablePlayersByMatch[matchId] || []), [unavailablePlayersByMatch]);
+  const getUnavailableSet = useCallback((matchId) => new Set(mergedUnavailableByMatch[matchId] || []), [mergedUnavailableByMatch]);
 
   const togglePlayerSelection = useCallback((matchId, playerId) => {
     const unavailableSet = getUnavailableSet(matchId);
@@ -208,6 +229,11 @@ export function PlanMatchesScreen({
   }, [getUnavailableSet, setSelectedPlayersByMatch]);
 
   const togglePlayerUnavailable = useCallback((matchId, playerId) => {
+    const providerUnavailableSet = new Set(providerUnavailableByMatch[matchId] || []);
+    if (providerUnavailableSet.has(playerId)) {
+      return;
+    }
+
     const wasUnavailable = (unavailablePlayersByMatch[matchId] || []).includes(playerId);
 
     setUnavailablePlayersByMatch((prev) => {
@@ -236,7 +262,7 @@ export function PlanMatchesScreen({
         return prev;
       });
     }
-  }, [setSelectedPlayersByMatch, setUnavailablePlayersByMatch, unavailablePlayersByMatch]);
+  }, [providerUnavailableByMatch, setSelectedPlayersByMatch, setUnavailablePlayersByMatch, unavailablePlayersByMatch]);
 
   const handleReorderSelectedPlayers = useCallback((matchId, newOrderedIds) => {
     setSelectedPlayersByMatch((prev) => ({
@@ -260,7 +286,7 @@ export function PlanMatchesScreen({
 
   const { registerContainer, handleDragMove, handleDragEnd, crossMatchState, swapAnimation, slideInAnimation } = useCrossMatchDrag({
     selectedPlayersByMatch,
-    unavailablePlayersByMatch,
+    unavailablePlayersByMatch: mergedUnavailableByMatch,
     onSwapPlayers: handleSwapPlayers
   });
 
@@ -280,14 +306,14 @@ export function PlanMatchesScreen({
       rosterWithStats,
       metric,
       targetCount: targetCounts[matchId] || 0,
-      unavailableIds: unavailablePlayersByMatch[matchId]
+      unavailableIds: mergedUnavailableByMatch[matchId]
     });
 
     setSelectedPlayersByMatch((prev) => ({
       ...prev,
       [matchId]: selected
     }));
-  }, [rosterWithStats, targetCounts, unavailablePlayersByMatch, setSelectedPlayersByMatch]);
+  }, [mergedUnavailableByMatch, rosterWithStats, targetCounts, setSelectedPlayersByMatch]);
 
   const runAutoSelectMultipleMatches = useCallback((metric, ensureCoverage) => {
     const nextSelections = autoSelectMultipleMatches({
@@ -295,7 +321,7 @@ export function PlanMatchesScreen({
       metric,
       matches,
       targetCounts,
-      unavailableByMatch: unavailablePlayersByMatch,
+      unavailableByMatch: mergedUnavailableByMatch,
       ensureCoverage
     });
 
@@ -303,7 +329,7 @@ export function PlanMatchesScreen({
       ...prev,
       ...nextSelections
     }));
-  }, [matches, rosterWithStats, targetCounts, unavailablePlayersByMatch, setSelectedPlayersByMatch]);
+  }, [matches, mergedUnavailableByMatch, rosterWithStats, targetCounts, setSelectedPlayersByMatch]);
 
   const isPlayerInMultipleMatches = useCallback((playerId) => {
     const matchesWithPlayer = matches.filter(match =>
@@ -332,9 +358,9 @@ export function PlanMatchesScreen({
 
     // Player must be unavailable in at least one other match
     return matches.some(other =>
-      other.id !== matchId && (unavailablePlayersByMatch[other.id] || []).includes(playerId)
+      other.id !== matchId && (mergedUnavailableByMatch[other.id] || []).includes(playerId)
     );
-  }, [matches, selectedPlayersByMatch, unavailablePlayersByMatch]);
+  }, [matches, mergedUnavailableByMatch, selectedPlayersByMatch]);
 
   const handleAutoSelect = () => {
     setAutoSelectMatchId(null);
@@ -484,7 +510,8 @@ export function PlanMatchesScreen({
       <div className={`grid gap-4 ${matches.length > 1 ? 'lg:grid-cols-2' : ''}`}>
         {matches.map((match) => {
           const selectedIds = selectedPlayersByMatch[match.id] || [];
-          const unavailableIds = unavailablePlayersByMatch[match.id] || [];
+          const unavailableIds = mergedUnavailableByMatch[match.id] || [];
+          const providerUnavailableIds = providerUnavailableByMatch[match.id] || [];
 
           return (
             <MatchCard
@@ -496,6 +523,7 @@ export function PlanMatchesScreen({
               rosterById={rosterById}
               selectedIds={selectedIds}
               unavailableIds={unavailableIds}
+              providerUnavailableIds={providerUnavailableIds}
               sortMetric={sortMetric}
               planningStatus={planningStatus[match.id]}
               canPlan={Boolean(defaults)}

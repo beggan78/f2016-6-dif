@@ -8,6 +8,7 @@ export function PlayerSelector({
   players,
   selectedIds,
   unavailableIds,
+  providerUnavailableIds,
   onToggleSelect,
   onToggleUnavailable,
   isSelectedInOtherMatch,
@@ -18,6 +19,7 @@ export function PlayerSelector({
   const { t } = useTranslation('team');
   const selectedSet = useMemo(() => new Set(selectedIds || []), [selectedIds]);
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
+  const providerUnavailableSet = useMemo(() => new Set(providerUnavailableIds || []), [providerUnavailableIds]);
 
   if (!players || players.length === 0) {
     return (
@@ -31,6 +33,7 @@ export function PlayerSelector({
     <div className="space-y-1 pr-1">
       {players.map((player) => {
         const isUnavailable = unavailableSet.has(player.id);
+        const isProviderUnavailable = providerUnavailableSet.has(player.id);
         const isSelected = selectedSet.has(player.id);
         const isSelectedElsewhere = isSelectedInOtherMatch ? isSelectedInOtherMatch(player.id) : false;
 
@@ -71,22 +74,40 @@ export function PlayerSelector({
                   </Tooltip>
               }
               {onToggleUnavailable && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onToggleUnavailable(player.id);
-                  }}
-                  className={`rounded p-1 ${
-                    isUnavailable
-                      ? 'text-rose-200 hover:text-rose-100'
-                      : 'text-slate-400 hover:text-rose-200'
-                  }`}
-                  title={isUnavailable ? t('planMatches.playerSelector.markAvailable') : t('planMatches.playerSelector.markUnavailable')}
-                  aria-label={isUnavailable ? t('planMatches.playerSelector.markAvailable') : t('planMatches.playerSelector.markUnavailable')}
-                >
-                  <Ban className="h-3.5 w-3.5" />
-                </button>
+                isProviderUnavailable ? (
+                  <Tooltip
+                    content={t('planMatches.playerSelector.providerUnavailable')}
+                    position="top"
+                    trigger="hover"
+                    className="inline-flex"
+                  >
+                    <span
+                      className="rounded p-1 text-rose-200 cursor-not-allowed"
+                      title={t('planMatches.playerSelector.providerUnavailable')}
+                      aria-label={t('planMatches.playerSelector.providerUnavailable')}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Ban className="h-3.5 w-3.5" />
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleUnavailable(player.id);
+                    }}
+                    className={`rounded p-1 ${
+                      isUnavailable
+                        ? 'text-rose-200 hover:text-rose-100'
+                        : 'text-slate-400 hover:text-rose-200'
+                    }`}
+                    title={isUnavailable ? t('planMatches.playerSelector.markAvailable') : t('planMatches.playerSelector.markUnavailable')}
+                    aria-label={isUnavailable ? t('planMatches.playerSelector.markAvailable') : t('planMatches.playerSelector.markUnavailable')}
+                  >
+                    <Ban className="h-3.5 w-3.5" />
+                  </button>
+                )
               )}
             </div>
           </div>

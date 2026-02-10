@@ -20,6 +20,10 @@ jest.mock('../../../hooks/usePlanningDefaults', () => ({
   usePlanningDefaults: jest.fn()
 }));
 
+jest.mock('../../../hooks/useProviderAvailability', () => ({
+  useProviderAvailability: jest.fn()
+}));
+
 jest.mock('../../../services/matchPlanningService', () => ({
   planUpcomingMatch: jest.fn()
 }));
@@ -31,6 +35,7 @@ describe('PlanMatchesScreen', () => {
   let mockUseTeam;
   let mockUseAttendanceStats;
   let mockUsePlanningDefaults;
+  let mockUseProviderAvailability;
   let mockPlanUpcomingMatch;
 
   const mockTeam = {
@@ -74,6 +79,7 @@ describe('PlanMatchesScreen', () => {
     mockUseTeam = require('../../../contexts/TeamContext').useTeam;
     mockUseAttendanceStats = require('../../../hooks/useAttendanceStats').useAttendanceStats;
     mockUsePlanningDefaults = require('../../../hooks/usePlanningDefaults').usePlanningDefaults;
+    mockUseProviderAvailability = require('../../../hooks/useProviderAvailability').useProviderAvailability;
     mockPlanUpcomingMatch = require('../../../services/matchPlanningService').planUpcomingMatch;
 
     mockUseTeam.mockReturnValue({
@@ -94,6 +100,11 @@ describe('PlanMatchesScreen', () => {
     mockUsePlanningDefaults.mockReturnValue({
       defaults: { format: '5v5' },
       defaultsError: null
+    });
+
+    mockUseProviderAvailability.mockReturnValue({
+      providerUnavailableByMatch: {},
+      providerAvailabilityLoading: false
     });
 
     mockPlanUpcomingMatch.mockResolvedValue({ success: true });
@@ -145,6 +156,29 @@ describe('PlanMatchesScreen', () => {
 
     const unavailableButton = within(alexRow).getByLabelText('Mark unavailable');
     fireEvent.click(unavailableButton);
+
+    fireEvent.click(screen.getByText('Alex Player'));
+
+    expect(screen.getAllByText('Alex Player').length).toBe(1);
+  });
+
+  it('should keep provider unavailable players non-toggleable and unselectable', () => {
+    mockUseProviderAvailability.mockReturnValue({
+      providerUnavailableByMatch: {
+        'match-1': ['p1']
+      },
+      providerAvailabilityLoading: false
+    });
+
+    render(<PlanMatchesScreen {...defaultProps} />);
+
+    const alexRow = screen.getByText('Alex Player').closest('[role="button"]');
+    if (!alexRow) {
+      throw new Error('Expected Alex Player row to be present.');
+    }
+
+    expect(within(alexRow).queryByLabelText('Mark available')).not.toBeInTheDocument();
+    expect(within(alexRow).getByLabelText('Unavailable (reported)')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Alex Player'));
 

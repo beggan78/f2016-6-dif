@@ -15,6 +15,7 @@ export function MatchCard({
   rosterById,
   selectedIds,
   unavailableIds,
+  providerUnavailableIds,
   planningStatus,
   canPlan,
   isSelectedInOtherMatch,
@@ -262,6 +263,7 @@ export function MatchCard({
             players={displayRoster}
             selectedIds={selectedIds}
             unavailableIds={unavailableIds}
+            providerUnavailableIds={providerUnavailableIds}
             onToggleSelect={onToggleSelect}
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}

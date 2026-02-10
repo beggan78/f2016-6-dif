@@ -3,7 +3,7 @@
  * Integration layer between match records and external data sources
  */
 
-import { findUpcomingMatchByOpponent } from '../matchIntegrationService';
+import { findUpcomingMatchByOpponent, getMatchPlayerAvailability } from '../matchIntegrationService';
 import * as fixtures from '../__fixtures__/upcomingMatches';
 
 // Mock dependencies
@@ -19,7 +19,9 @@ describe('MatchIntegrationService', () => {
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
       gte: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis()
+      order: jest.fn().mockReturnThis(),
+      in: jest.fn().mockReturnThis(),
+      not: jest.fn().mockReturnThis()
     };
 
     require('../../lib/supabase').supabase = mockSupabase;
@@ -371,6 +373,114 @@ describe('MatchIntegrationService', () => {
 
         expect(result).toBe(null);
       });
+    });
+  });
+
+  describe('getMatchPlayerAvailability', () => {
+    it('returns empty map when matchIds is empty', async () => {
+      const result = await getMatchPlayerAvailability([]);
+
+      expect(result).toEqual({
+        success: true,
+        availabilityByMatch: {}
+      });
+      expect(mockSupabase.from).not.toHaveBeenCalled();
+    });
+
+    it('queries upcoming_match_player with match filter and non-null player mapping', async () => {
+      mockSupabase.not.mockResolvedValue({
+        data: [],
+        error: null
+      });
+
+      await getMatchPlayerAvailability(['match-1', 'match-2']);
+
+      expect(mockSupabase.from).toHaveBeenCalledWith('upcoming_match_player');
+      expect(mockSupabase.select).toHaveBeenCalledWith(
+        expect.stringContaining('connected_player:connected_player_id')
+      );
+      expect(mockSupabase.in).toHaveBeenCalledWith('upcoming_match_id', ['match-1', 'match-2']);
+      expect(mockSupabase.not).toHaveBeenCalledWith('connected_player.player_id', 'is', null);
+    });
+
+    it('maps availability and response by match and player id', async () => {
+      mockSupabase.not.mockResolvedValue({
+        data: [
+          {
+            upcoming_match_id: 'match-1',
+            availability: 'unavailable',
+            response: 'declined',
+            connected_player: { player_id: 'player-1' }
+          },
+          {
+            upcoming_match_id: 'match-1',
+            availability: 'available',
+            response: 'accepted',
+            connected_player: { player_id: 'player-2' }
+          },
+          {
+            upcoming_match_id: 'match-2',
+            availability: 'unknown',
+            response: 'no_response',
+            connected_player: { player_id: 'player-3' }
+          },
+          {
+            upcoming_match_id: 'match-2',
+            availability: 'unavailable',
+            response: 'declined',
+            connected_player: { player_id: null }
+          }
+        ],
+        error: null
+      });
+
+      const result = await getMatchPlayerAvailability(['match-1', 'match-2']);
+
+      expect(result).toEqual({
+        success: true,
+        availabilityByMatch: {
+          'match-1': {
+            'player-1': { availability: 'unavailable', response: 'declined' },
+            'player-2': { availability: 'available', response: 'accepted' }
+          },
+          'match-2': {
+            'player-3': { availability: 'unknown', response: 'no_response' }
+          }
+        }
+      });
+    });
+
+    it('returns a database error result when query fails', async () => {
+      mockSupabase.not.mockResolvedValue({
+        data: null,
+        error: { message: 'query failed' }
+      });
+
+      const result = await getMatchPlayerAvailability(['match-1']);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Database error: query failed'
+      });
+      expect(console.error).toHaveBeenCalledWith(
+        'Failed to get upcoming match player availability:',
+        { message: 'query failed' }
+      );
+    });
+
+    it('returns an unexpected error result on exception', async () => {
+      mockSupabase.not.mockRejectedValue(new Error('network down'));
+
+      const result = await getMatchPlayerAvailability(['match-1']);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Unexpected error: network down'
+      });
+      expect(console.error).toHaveBeenCalledWith(
+        'Exception while getting match player availability:',
+        expect.any(Error)
+      );
     });
   });
 });
