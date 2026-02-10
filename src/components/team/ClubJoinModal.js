@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -77,12 +78,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <p className="text-rose-200 text-sm">{error}</p>
-              </div>
-            </div>
+            <Alert variant="error" icon={AlertTriangle} className="mt-4">{error}</Alert>
           )}
         </div>
 

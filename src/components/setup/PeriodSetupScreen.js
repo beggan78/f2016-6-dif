@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Users, Play, ArrowLeft, Shuffle, Save } from 'lucide-react';
 import { Select, Button, ConfirmationModal } from '../shared/UI';
+import { Alert } from '../shared/Alert';
 import { getPlayerLabel } from '../../utils/formatUtils';
 import { scrollToTopSmooth } from '../../utils/scrollUtils';
 import { getPlayerDisplayName as getPlayerDisplayNameUtil, getPlayerDisplayNameById as getPlayerDisplayNameByIdUtil } from '../../utils/playerUtils';
@@ -1131,15 +1132,11 @@ export function PeriodSetupScreen({
 
       {/* Save Period Configuration Status Messages */}
       {savePeriodConfigStatus.message && (
-        <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
-          <p className="text-emerald-200 text-sm">{savePeriodConfigStatus.message}</p>
-        </div>
+        <Alert variant="success">{savePeriodConfigStatus.message}</Alert>
       )}
 
       {savePeriodConfigStatus.error && (
-        <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
-          <p className="text-rose-200 text-sm">{t('periodSetup.saveStatus.error', { message: savePeriodConfigStatus.error })}</p>
-        </div>
+        <Alert variant="error">{t('periodSetup.saveStatus.error', { message: savePeriodConfigStatus.error })}</Alert>
       )}
 
       {formation.goalie && (

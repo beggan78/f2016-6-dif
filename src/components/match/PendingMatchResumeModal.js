@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { Alert } from '../shared/Alert';
 import { Play, Trash2, X, Calendar, Users, Clock, Target, Plus, User } from 'lucide-react';
 
 /**
@@ -94,9 +96,7 @@ export function PendingMatchResumeModal({
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Error Display */}
           {error && (
-            <div className="p-4 mx-6 mt-6 bg-rose-900/20 border border-rose-600 rounded-lg">
-              <p className="text-sm text-rose-200">{error}</p>
-            </div>
+            <Alert variant="error" className="mx-6 mt-6">{error}</Alert>
           )}
 
           {/* Empty State */}
@@ -253,10 +253,7 @@ export function PendingMatchResumeModal({
         {/* Loading State Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-              <p className="text-sm text-slate-300">{t('pendingMatchResume.processing')}</p>
-            </div>
+            <LoadingSpinner size="md" message={t('pendingMatchResume.processing')} />
           </div>
         )}
       </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, BarChart3, Users, History, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
@@ -266,10 +268,10 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
           )}
         </div>
       </div>
-      <div className="bg-slate-800 border border-slate-600 rounded-lg p-6 text-center space-y-4">
+      <Card variant="dark" padding="lg" className="text-center space-y-4">
         <p className="text-slate-300 text-sm">{body}</p>
         {actions}
-      </div>
+      </Card>
     </div>
   );
 
@@ -291,10 +293,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
           </div>
         </div>
         <div className="flex justify-center py-10">
-          <div className="flex items-center space-x-3 text-slate-400">
-            <div className="h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-            <span>{tStats('screen.fetchingData')}</span>
-          </div>
+          <LoadingSpinner size="sm" message={tStats('screen.fetchingData')} />
         </div>
       </div>
     );

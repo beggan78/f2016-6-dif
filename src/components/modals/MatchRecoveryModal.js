@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Card } from '../shared/Card';
+import { Alert } from '../shared/Alert';
 import { History, Trash2, X, Calendar, Clock, Trophy, Users } from 'lucide-react';
 import { FORMATS } from '../../constants/teamConfiguration';
 
@@ -120,7 +122,7 @@ export function MatchRecoveryModal({
         {/* Content */}
         <div className="p-6">
           {/* Match Details */}
-          <div className="bg-slate-700 rounded-lg p-4 mb-6 space-y-3">
+          <Card className="mb-6 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-medium text-slate-200">{t('matchRecovery.matchDetails')}</h3>
               <span className={`text-sm font-semibold ${outcomeDisplay.color}`}>
@@ -157,14 +159,14 @@ export function MatchRecoveryModal({
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Explanation */}
-          <div className="mb-6 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
-            <p className="text-sm text-blue-200 leading-relaxed">
+          <Alert variant="info" className="mb-6">
+            <p className="leading-relaxed">
               {t('matchRecovery.explanation')}
             </p>
-          </div>
+          </Alert>
 
           {/* Action Buttons */}
           <div className="space-y-3">

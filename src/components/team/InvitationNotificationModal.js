@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -156,12 +157,7 @@ export function InvitationNotificationModal({
 
           {/* Success Message */}
           {successMessage && (
-            <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                <span className="text-emerald-200 text-sm">{successMessage}</span>
-              </div>
-            </div>
+            <Alert variant="success" icon={CheckCircle} className="mb-4">{successMessage}</Alert>
           )}
 
           <p className="text-slate-300 text-sm mb-6">

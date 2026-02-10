@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
 import { Link, X } from 'lucide-react';
 import { matchPlayerToConnectedPlayer } from '../../services/connectorService';
 import { useTranslation } from 'react-i18next';
@@ -95,9 +97,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-              <p className="text-rose-200 text-sm">{error}</p>
-            </div>
+            <Alert variant="error">{error}</Alert>
           )}
 
           {/* Roster Player Info */}
@@ -113,10 +113,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
           </div>
 
           {/* Provider Player Selection */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('playerMatching.selectProviderLabel')}
-            </label>
+          <FormGroup label={t('playerMatching.selectProviderLabel')}>
             <Select
               name="provider_player"
               value={selectedExternalPlayerId}
@@ -131,7 +128,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
             <p className="mt-2 text-xs text-slate-400">
               {t('playerMatching.selectProviderHelp')}
             </p>
-          </div>
+          </FormGroup>
 
           {/* Actions */}
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-600">

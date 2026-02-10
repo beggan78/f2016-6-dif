@@ -1,5 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { LoadingSpinner } from '../../shared/LoadingSpinner';
+import { Card } from '../../shared/Card';
 
 /**
  * StatsLoadingState Component
@@ -15,9 +17,9 @@ export function StatsLoadingState({ message }) {
   const displayMessage = message || t('loading');
   return (
     <div className="space-y-6">
-      <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-        <div className="text-slate-400">{displayMessage}</div>
-      </div>
+      <Card padding="lg" className="text-center">
+        <LoadingSpinner size="md" message={displayMessage} />
+      </Card>
     </div>
   );
 }

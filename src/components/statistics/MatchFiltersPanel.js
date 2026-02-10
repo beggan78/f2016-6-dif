@@ -4,6 +4,8 @@ import { Filter, ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
 import { getMatchTypeOptions } from '../../constants/matchTypes';
 import { MultiSelect, Button } from '../shared/UI';
 import { BREAKPOINTS } from '../../constants/layoutConstants';
+import { Card } from '../shared/Card';
+import { SectionHeader } from '../shared/SectionHeader';
 
 /**
  * Reusable match filters panel with collapsible behavior
@@ -115,16 +117,13 @@ export function MatchFiltersPanel({
   }, [showPlayerFilter, shouldShowFormatFilter]);
 
   return (
-    <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+    <Card>
       <div className="flex items-center justify-between">
         <div
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => setIsFilterCollapsed(!isFilterCollapsed)}
         >
-          <h3 className="text-lg font-semibold text-sky-400 flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {t('filters.title')}
-          </h3>
+          <SectionHeader title={t('filters.title')} icon={Filter} />
           {needsCollapse && (
             <button className="text-sky-400 hover:text-sky-300 transition-colors">
               {isFilterCollapsed ? (
@@ -219,6 +218,6 @@ export function MatchFiltersPanel({
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

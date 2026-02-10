@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
 import { Edit3, X } from 'lucide-react';
 
 export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAvailableJerseyNumbers }) {
@@ -147,15 +149,10 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* General Error */}
           {errors.general && (
-            <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-              <p className="text-rose-200 text-sm">{errors.general}</p>
-            </div>
+            <Alert variant="error">{errors.general}</Alert>
           )}
           {/* First Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.firstName')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.firstName')} error={errors.first_name}>
             <Input
               name="first_name"
               value={playerData.first_name}
@@ -165,16 +162,10 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               disabled={loading}
               className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
-            {errors.first_name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.first_name}</p>
-            )}
-          </div>
+          </FormGroup>
 
           {/* Last Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.lastName')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.lastName')} error={errors.last_name}>
             <Input
               name="last_name"
               value={playerData.last_name}
@@ -183,16 +174,10 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               disabled={loading}
               className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
-            {errors.last_name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.last_name}</p>
-            )}
-          </div>
+          </FormGroup>
 
           {/* Display Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.displayName')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.displayName')} error={errors.display_name}>
             <Input
               name="display_name"
               value={playerData.display_name}
@@ -201,19 +186,13 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               disabled={loading}
               className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
-            {errors.display_name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.display_name}</p>
-            )}
             <p className="mt-1 text-xs text-slate-400">
               {t('editRosterPlayerModal.form.helperText.displayName')}
             </p>
-          </div>
+          </FormGroup>
 
           {/* Jersey Number */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.jerseyNumber')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.jerseyNumber')} error={errors.jersey_number}>
             <Select
               value={playerData.jersey_number}
               onChange={(value) => handleInputChange('jersey_number', value)}
@@ -221,15 +200,12 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               disabled={loading}
               className={errors.jersey_number ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
             />
-            {errors.jersey_number && (
-              <p className="mt-1 text-sm text-rose-400">{errors.jersey_number}</p>
-            )}
             {availableNumbers.length === 0 && !currentJersey && (
               <p className="mt-1 text-sm text-amber-400">
                 {t('editRosterPlayerModal.jerseyNumber.allTaken')}
               </p>
             )}
-          </div>
+          </FormGroup>
 
           {/* Roster Status */}
           <div className="flex items-center space-x-3">

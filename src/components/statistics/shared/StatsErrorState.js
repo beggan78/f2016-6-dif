@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert } from '../../shared/Alert';
 
 /**
  * StatsErrorState Component
@@ -13,10 +14,12 @@ import React from 'react';
 export function StatsErrorState({ title, message }) {
   return (
     <div className="space-y-6">
-      <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-        <div className="text-red-400 mb-2">{title}</div>
-        <div className="text-slate-400 text-sm">{message}</div>
-      </div>
+      <Alert variant="error">
+        <div className="text-center">
+          <div className="mb-2 font-medium">{title}</div>
+          <div className="text-sm opacity-80">{message}</div>
+        </div>
+      </Alert>
     </div>
   );
 }

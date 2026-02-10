@@ -10,6 +10,10 @@ import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
 import { Button } from '../shared/UI';
 import { BREAKPOINTS } from '../../constants/layoutConstants';
+import { StatsLoadingState } from './shared/StatsLoadingState';
+import { StatsErrorState } from './shared/StatsErrorState';
+import { Card } from '../shared/Card';
+import { SectionHeader } from '../shared/SectionHeader';
 
 export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endDate, refreshKey = 0 }) {
   const { t } = useTranslation('statistics');
@@ -110,25 +114,12 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">{t('matchHistory.loading')}</div>
-        </div>
-      </div>
-    );
+    return <StatsLoadingState message={t('matchHistory.loading')} />;
   }
 
   // Show error state
   if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-red-400 mb-2">{t('matchHistory.error')}</div>
-          <div className="text-slate-400 text-sm">{error}</div>
-        </div>
-      </div>
-    );
+    return <StatsErrorState title={t('matchHistory.error')} message={error} />;
   }
 
   return (
@@ -152,12 +143,9 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
       />
 
       {/* Match List */}
-      <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+      <Card>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <History className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">{t('matchHistory.title')}</h3>
-          </div>
+          <SectionHeader title={t('matchHistory.title')} icon={History} />
           {onCreateMatch && (
             <Button onClick={onCreateMatch} Icon={PlusCircle} size="sm">
               {t('matchHistory.addMatch')}
@@ -243,7 +231,7 @@ export function MatchHistoryView({ onMatchSelect, onCreateMatch, startDate, endD
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

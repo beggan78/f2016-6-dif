@@ -2,6 +2,7 @@ import React from 'react';
 import { Shield, Sword, Hand, ArrowDownUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FORMATIONS } from '../../constants/teamConfiguration';
+import { Card } from '../shared/Card';
 import fieldImage from '../../assets/images/full-field-perspective.png';
 
 /**
@@ -98,7 +99,7 @@ export function FormationPreview({ formation, className = '' }) {
   if (!layout) return null;
 
   return (
-    <div className={`bg-slate-800 rounded-lg p-4 border border-slate-600 ${className}`}>
+    <Card variant="dark" className={className}>
       <div className="mb-3">
         <h4 className="text-sm font-medium text-sky-200 mb-1">{layout.name}</h4>
         <p className="text-xs text-slate-400">{layout.description}</p>
@@ -133,6 +134,6 @@ export function FormationPreview({ formation, className = '' }) {
       <div className="flex justify-between text-xs">
         {/* Role counts removed as requested */}
       </div>
-    </div>
+    </Card>
   );
 }

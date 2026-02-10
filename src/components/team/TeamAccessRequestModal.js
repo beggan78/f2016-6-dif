@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
 import { useTeam } from '../../contexts/TeamContext';
 import { 
   Users, 
@@ -154,9 +156,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
 
       {successMessage ? (
         /* Show success banner when there's a success message */
-        <div className="p-4 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       ) : hasExistingRequest && !justSubmitted ? (
         /* Show pending warning only if user has existing request but didn't just submit */
         <div className="p-4 bg-amber-900/20 border border-amber-600/50 rounded-lg">
@@ -173,10 +173,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
       ) : !successMessage ? (
         /* Show form only if no success message */
         <>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('accessRequestModal.request.form.roleLabel')}
-            </label>
+          <FormGroup label={t('accessRequestModal.request.form.roleLabel')}>
             <Select
               value={requestForm.role}
               onChange={(value) => setRequestForm(prev => ({ ...prev, role: value }))}
@@ -189,12 +186,9 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
             <p className="text-slate-500 text-xs mt-1">
               {t('accessRequestModal.request.form.roleHint')}
             </p>
-          </div>
+          </FormGroup>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('accessRequestModal.request.form.messageLabel')}
-            </label>
+          <FormGroup label={t('accessRequestModal.request.form.messageLabel')}>
             <textarea
               value={requestForm.message}
               onChange={(e) => setRequestForm(prev => ({ ...prev, message: e.target.value }))}
@@ -206,7 +200,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
             <p className="text-slate-500 text-xs mt-1">
               {t('accessRequestModal.request.form.characterCount', { count: requestForm.message.length })}
             </p>
-          </div>
+          </FormGroup>
 
           <div className="flex justify-between">
             <Button
@@ -471,12 +465,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-600" />
-                <p className="text-rose-800 text-sm">{error}</p>
-              </div>
-            </div>
+            <Alert variant="error" icon={AlertTriangle} className="mt-4">{error}</Alert>
           )}
 
 

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function ChangePassword({ isOpen, onClose }) {
@@ -177,17 +180,12 @@ export function ChangePassword({ isOpen, onClose }) {
 
             {/* Error Message */}
             {getErrorMessage() && (
-              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-              </div>
+              <Alert variant="error">{getErrorMessage()}</Alert>
             )}
 
             {/* Change Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="current-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('changePassword.form.currentPasswordLabel')}
-                </label>
+              <FormGroup label={t('changePassword.form.currentPasswordLabel')} htmlFor="current-password" error={errors.currentPassword}>
                 <Input
                   id="current-password"
                   type="password"
@@ -202,15 +200,9 @@ export function ChangePassword({ isOpen, onClose }) {
                   disabled={loading}
                   className={errors.currentPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
-                {errors.currentPassword && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.currentPassword}</p>
-                )}
-              </div>
+              </FormGroup>
 
-              <div>
-                <label htmlFor="new-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('changePassword.form.newPasswordLabel')}
-                </label>
+              <FormGroup label={t('changePassword.form.newPasswordLabel')} htmlFor="new-password" error={errors.newPassword}>
                 <Input
                   id="new-password"
                   type="password"
@@ -225,15 +217,9 @@ export function ChangePassword({ isOpen, onClose }) {
                   disabled={loading}
                   className={errors.newPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
-                {errors.newPassword && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.newPassword}</p>
-                )}
-              </div>
+              </FormGroup>
 
-              <div>
-                <label htmlFor="confirm-new-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('changePassword.form.confirmPasswordLabel')}
-                </label>
+              <FormGroup label={t('changePassword.form.confirmPasswordLabel')} htmlFor="confirm-new-password" error={errors.confirmPassword}>
                 <Input
                   id="confirm-new-password"
                   type="password"
@@ -248,10 +234,7 @@ export function ChangePassword({ isOpen, onClose }) {
                   disabled={loading}
                   className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
                 />
-                {errors.confirmPassword && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.confirmPassword}</p>
-                )}
-              </div>
+              </FormGroup>
 
               <Button
                 type="submit"
@@ -265,14 +248,14 @@ export function ChangePassword({ isOpen, onClose }) {
             </form>
 
             {/* Security Info */}
-            <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+            <Card>
               <h4 className="text-slate-300 font-medium mb-2">{t('changePassword.requirements.title')}</h4>
               <ul className="text-slate-400 text-sm space-y-1">
                 <li>• {t('changePassword.requirements.items.minLength')}</li>
                 <li>• {t('changePassword.requirements.items.different')}</li>
                 <li>• {t('changePassword.requirements.items.mix')}</li>
               </ul>
-            </div>
+            </Card>
           </div>
         </div>
       </div>
