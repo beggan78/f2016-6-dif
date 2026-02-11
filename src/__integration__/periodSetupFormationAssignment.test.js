@@ -466,4 +466,361 @@ describe('PeriodSetupScreen — Formation Assignment Integration', () => {
       expect(enterGameButton).not.toBeDisabled();
     });
   });
+
+  // ---------------------------------------------------------------
+  // 13. 5v5 with exactly 5 players (0 subs) — minimum squad
+  // ---------------------------------------------------------------
+  describe('5v5 2-2 with 5 players (exact minimum, 0 subs)', () => {
+    const teamConfig = { format: '5v5', squadSize: 5, formation: '2-2' };
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 5 selects (1 goalie + 4 field + 0 substitutes) and enable Enter Game', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 4 field + 0 substitute = 5 selects
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(5);
+
+      // No Substitutes header when there are no subs
+      expect(screen.queryByText('Substitutes')).not.toBeInTheDocument();
+
+      const enterGameButton = screen.getByText('Enter Game');
+      expect(enterGameButton).not.toBeDisabled();
+    });
+
+    it('should disable Enter Game when one field position is unassigned', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      // Clear one field position
+      const incompleteFormation = { ...formation, leftAttacker: null };
+      const props = createPeriodSetupProps(teamConfig, { formation: incompleteFormation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      const enterGameButton = screen.getByText('Enter Game');
+      expect(enterGameButton).toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 14. 5v5 1-2-1 with 5 players (0 subs) — minimum squad, midfield formation
+  // ---------------------------------------------------------------
+  describe('5v5 1-2-1 with 5 players (exact minimum, 0 subs)', () => {
+    const teamConfig = { format: '5v5', squadSize: 5, formation: '1-2-1' };
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 5 selects with Defence/Midfield/Offence headers and no Substitutes', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(5);
+
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.getByText('Midfield')).toBeInTheDocument();
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.queryByText('Substitutes')).not.toBeInTheDocument();
+
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 15. 5v5 2-2 with 8 players (3 subs)
+  // ---------------------------------------------------------------
+  describe('5v5 2-2 with 8 players (3 subs)', () => {
+    const teamConfig = TEAM_CONFIGS.INDIVIDUAL_8;
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 8 selects and enable Enter Game when complete', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 4 field + 3 substitute = 8
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(8);
+
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 16. 5v5 2-2 with 10 players (5 subs)
+  // ---------------------------------------------------------------
+  describe('5v5 2-2 with 10 players (5 subs)', () => {
+    const teamConfig = TEAM_CONFIGS.INDIVIDUAL_10;
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 10 selects and enable Enter Game when complete', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 4 field + 5 substitute = 10
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(10);
+
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 17. 7v7 with exactly 7 players (0 subs) — minimum squad for 7v7
+  // ---------------------------------------------------------------
+  describe('7v7 2-2-2 with 7 players (exact minimum, 0 subs)', () => {
+    const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7V7_MIN;
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 7 selects (1 goalie + 6 field + 0 substitutes) and enable Enter Game', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 6 field + 0 substitute = 7
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(7);
+
+      expect(screen.queryByText('Substitutes')).not.toBeInTheDocument();
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.getByText('Midfield')).toBeInTheDocument();
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+
+    it('should disable Enter Game when one field position is unassigned', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const incompleteFormation = { ...formation, leftMidfielder: null };
+      const props = createPeriodSetupProps(teamConfig, { formation: incompleteFormation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      expect(screen.getByText('Enter Game')).toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 18. 7v7 2-3-1 with 10 players (3 subs)
+  // ---------------------------------------------------------------
+  describe('7v7 2-3-1 with 10 players (3 subs)', () => {
+    const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7V7_231;
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 10 selects (1 goalie + 6 field + 3 substitute) with correct headers', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 6 field + 3 substitute = 10
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(10);
+
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.getByText('Midfield')).toBeInTheDocument();
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+
+    it('should call handleStartGame when Enter Game is clicked', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      fireEvent.click(screen.getByText('Enter Game'));
+      expect(props.handleStartGame).toHaveBeenCalledTimes(1);
+    });
+
+    it('should support auto-swap between field and substitute positions', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // Swap: assign player '7' (substitute) into a field position occupied by player '1'
+      const fieldSelect = screen.getAllByTestId('select').find(s => s.value === '1');
+      expect(fieldSelect).toBeDefined();
+
+      fireEvent.change(fieldSelect, { target: { value: '7' } });
+
+      expect(props.setFormation).toHaveBeenCalled();
+      const arg = props.setFormation.mock.calls[0][0];
+      if (typeof arg === 'function') {
+        const updated = arg(formation);
+        // Player '7' should now be at position where '1' was
+        expect(updated.leftDefender).toBe('7');
+        // Player '1' should have moved to where '7' was
+        expect(updated.substitute_1).toBe('1');
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 19. 7v7 2-3-1 with 8 players (1 sub)
+  // ---------------------------------------------------------------
+  describe('7v7 2-3-1 with 8 players (1 sub)', () => {
+    const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7V7_231_8;
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 8 selects (1 goalie + 6 field + 1 substitute)', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 6 field + 1 substitute = 8
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(8);
+
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+
+    it('should disable Enter Game with incomplete formation', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const incompleteFormation = { ...formation, centerMidfielder: null };
+      const props = createPeriodSetupProps(teamConfig, { formation: incompleteFormation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      expect(screen.getByText('Enter Game')).toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 20. 7v7 2-3-1 with 7 players (0 subs) — exact minimum for 7v7
+  // ---------------------------------------------------------------
+  describe('7v7 2-3-1 with 7 players (exact minimum, 0 subs)', () => {
+    const teamConfig = { format: '7v7', squadSize: 7, formation: '2-3-1' };
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 7 selects (1 goalie + 6 field + 0 substitutes) and no Substitutes header', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 6 field + 0 substitute = 7
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(7);
+
+      expect(screen.queryByText('Substitutes')).not.toBeInTheDocument();
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.getByText('Midfield')).toBeInTheDocument();
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 21. 7v7 2-3-1 with 12 players (5 subs) — large squad
+  // ---------------------------------------------------------------
+  describe('7v7 2-3-1 with 12 players (5 subs)', () => {
+    const teamConfig = { format: '7v7', squadSize: 12, formation: '2-3-1' };
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 12 selects (1 goalie + 6 field + 5 substitutes)', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // 1 goalie + 6 field + 5 substitute = 12
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(12);
+
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+
+    it('should swap correctly between two substitute positions', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      // Player '7' is in substitute_1, player '8' is in substitute_2
+      // Assign player '8' to the select currently holding '7'
+      const sub1Select = screen.getAllByTestId('select').find(s => s.value === '7');
+      expect(sub1Select).toBeDefined();
+
+      fireEvent.change(sub1Select, { target: { value: '8' } });
+
+      expect(props.setFormation).toHaveBeenCalled();
+      const arg = props.setFormation.mock.calls[0][0];
+      if (typeof arg === 'function') {
+        const updated = arg(formation);
+        expect(updated.substitute_1).toBe('8');
+        expect(updated.substitute_2).toBe('7');
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------
+  // 22. 7v7 2-2-2 with 10 players (3 subs)
+  // ---------------------------------------------------------------
+  describe('7v7 2-2-2 with 10 players (3 subs)', () => {
+    const teamConfig = { format: '7v7', squadSize: 10, formation: '2-2-2' };
+
+    beforeEach(() => {
+      setupPeriodSetupMocks(teamConfig);
+    });
+
+    it('should render 10 selects (1 goalie + 6 field + 3 substitutes)', () => {
+      const formation = buildCompleteFormation(teamConfig);
+      const props = createPeriodSetupProps(teamConfig, { formation });
+
+      renderWithI18n(<PeriodSetupScreen {...props} />);
+
+      const selects = screen.getAllByTestId('select');
+      expect(selects).toHaveLength(10);
+
+      expect(screen.getByText('Offence')).toBeInTheDocument();
+      expect(screen.getByText('Midfield')).toBeInTheDocument();
+      expect(screen.getByText('Defence')).toBeInTheDocument();
+      expect(screen.getByText('Substitutes')).toBeInTheDocument();
+
+      expect(screen.getByText('Enter Game')).not.toBeDisabled();
+    });
+  });
 });
