@@ -359,8 +359,7 @@ export function AuthProvider({ children }) {
       // Check if email confirmation is required
       if (data.user && !data.session) {
         // User was created but no session - email confirmation required
-        // Use server timestamp for accuracy (eliminates client clock skew)
-        setOtpSentTime(email, data.user.confirmation_sent_at);
+        setOtpSentTime(email);
 
         return {
           user: null,
