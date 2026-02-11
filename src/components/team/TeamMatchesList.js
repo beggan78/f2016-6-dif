@@ -34,6 +34,8 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   const [deletingMatchId, setDeletingMatchId] = useState(null);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [planSelectionIds, setPlanSelectionIds] = useState([]);
+  const pendingMatches = activeMatches.filter(match => match.state === 'pending');
+  const plannableMatches = [...upcomingMatches, ...pendingMatches];
 
   const handleCopyLink = async (matchId) => {
     setCopyingMatchId(matchId);
@@ -134,7 +136,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   };
 
   const handlePlanMatch = (match) => {
-    if (upcomingMatches.length <= 1) {
+    if (plannableMatches.length <= 1) {
       onNavigateTo(VIEWS.PLAN_MATCHES, {
         matchesToPlan: [match]
       });
@@ -154,7 +156,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   };
 
   const confirmPlanSelection = () => {
-    const selectedMatches = upcomingMatches.filter(match => planSelectionIds.includes(match.id));
+    const selectedMatches = plannableMatches.filter(match => planSelectionIds.includes(match.id));
     if (selectedMatches.length === 0) {
       return;
     }
@@ -367,6 +369,17 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     {isPending && (
                       <Button
+                        onClick={() => handlePlanMatch(match)}
+                        variant="accent"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        disabled={isDeleting}
+                      >
+                        {t('teamMatches.buttons.plan')}
+                      </Button>
+                    )}
+                    {isPending && (
+                      <Button
                         onClick={() => handleResumeSetup(match.id)}
                         variant="accent"
                         size="sm"
@@ -481,8 +494,12 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
               </h3>
             </div>
             <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-              {upcomingMatches.map((match) => {
+              {plannableMatches.map((match) => {
                 const isSelected = planSelectionIds.includes(match.id);
+                const scheduleLabel = formatUpcomingSchedule(match.matchDate, match.matchTime);
+                const stateLabel = match.state === 'pending'
+                  ? t('teamMatches.states.pending')
+                  : t('teamMatches.states.upcoming');
                 return (
                   <label
                     key={match.id}
@@ -503,7 +520,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                       <div className="min-w-0">
                         <div className="truncate font-medium">{match.opponent}</div>
                         <div className="text-xs text-slate-400">
-                          {formatUpcomingSchedule(match.matchDate, match.matchTime)}
+                          {stateLabel} - {scheduleLabel}
                         </div>
                       </div>
                     </div>
