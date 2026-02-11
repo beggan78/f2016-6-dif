@@ -5,9 +5,6 @@ import { formatPlayerName } from '../../utils/formatUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 
-// Re-export Card from its own module for backwards compatibility
-export { Card } from './Card';
-
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
     <>

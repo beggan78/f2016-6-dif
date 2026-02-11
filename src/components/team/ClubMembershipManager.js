@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Input } from '../shared/UI';
+import { Button, Input } from '../shared/UI';
+import { Card } from '../shared/Card';
 import { SectionHeader } from '../shared/SectionHeader';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
