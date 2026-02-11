@@ -207,6 +207,14 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     return formatIsoDate(date);
   };
 
+  const formatActiveMatchSchedule = (match) => {
+    // Pending matches linked to an upcoming provider match should display provider schedule.
+    if (match?.state === 'pending' && match?.matchDate) {
+      return formatUpcomingSchedule(match.matchDate, match.matchTime);
+    }
+    return formatTimestamp(match?.createdAt);
+  };
+
   const formatUpcomingMatchTime = (matchTime) => {
     if (!matchTime) return null;
     return matchTime.slice(0, 5);
@@ -351,7 +359,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                     <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3.5 h-3.5" />
-                        <span>{formatTimestamp(match.createdAt)}</span>
+                        <span>{formatActiveMatchSchedule(match)}</span>
                       </div>
                       {match.type && (
                         <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">

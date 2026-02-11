@@ -813,7 +813,7 @@ describe('matchStateManager', () => {
         expect(result.success).toBe(true);
         expect(result.matches).toHaveLength(2);
         expect(supabase.from).toHaveBeenCalledWith('match');
-        expect(chain.select).toHaveBeenCalledWith('id, opponent, state, created_at, started_at, type, venue_type');
+        expect(chain.select).toHaveBeenCalledWith('id, opponent, state, created_at, started_at, type, venue_type, upcoming_match(match_date, match_time)');
         expect(chain.eq).toHaveBeenCalledWith('team_id', 'team-123');
         expect(chain.in).toHaveBeenCalledWith('state', ['pending', 'running']);
         expect(chain.is).toHaveBeenCalledWith('deleted_at', null);
@@ -1025,6 +1025,30 @@ describe('matchStateManager', () => {
 
         expect(result.matches[0].venueType).toBe('away');
         expect(result.matches[0].venue_type).toBeUndefined();
+      });
+
+      it('should map linked upcoming match schedule for pending matches', async () => {
+        const mockData = [{
+          id: 'match-1',
+          opponent: 'Team A',
+          state: 'pending',
+          created_at: '2026-01-10T10:00:00Z',
+          started_at: null,
+          type: 'friendly',
+          venue_type: 'home',
+          upcoming_match: [{
+            match_date: '2030-05-01',
+            match_time: '18:00:00'
+          }]
+        }];
+
+        const chain = createQueryChain({ data: mockData });
+        supabase.from.mockReturnValue(chain);
+
+        const result = await getActiveMatches('team-123');
+
+        expect(result.matches[0].matchDate).toBe('2030-05-01');
+        expect(result.matches[0].matchTime).toBe('18:00:00');
       });
 
       it('should preserve id, state, and type fields', async () => {

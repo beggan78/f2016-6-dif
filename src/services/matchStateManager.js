@@ -770,7 +770,7 @@ export async function getActiveMatches(teamId) {
 
     const { data, error } = await supabase
       .from('match')
-      .select('id, opponent, state, created_at, started_at, type, venue_type')
+      .select('id, opponent, state, created_at, started_at, type, venue_type, upcoming_match(match_date, match_time)')
       .eq('team_id', teamId)
       .in('state', ['pending', 'running'])
       .is('deleted_at', null)
@@ -785,15 +785,31 @@ export async function getActiveMatches(teamId) {
     }
 
     // Transform to UI format
-    const matches = (data || []).map(match => ({
-      id: match.id,
-      opponent: match.opponent || 'Internal Match',
-      state: match.state,
-      createdAt: match.created_at,
-      startedAt: match.started_at,
-      type: match.type,
-      venueType: match.venue_type
-    }));
+    const matches = (data || []).map(match => {
+      const linkedUpcoming = Array.isArray(match.upcoming_match)
+        ? (match.upcoming_match[0] || null)
+        : (match.upcoming_match || null);
+
+      const transformedMatch = {
+        id: match.id,
+        opponent: match.opponent || 'Internal Match',
+        state: match.state,
+        createdAt: match.created_at,
+        startedAt: match.started_at,
+        type: match.type,
+        venueType: match.venue_type
+      };
+
+      // For planned pending matches linked from provider schedules, expose provider date/time.
+      if (linkedUpcoming?.match_date) {
+        transformedMatch.matchDate = linkedUpcoming.match_date;
+      }
+      if (linkedUpcoming?.match_time) {
+        transformedMatch.matchTime = linkedUpcoming.match_time;
+      }
+
+      return transformedMatch;
+    });
 
     return {
       success: true,

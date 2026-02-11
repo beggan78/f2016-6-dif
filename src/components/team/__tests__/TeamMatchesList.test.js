@@ -533,6 +533,27 @@ describe('TeamMatchesList', () => {
       expect(screen.getByText('2026-01-01')).toBeInTheDocument();
     });
 
+    it('should prefer upcoming match schedule for linked pending matches', () => {
+      const pendingLinkedMatch = {
+        ...mockMatches[1],
+        createdAt: new Date().toISOString(),
+        matchDate: '2030-05-01',
+        matchTime: '18:00:00'
+      };
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [pendingLinkedMatch],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('2030-05-01 18:00')).toBeInTheDocument();
+      expect(screen.queryByText(/Today at/)).not.toBeInTheDocument();
+    });
+
     it('should render multiple matches correctly', () => {
       mockUseRealtimeTeamMatches.mockReturnValue({
         matches: mockMatches,
