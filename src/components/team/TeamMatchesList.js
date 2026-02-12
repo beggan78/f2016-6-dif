@@ -35,7 +35,17 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [planSelectionIds, setPlanSelectionIds] = useState([]);
   const pendingMatches = activeMatches.filter(match => match.state === 'pending');
-  const plannableMatches = [...upcomingMatches, ...pendingMatches];
+  const plannableMatches = [...upcomingMatches, ...pendingMatches].sort((a, b) => {
+    if (!a.matchDate && !b.matchDate) return 0;
+    if (!a.matchDate) return 1;
+    if (!b.matchDate) return -1;
+    const dateCompare = a.matchDate.localeCompare(b.matchDate);
+    if (dateCompare !== 0) return dateCompare;
+    if (!a.matchTime && !b.matchTime) return 0;
+    if (!a.matchTime) return -1;
+    if (!b.matchTime) return 1;
+    return a.matchTime.localeCompare(b.matchTime);
+  });
 
   const handleCopyLink = async (matchId) => {
     setCopyingMatchId(matchId);
