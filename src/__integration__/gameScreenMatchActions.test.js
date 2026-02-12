@@ -415,5 +415,45 @@ describe('GameScreen Match Actions', () => {
       const increaseButton = screen.getByLabelText('Increase number of players to substitute');
       expect(increaseButton).toBeEnabled();
     });
+
+    it('should render correctly with 7v7 2-2-2 formation', () => {
+      const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7V7_222;
+      const props = createGameScreenProps(teamConfig, {
+        matchState: 'running'
+      });
+
+      renderWithI18n(<GameScreen {...props} />);
+
+      expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
+      expect(screen.getByText('0 - 0')).toBeInTheDocument();
+    });
+
+    it('should render correctly with 7v7 2-3-1 formation', () => {
+      const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7V7_231;
+      const props = createGameScreenProps(teamConfig, {
+        matchState: 'running'
+      });
+
+      renderWithI18n(<GameScreen {...props} />);
+
+      expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
+      expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
+      expect(screen.getByText('0 - 0')).toBeInTheDocument();
+    });
+
+    it('should render 7v7 2-3-1 with 8 players (1 sub, controls disabled)', () => {
+      const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7V7_231_8;
+      const props = createGameScreenProps(teamConfig, {
+        matchState: 'running'
+      });
+
+      renderWithI18n(<GameScreen {...props} />);
+
+      const decreaseButton = screen.getByLabelText('Decrease number of players to substitute');
+      const increaseButton = screen.getByLabelText('Increase number of players to substitute');
+      expect(decreaseButton).toBeDisabled();
+      expect(increaseButton).toBeDisabled();
+    });
   });
 });

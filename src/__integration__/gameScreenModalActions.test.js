@@ -52,7 +52,8 @@ jest.mock('../utils/gameEventLogger', () => ({
 const FORMATION_VARIANTS = [
   { name: '5v5 2-2 7p', teamConfig: TEAM_CONFIGS.INDIVIDUAL_7 },
   { name: '5v5 1-2-1 7p', teamConfig: TEAM_CONFIGS.INDIVIDUAL_7_1_2_1 },
-  { name: '7v7 2-2-2 9p', teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_222 }
+  { name: '7v7 2-2-2 9p', teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_222 },
+  { name: '7v7 2-3-1 10p', teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_231 }
 ];
 
 /**

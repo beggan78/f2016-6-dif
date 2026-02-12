@@ -556,7 +556,36 @@ describe('ConfigurationScreen → PeriodSetup integration flows', () => {
   });
 
   // -----------------------------------------------------------------
-  // 10. Partial goalie assignment: only period 1 assigned out of 2 → disabled
+  // 10. 7v7 format with 2-3-1 formation with 10 players: proceed works
+  // -----------------------------------------------------------------
+  it('enables proceed for 7v7 2-3-1 formation with 10 players', async () => {
+    const players = createPlayers(10);
+    const numPeriods = 2;
+
+    const props = createConfigurationProps({
+      allPlayers: players,
+      selectedSquadIds: players.map(p => p.id),
+      selectedSquadPlayers: players,
+      numPeriods,
+      periodGoalieIds: buildGoalieIds(numPeriods, 'player-10'),
+      teamConfig: { format: FORMATS.FORMAT_7V7, squadSize: 10, formation: FORMATIONS.FORMATION_2_3_1 },
+      selectedFormation: FORMATIONS.FORMATION_2_3_1
+    });
+
+    renderConfigScreen(props);
+
+    await waitFor(() => {
+      const proceedBtn = findProceedButton();
+      expect(proceedBtn).toBeDefined();
+      expect(proceedBtn).not.toBeDisabled();
+    });
+
+    fireEvent.click(findProceedButton());
+    expect(props.handleStartPeriodSetup).toHaveBeenCalledTimes(1);
+  });
+
+  // -----------------------------------------------------------------
+  // 11. Partial goalie assignment: only period 1 assigned out of 2 → disabled
   // -----------------------------------------------------------------
   it('disables proceed when only some periods have goalies assigned', async () => {
     const players = createPlayers(7);

@@ -45,6 +45,7 @@ export const renderWithI18n = (component) => {
  * Each entry describes a valid team configuration with expected slot counts.
  */
 export const FORMATION_TEST_MATRIX = [
+  // 5v5 2-2: 3 squad sizes
   {
     name: '5v5 2-2 6p',
     teamConfig: TEAM_CONFIGS.INDIVIDUAL_6,
@@ -66,6 +67,14 @@ export const FORMATION_TEST_MATRIX = [
     expectedSubSlots: 4,
     expectedTotalOutfield: 8
   },
+  // 5v5 1-2-1: 3 squad sizes
+  {
+    name: '5v5 1-2-1 6p',
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_6_1_2_1,
+    expectedFieldSlots: 4,
+    expectedSubSlots: 1,
+    expectedTotalOutfield: 5
+  },
   {
     name: '5v5 1-2-1 7p',
     teamConfig: TEAM_CONFIGS.INDIVIDUAL_7_1_2_1,
@@ -74,11 +83,41 @@ export const FORMATION_TEST_MATRIX = [
     expectedTotalOutfield: 6
   },
   {
+    name: '5v5 1-2-1 9p',
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_9_1_2_1,
+    expectedFieldSlots: 4,
+    expectedSubSlots: 4,
+    expectedTotalOutfield: 8
+  },
+  // 7v7 2-2-2: 3 squad sizes
+  {
+    name: '7v7 2-2-2 7p (min)',
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_MIN,
+    expectedFieldSlots: 6,
+    expectedSubSlots: 0,
+    expectedTotalOutfield: 6
+  },
+  {
     name: '7v7 2-2-2 9p',
     teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_222,
     expectedFieldSlots: 6,
     expectedSubSlots: 2,
     expectedTotalOutfield: 8
+  },
+  {
+    name: '7v7 2-2-2 10p',
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_222_10,
+    expectedFieldSlots: 6,
+    expectedSubSlots: 3,
+    expectedTotalOutfield: 9
+  },
+  // 7v7 2-3-1: 2 squad sizes
+  {
+    name: '7v7 2-3-1 8p',
+    teamConfig: TEAM_CONFIGS.INDIVIDUAL_7V7_231_8,
+    expectedFieldSlots: 6,
+    expectedSubSlots: 1,
+    expectedTotalOutfield: 7
   },
   {
     name: '7v7 2-3-1 10p',
