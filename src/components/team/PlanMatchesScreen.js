@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, NotificationModal } from '../shared/UI';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
 import { planUpcomingMatch } from '../../services/matchPlanningService';
+import { getSquadSelectionsForMatches } from '../../services/matchStateManager';
 import { useAutoSelectPreferences } from '../../hooks/useAutoSelectPreferences';
 import { useAttendanceStats } from '../../hooks/useAttendanceStats';
 import { usePlanProgress } from '../../hooks/usePlanProgress';
@@ -53,6 +54,46 @@ export function PlanMatchesScreen({
     matchesToPlan,
     debugEnabled: DEBUG_ENABLED
   });
+  // Track which pending match IDs have been fetched for saved squad selections
+  const fetchedPendingSelectionRef = useRef(new Set());
+
+  // Reset tracked IDs when team changes
+  useEffect(() => {
+    fetchedPendingSelectionRef.current = new Set();
+  }, [currentTeam?.id]);
+
+  // Seed selectedPlayersByMatch from saved initial_config.squadSelection for pending matches
+  useEffect(() => {
+    const pendingMatchIds = matches
+      .filter(m => m.state === 'pending')
+      .map(m => m.id)
+      .filter(id => !fetchedPendingSelectionRef.current.has(id));
+
+    if (pendingMatchIds.length === 0) return;
+
+    // Mark as fetched immediately to prevent duplicate requests
+    pendingMatchIds.forEach(id => fetchedPendingSelectionRef.current.add(id));
+
+    getSquadSelectionsForMatches(pendingMatchIds).then(result => {
+      if (!result.success || !result.selections) return;
+
+      const fetchedSelections = result.selections;
+      if (Object.keys(fetchedSelections).length === 0) return;
+
+      setSelectedPlayersByMatch(prev => {
+        let didChange = false;
+        const next = { ...prev };
+        Object.entries(fetchedSelections).forEach(([matchId, playerIds]) => {
+          if (!next[matchId] || next[matchId].length === 0) {
+            next[matchId] = playerIds;
+            didChange = true;
+          }
+        });
+        return didChange ? next : prev;
+      });
+    });
+  }, [matches, setSelectedPlayersByMatch]);
+
   const autoSelectMatches = useMemo(() => {
     if (matches.length > 1) {
       return matches;

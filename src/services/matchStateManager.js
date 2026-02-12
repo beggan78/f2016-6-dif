@@ -2043,6 +2043,51 @@ export async function saveInitialMatchConfig(matchId, initialConfig) {
 }
 
 /**
+ * Get squad selections from initial_config for multiple pending matches
+ * @param {Array<string>} matchIds - Array of match IDs to fetch
+ * @returns {Promise<{success: boolean, selections?: Object, error?: string}>}
+ *   selections is a map of { [matchId]: [playerId, ...] }
+ */
+export async function getSquadSelectionsForMatches(matchIds) {
+  try {
+    if (!Array.isArray(matchIds) || matchIds.length === 0) {
+      return { success: true, selections: {} };
+    }
+
+    const { data, error } = await supabase
+      .from('match')
+      .select('id, initial_config')
+      .in('id', matchIds)
+      .eq('state', 'pending')
+      .is('deleted_at', null);
+
+    if (error) {
+      console.error('Failed to fetch squad selections:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    const selections = {};
+    (data || []).forEach(match => {
+      const squadSelection = match.initial_config?.squadSelection;
+      if (Array.isArray(squadSelection) && squadSelection.length > 0) {
+        selections[match.id] = squadSelection;
+      }
+    });
+
+    return { success: true, selections };
+  } catch (error) {
+    console.error('Exception while fetching squad selections:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}
+
+/**
  * Get pending match with initial configuration for a team
  * @param {string} teamId - Team ID
  * @returns {Promise<{success: boolean, match?: Object, error?: string}>}

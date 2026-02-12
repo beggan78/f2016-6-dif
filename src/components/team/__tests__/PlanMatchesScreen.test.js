@@ -28,6 +28,10 @@ jest.mock('../../../services/matchPlanningService', () => ({
   planUpcomingMatch: jest.fn()
 }));
 
+jest.mock('../../../services/matchStateManager', () => ({
+  getSquadSelectionsForMatches: jest.fn()
+}));
+
 const STORAGE_KEY = 'sport-wizard-plan-match-auto-select-settings';
 const UNAVAILABLE_STORAGE_KEY = 'sport-wizard-plan-match-unavailable-players';
 
@@ -38,6 +42,7 @@ describe('PlanMatchesScreen', () => {
   let mockUsePlanningDefaults;
   let mockUseProviderAvailability;
   let mockPlanUpcomingMatch;
+  let mockGetSquadSelectionsForMatches;
 
   const mockTeam = {
     id: 'team-1',
@@ -82,6 +87,9 @@ describe('PlanMatchesScreen', () => {
     mockUsePlanningDefaults = require('../../../hooks/usePlanningDefaults').usePlanningDefaults;
     mockUseProviderAvailability = require('../../../hooks/useProviderAvailability').useProviderAvailability;
     mockPlanUpcomingMatch = require('../../../services/matchPlanningService').planUpcomingMatch;
+    mockGetSquadSelectionsForMatches = require('../../../services/matchStateManager').getSquadSelectionsForMatches;
+
+    mockGetSquadSelectionsForMatches.mockResolvedValue({ success: true, selections: {} });
 
     mockUseTeam.mockReturnValue({
       currentTeam: mockTeam,
@@ -336,6 +344,111 @@ describe('PlanMatchesScreen', () => {
       // lastSquadSize is 10, but roster is only 4, so capped to 4
       const squadInput = screen.getByDisplayValue('4');
       expect(squadInput).toBeInTheDocument();
+    });
+  });
+
+  describe('saved squad selection pre-population', () => {
+    const pendingMatchesToPlan = [
+      {
+        id: 'match-1',
+        opponent: 'Opponent FC',
+        state: 'pending',
+        matchDate: '2030-01-01',
+        matchTime: '18:00:00'
+      }
+    ];
+
+    it('should fetch saved selections for pending matches', async () => {
+      mockGetSquadSelectionsForMatches.mockResolvedValue({
+        success: true,
+        selections: { 'match-1': ['p1', 'p2'] }
+      });
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={pendingMatchesToPlan}
+        />
+      );
+
+      await waitFor(() => {
+        expect(mockGetSquadSelectionsForMatches).toHaveBeenCalledWith(['match-1']);
+      });
+
+      // Both players should appear in the selected area (rendered twice: roster + selected)
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+      });
+    });
+
+    it('should not fetch when matches are not pending', () => {
+      const runningMatches = [
+        {
+          id: 'match-1',
+          opponent: 'Opponent FC',
+          state: 'running',
+          matchDate: '2030-01-01',
+          matchTime: '18:00:00'
+        }
+      ];
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={runningMatches}
+        />
+      );
+
+      expect(mockGetSquadSelectionsForMatches).not.toHaveBeenCalled();
+    });
+
+    it('should not overwrite existing selections', async () => {
+      mockGetSquadSelectionsForMatches.mockResolvedValue({
+        success: true,
+        selections: { 'match-1': ['p2'] }
+      });
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={pendingMatchesToPlan}
+        />
+      );
+
+      // Manually select p1 before DB fetch resolves
+      fireEvent.click(screen.getByText('Alex Player'));
+      expect(screen.getAllByText('Alex Player').length).toBe(2);
+
+      // Wait for the fetch to complete - it should not overwrite the manual selection
+      await waitFor(() => {
+        expect(mockGetSquadSelectionsForMatches).toHaveBeenCalled();
+      });
+
+      // p1 (Alex) should still be selected (manual), not replaced by p2 from DB
+      expect(screen.getAllByText('Alex Player').length).toBe(2);
+    });
+
+    it('should handle failed DB fetch gracefully', async () => {
+      mockGetSquadSelectionsForMatches.mockResolvedValue({
+        success: false,
+        error: 'DB error'
+      });
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={pendingMatchesToPlan}
+        />
+      );
+
+      await waitFor(() => {
+        expect(mockGetSquadSelectionsForMatches).toHaveBeenCalled();
+      });
+
+      // Players should still be listed in roster (once each, not selected)
+      expect(screen.getAllByText('Alex Player').length).toBe(1);
+      expect(screen.getAllByText('Bree Player').length).toBe(1);
     });
   });
 });
