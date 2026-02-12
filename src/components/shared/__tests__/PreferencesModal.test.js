@@ -209,7 +209,7 @@ describe('PreferencesModal', () => {
       
       // Modal should have proper role and labeling
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveAttribute('aria-labelledby', 'preferences-title');
+      expect(modal).toHaveAttribute('aria-labelledby', 'modal-title');
       
       // Toggle should have appropriate aria-label
       const toggle = screen.getByRole('button', { name: /audio alerts/i });

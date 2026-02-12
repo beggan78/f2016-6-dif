@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -136,25 +137,14 @@ export function InvitationNotificationModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <Users className="w-6 h-6 text-blue-400" />
-              <h2 className="text-xl font-semibold text-slate-100">
-                {t('invitationNotification.title')}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-              aria-label={t('invitationNotification.closeLabel')}
-            >
-              ✕
-            </button>
-          </div>
-
+    <ModalShell
+      title={t('invitationNotification.title')}
+      icon={Users}
+      iconColor="blue"
+      onClose={onClose}
+      maxWidth="2xl"
+      className="max-h-[90vh] overflow-y-auto"
+    >
           {/* Success Message */}
           {successMessage && (
             <Alert variant="success" icon={CheckCircle} className="mb-4">{successMessage}</Alert>
@@ -251,8 +241,6 @@ export function InvitationNotificationModal({
               </Button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

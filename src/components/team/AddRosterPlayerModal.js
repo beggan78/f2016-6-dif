@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { FormGroup } from '../shared/FormGroup';
-import { UserPlus, X } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 
 export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailableJerseyNumbers }) {
   const { t } = useTranslation('team');
@@ -142,29 +143,14 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('addRosterPlayerModal.header.title')}</h2>
-              <p className="text-sm text-slate-400">{t('addRosterPlayerModal.header.subtitle', { teamName: team.name })}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <ModalShell
+      title={t('addRosterPlayerModal.header.title')}
+      subtitle={t('addRosterPlayerModal.header.subtitle', { teamName: team.name })}
+      icon={UserPlus}
+      iconColor="sky"
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Success Message */}
           {successMessage && (
             <Alert variant="success">{successMessage}</Alert>
@@ -183,7 +169,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               onBlur={handleFirstNameBlur}
               placeholder={t('addRosterPlayerModal.form.placeholders.firstName')}
               disabled={loading}
-              className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.first_name}
             />
           </FormGroup>
 
@@ -195,7 +181,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               onChange={(e) => handleInputChange('last_name', e.target.value)}
               placeholder={t('addRosterPlayerModal.form.placeholders.lastName')}
               disabled={loading}
-              className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.last_name}
             />
           </FormGroup>
 
@@ -207,7 +193,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               onChange={(e) => handleInputChange('display_name', e.target.value)}
               placeholder={t('addRosterPlayerModal.form.placeholders.displayName')}
               disabled={loading}
-              className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.display_name}
             />
             <p className="mt-1 text-xs text-slate-400">
               {t('addRosterPlayerModal.form.helperText.displayName')}
@@ -221,7 +207,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               onChange={(value) => handleInputChange('jersey_number', value)}
               options={jerseyOptions}
               disabled={loading}
-              className={errors.jersey_number ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.jersey_number}
             />
             {availableNumbers.length === 0 && (
               <p className="mt-1 text-sm text-amber-400">
@@ -250,8 +236,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
               {t('addRosterPlayerModal.buttons.cancel')}
             </Button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }

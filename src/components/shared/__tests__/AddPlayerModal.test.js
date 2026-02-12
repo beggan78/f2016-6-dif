@@ -94,9 +94,9 @@ describe('AddPlayerModal', () => {
       const modalOverlay = screen.getByText('Add Temporary Player').closest('.fixed');
       expect(modalOverlay).toHaveClass('inset-0', 'bg-black', 'bg-opacity-50');
       
-      // Check for modal content container
-      const modalContent = screen.getByText('Add Temporary Player').closest('.bg-slate-800');
-      expect(modalContent).toHaveClass('rounded-lg', 'p-6');
+      // Check for modal content container (ModalShell wraps in dialog)
+      const modalContent = screen.getByRole('dialog');
+      expect(modalContent).toHaveClass('rounded-lg', 'bg-slate-800');
     });
 
     it('should render form elements with correct attributes', () => {

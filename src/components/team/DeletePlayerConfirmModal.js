@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '../shared/UI';
 import { Card } from '../shared/Card';
-import { Trash2, AlertTriangle, X } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 import { useTranslation } from 'react-i18next';
 
 export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onConfirm }) {
@@ -14,31 +15,13 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-rose-600 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('deletePlayerModal.title')}</h2>
-              <p className="text-sm text-slate-400">
-                {willBeDeleted ? t('deletePlayerModal.subtitleDelete') : t('deletePlayerModal.subtitleDeactivate')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <ModalShell
+      title={t('deletePlayerModal.title')}
+      subtitle={willBeDeleted ? t('deletePlayerModal.subtitleDelete') : t('deletePlayerModal.subtitleDeactivate')}
+      icon={AlertTriangle}
+      iconColor="rose"
+      onClose={onClose}
+    >
           {/* Player Info */}
           <Card padding="md" className="mb-6">
             <div className="flex items-center space-x-3">
@@ -126,8 +109,6 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
               {t('deletePlayerModal.buttons.cancel')}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

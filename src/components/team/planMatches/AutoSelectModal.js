@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Input } from '../../shared/UI';
+import { ModalShell } from '../../shared/ModalShell';
 import { AUTO_SELECT_STRATEGY } from '../../../constants/planMatchesConstants';
 import { useTranslation } from 'react-i18next';
 
@@ -25,19 +26,11 @@ export function AutoSelectModal({
   const isMultiMatch = matches.length > 1;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div
-        className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="auto-select-title"
-      >
-        <div className="p-4 border-b border-slate-600">
-          <h3 id="auto-select-title" className="text-lg font-semibold text-sky-300">
-            {t('planMatches.autoSelect.title')}
-          </h3>
-        </div>
-        <div className="p-4 space-y-4">
+    <ModalShell
+      title={t('planMatches.autoSelect.title')}
+      onClose={onCancel}
+    >
+        <div className="space-y-4">
           <div className="space-y-2">
             <div className="text-sm font-semibold text-slate-200">
               {isMultiMatch ? t('planMatches.autoSelect.squadSizeMulti') : t('planMatches.autoSelect.squadSizeSingle')}
@@ -108,7 +101,7 @@ export function AutoSelectModal({
             </div>
           )}
         </div>
-        <div className="p-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
+        <div className="pt-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
           <Button variant="secondary" onClick={onCancel}>
             {t('planMatches.autoSelect.cancel')}
           </Button>
@@ -116,7 +109,6 @@ export function AutoSelectModal({
             {t('planMatches.autoSelect.apply')}
           </Button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

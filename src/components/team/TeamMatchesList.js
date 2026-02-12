@@ -4,6 +4,7 @@ import { Button, NotificationModal } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { EmptyState } from '../shared/EmptyState';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { useRealtimeTeamMatches } from '../../hooks/useRealtimeTeamMatches';
@@ -461,19 +462,12 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
       )}
 
       {showPlanModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div
-            className="bg-slate-800 rounded-lg shadow-xl max-w-lg w-full border border-slate-600"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="plan-matches-title"
-          >
-            <div className="p-4 border-b border-slate-600">
-              <h3 id="plan-matches-title" className="text-lg font-semibold text-sky-300">
-                {t('teamMatches.planModal.title')}
-              </h3>
-            </div>
-            <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+        <ModalShell
+          title={t('teamMatches.planModal.title')}
+          onClose={closePlanModal}
+          maxWidth="lg"
+        >
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
               {upcomingMatches.map((match) => {
                 const isSelected = planSelectionIds.includes(match.id);
                 return (
@@ -504,7 +498,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                 );
               })}
             </div>
-            <div className="p-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <div className="pt-4 border-t border-slate-600 flex flex-col sm:flex-row gap-2 sm:justify-end">
               <Button variant="secondary" onClick={closePlanModal}>
                 {t('teamMatches.planModal.cancel')}
               </Button>
@@ -516,8 +510,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                 {t('teamMatches.planModal.planSelected')}
               </Button>
             </div>
-          </div>
-        </div>
+        </ModalShell>
       )}
 
       <NotificationModal

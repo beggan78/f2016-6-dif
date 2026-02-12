@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { Card } from '../shared/Card';
-import { AlertTriangle, X, Unplug } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
+import { AlertTriangle, Unplug } from 'lucide-react';
 import { getProviderById } from '../../constants/connectorProviders';
 
 export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }) {
@@ -30,32 +31,13 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-rose-600 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('disconnect.title', { provider: providerName })}</h2>
-              <p className="text-sm text-slate-400">
-                {t('disconnect.subtitle')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            disabled={isDisconnecting}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <ModalShell
+      title={t('disconnect.title', { provider: providerName })}
+      subtitle={t('disconnect.subtitle')}
+      icon={AlertTriangle}
+      iconColor="rose"
+      onClose={onClose}
+    >
           {/* Warning Message */}
           <Alert variant="error" icon={AlertTriangle} className="mb-6">
             <div className="space-y-2">
@@ -102,8 +84,6 @@ export function DisconnectConfirmModal({ isOpen, onClose, connector, onConfirm }
               {t('disconnect.cancel')}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

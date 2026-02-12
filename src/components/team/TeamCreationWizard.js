@@ -297,7 +297,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           value={clubForm.longName}
           onChange={(e) => setClubForm(prev => ({ ...prev, longName: sanitizeNameInput(e.target.value) }))}
           placeholder={t('wizard.clubCreation.fullNamePlaceholder')}
-          className={errors.clubLongName ? 'border-rose-500' : ''}
+          error={!!errors.clubLongName}
         />
       </FormGroup>
 
@@ -307,7 +307,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           value={clubForm.name}
           onChange={(e) => setClubForm(prev => ({ ...prev, name: sanitizeNameInput(e.target.value) }))}
           placeholder={t('wizard.clubCreation.displayNamePlaceholder')}
-          className={errors.clubName ? 'border-rose-500' : ''}
+          error={!!errors.clubName}
         />
       </FormGroup>
 
@@ -411,7 +411,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
             value={teamForm.name}
             onChange={(e) => setTeamForm(prev => ({ ...prev, name: sanitizeNameInput(e.target.value) }))}
             placeholder={t('wizard.teamCreation.teamNamePlaceholder')}
-            className={errors.teamName ? 'border-rose-500' : ''}
+            error={!!errors.teamName}
           />
           <p className="text-slate-500 text-xs mt-1">{t('wizard.teamCreation.teamNameHelper')}</p>
         </FormGroup>
@@ -455,7 +455,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
               value={playerForm.displayName}
               onChange={(e) => setPlayerForm(prev => ({ ...prev, displayName: sanitizeNameInput(e.target.value) }))}
               placeholder={t('wizard.playerCreation.playerNamePlaceholder')}
-              className={errors.playerName ? 'border-rose-500' : ''}
+              error={!!errors.playerName}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && playerForm.displayName.trim()) {
                   handleAddPlayer();

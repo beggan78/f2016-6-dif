@@ -484,11 +484,13 @@ describe('PendingMatchResumeModal', () => {
       expect(loadingSpinner).toBeInTheDocument();
     });
 
-    it('should disable close button during loading', () => {
+    it('should prevent closing during loading', () => {
       render(<PendingMatchResumeModal {...defaultProps} pendingMatches={[testMatch]} isLoading={true} />);
 
+      // ModalShell's close button is rendered; handleClose guards against closing during loading
       const closeButton = screen.getByTestId('x-icon').closest('button');
-      expect(closeButton).toBeDisabled();
+      fireEvent.click(closeButton);
+      expect(defaultProps.onClose).not.toHaveBeenCalled();
     });
 
     it('should disable all action buttons during loading', () => {

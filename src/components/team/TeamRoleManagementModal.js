@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react';
+import { UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -193,24 +194,16 @@ export function TeamRoleManagementModal({
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <UserCheck className="w-6 h-6 text-sky-400" />
-            <h2 className="text-xl font-semibold text-slate-100">{t('roleManagement.title')}</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
+    <ModalShell
+      title={t('roleManagement.title')}
+      icon={UserCheck}
+      iconColor="sky"
+      onClose={onClose}
+      maxWidth="2xl"
+      className="max-h-[90vh] overflow-hidden"
+    >
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="overflow-y-auto max-h-[60vh]">
           {/* Messages */}
           {error && (
             <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
@@ -371,7 +364,7 @@ export function TeamRoleManagementModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-slate-600">
+        <div className="flex items-center justify-between pt-6 border-t border-slate-600">
           <div className="text-sm text-slate-400">
             {hasPendingChanges && (
               <span className="text-amber-400">
@@ -400,7 +393,6 @@ export function TeamRoleManagementModal({
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

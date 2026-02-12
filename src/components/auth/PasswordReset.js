@@ -251,7 +251,8 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                   }}
                   placeholder={t('auth:passwordReset.code.form.codePlaceholder')}
                   disabled={loading}
-                  className={`text-center text-lg tracking-widest ${errors.code ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}`}
+                  className="text-center text-lg tracking-widest"
+                  error={!!errors.code}
                   maxLength={6}
                   autoComplete="one-time-code"
                 />
@@ -330,7 +331,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               }}
               placeholder={t('auth:passwordReset.email.form.emailPlaceholder')}
               disabled={loading}
-              className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.email}
             />
           </FormGroup>
 
@@ -404,7 +405,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               }}
               placeholder={t('auth:passwordReset.update.form.newPasswordPlaceholder')}
               disabled={loading}
-              className={errors.newPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.newPassword}
             />
           </FormGroup>
 
@@ -421,7 +422,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               }}
               placeholder={t('auth:passwordReset.update.form.confirmPasswordPlaceholder')}
               disabled={loading}
-              className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.confirmPassword}
             />
           </FormGroup>
 

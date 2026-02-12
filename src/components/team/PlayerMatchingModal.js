@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { FormGroup } from '../shared/FormGroup';
-import { Link, X } from 'lucide-react';
+import { Link } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 import { matchPlayerToConnectedPlayer } from '../../services/connectorService';
 import { useTranslation } from 'react-i18next';
 
@@ -71,30 +72,14 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
   if (!rosterPlayer) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-amber-600 rounded-full flex items-center justify-center">
-              <Link className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('playerMatching.title')}</h2>
-              <p className="text-sm text-slate-400">{t('playerMatching.subtitle')}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            disabled={loading}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <ModalShell
+      title={t('playerMatching.title')}
+      subtitle={t('playerMatching.subtitle')}
+      icon={Link}
+      iconColor="amber"
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error Message */}
           {error && (
             <Alert variant="error">{error}</Alert>
@@ -123,7 +108,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
               }}
               options={attendanceOptions}
               disabled={loading}
-              className={error ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!error}
             />
             <p className="mt-2 text-xs text-slate-400">
               {t('playerMatching.selectProviderHelp')}
@@ -149,8 +134,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
               {loading ? t('playerMatching.buttons.matching') : t('playerMatching.buttons.matchPlayer')}
             </Button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }

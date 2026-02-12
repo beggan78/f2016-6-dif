@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import {
   Building,
   Users,
   AlertTriangle,
-  UserPlus,
-  X
+  UserPlus
 } from 'lucide-react';
 
 export function ClubJoinModal({ club, onClose, onSuccess }) {
@@ -44,8 +44,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
 
   if (joinRequested) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-slate-800 rounded-lg max-w-md w-full p-6">
+      <ModalShell title={t('clubJoin.successTitle')}>
           <div className="text-center">
             <div className="animate-pulse mb-4">
               <UserPlus className="h-12 w-12 text-emerald-400 mx-auto" />
@@ -57,33 +56,18 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               {t('clubJoin.successMessage', { clubName: club.long_name || club.name })}
             </p>
           </div>
-        </div>
-      </div>
+      </ModalShell>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg max-w-md w-full">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-sky-300">{t('clubJoin.title')}</h2>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
+    <ModalShell
+      title={t('clubJoin.title')}
+      onClose={onClose}
+    >
           {error && (
-            <Alert variant="error" icon={AlertTriangle} className="mt-4">{error}</Alert>
+            <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
           )}
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
           <div className="text-center mb-6">
             <Building className="h-12 w-12 text-sky-400 mx-auto mb-4" />
             
@@ -134,8 +118,6 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               {loading ? t('clubJoin.buttons.joining') : t('clubJoin.buttons.joinClub')}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
