@@ -341,13 +341,17 @@ export const setupGameScreenHooks = () => {
     handleSubstitutionWithHighlight: jest.fn(),
     handleUndo: jest.fn(),
     handleSetNextSubstitution: jest.fn(),
+    handleRemoveFromNextSubstitution: jest.fn(),
     handleSubstituteNow: jest.fn(),
     handleCancelFieldPlayerModal: jest.fn(),
     handleChangePosition: jest.fn(),
     handleInactivatePlayer: jest.fn(),
     handleActivatePlayer: jest.fn(),
     handleCancelSubstituteModal: jest.fn(),
-    handleSetAsNextToGoIn: jest.fn()
+    handleSetAsNextToGoIn: jest.fn(),
+    handleChangeNextPosition: jest.fn(),
+    handleSelectSubstituteForImmediate: jest.fn(),
+    handleCancelSubstituteSelection: jest.fn()
   };
   require('../game/handlers/substitutionHandlers').createSubstitutionHandlers.mockReturnValue(substitutionHandlersMock);
 
@@ -371,6 +375,9 @@ export const setupGameScreenHooks = () => {
     handleAddGoalConceded: jest.fn(),
     handleSelectGoalScorer: jest.fn(),
     handleCorrectGoalScorer: jest.fn(),
+    handleEditGoalScorer: jest.fn(),
+    handleDeleteGoal: jest.fn(),
+    handleCancelGoalScorer: jest.fn(),
     handleScoreEdit: jest.fn(),
     handleOpenScoreEdit: jest.fn(),
     scoreCallback: jest.fn()
@@ -493,3 +500,52 @@ export const createConfigurationProps = (overrides = {}) => ({
   removeFromNavigationStack: jest.fn(),
   ...overrides
 });
+
+// ===================================================================
+// MODAL STATE HELPERS
+// ===================================================================
+
+/**
+ * Default modal state (all modals closed).
+ */
+const DEFAULT_MODAL_STATE = {
+  fieldPlayer: { isOpen: false, type: null, target: null, playerName: '', sourcePlayerId: null, availablePlayers: [], showPositionOptions: false, isPlayerAboutToSubOff: false },
+  substitute: { isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false, canChangeNextPosition: false, availableNextPositions: [], showPositionSelection: false },
+  substituteSelection: { isOpen: false, fieldPlayerName: '', fieldPlayerId: null, availableSubstitutes: [] },
+  goalie: { isOpen: false, currentGoalieName: '', availablePlayers: [] },
+  scoreEdit: { isOpen: false },
+  undoConfirm: { isOpen: false },
+  goalScorer: { isOpen: false, eventId: null, team: 'own', mode: 'new', matchTime: '00:00', periodNumber: 1, existingGoalData: null }
+};
+
+/**
+ * Reconfigure the useGameModals mock with a specific modal state.
+ * Only the specified modal overrides are applied; all other modals remain closed.
+ *
+ * @param {Object} modalOverrides - Object with modal keys and their state overrides.
+ *   Example: { fieldPlayer: { isOpen: true, playerName: 'Alice', type: 'player' } }
+ */
+export const configureGameModals = (modalOverrides = {}) => {
+  const modals = { ...DEFAULT_MODAL_STATE };
+  for (const [key, overrides] of Object.entries(modalOverrides)) {
+    if (modals[key]) {
+      modals[key] = { ...modals[key], ...overrides };
+    }
+  }
+
+  require('../hooks/useGameModals').useGameModals.mockReturnValue({
+    modals,
+    openFieldPlayerModal: jest.fn(),
+    closeFieldPlayerModal: jest.fn(),
+    openSubstituteModal: jest.fn(),
+    closeSubstituteModal: jest.fn(),
+    openGoalieModal: jest.fn(),
+    closeGoalieModal: jest.fn(),
+    openScoreEditModal: jest.fn(),
+    closeScoreEditModal: jest.fn(),
+    openUndoConfirmModal: jest.fn(),
+    closeUndoConfirmModal: jest.fn(),
+    openGoalScorerModal: jest.fn(),
+    closeGoalScorerModal: jest.fn()
+  });
+};
