@@ -29,7 +29,7 @@ import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
-import { Tooltip } from '../shared';
+import { Tooltip, TabBar } from '../shared';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
@@ -403,32 +403,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
 
         {/* Tab Navigation */}
         <div className="border-b border-slate-600">
-          <div className="overflow-x-auto">
-            <nav className="flex space-x-0 min-w-max">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-2 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative flex-shrink-0 whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'border-sky-400 text-sky-300 bg-slate-600/50'
-                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                    {tab.badge && (
-                      <span className="absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} variant="scroll" />
         </div>
 
         {/* Tab Content */}

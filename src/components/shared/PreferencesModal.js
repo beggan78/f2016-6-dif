@@ -8,7 +8,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Volume2, Play, Globe, Palette, Loader, X } from 'lucide-react';
+import { Settings, Volume2, Play, Globe, Palette, Loader } from 'lucide-react';
+import { ModalShell } from './ModalShell';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { AUDIO_ALERT_OPTIONS, LANGUAGE_OPTIONS, THEME_OPTIONS } from '../../constants/audioAlerts';
 import { audioAlertService } from '../../services/audioAlertService';
@@ -141,14 +142,12 @@ export function PreferencesModal({ isOpen, onClose }) {
   // Show loading state
   if (preferencesLoading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4">
+      <ModalShell title={t('preferences.title')}>
           <div className="flex items-center justify-center space-x-3">
             <div className="w-4 h-4 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-slate-100">{t('preferences.loadingPreferences')}</span>
           </div>
-        </div>
-      </div>
+      </ModalShell>
     );
   }
 
@@ -169,22 +168,13 @@ export function PreferencesModal({ isOpen, onClose }) {
   }));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div role="dialog" aria-labelledby="preferences-title" className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto border border-slate-600">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <Settings className="h-6 w-6 text-sky-400" />
-            <h2 id="preferences-title" className="text-xl font-semibold text-sky-300">{t('preferences.title')}</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
+    <ModalShell
+      title={t('preferences.title')}
+      icon={Settings}
+      iconColor="sky"
+      onClose={onClose}
+      className="max-h-[90vh] overflow-y-auto"
+    >
         <div className="space-y-8">
           {/* Substitution Alerts Section */}
           <div className="space-y-4">
@@ -326,7 +316,6 @@ export function PreferencesModal({ isOpen, onClose }) {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

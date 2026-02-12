@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ThumbsUp, Info, CheckCircle, AlertTriangle, LogIn } from 'lucide-react';
+import { ThumbsUp, Info, CheckCircle, AlertTriangle, LogIn } from 'lucide-react';
+import { ModalShell } from './ModalShell';
 import { Button } from './UI';
 
 const FeatureVoteModal = ({
@@ -26,59 +27,36 @@ const FeatureVoteModal = ({
     }
   };
 
+  const modalIcon = successMessage ? CheckCircle : infoMessage ? CheckCircle : error ? AlertTriangle : Info;
+  const modalIconColor = successMessage ? 'emerald' : infoMessage ? 'sky' : error ? 'rose' : 'sky';
+  const modalTitle = successMessage ? t('featureVote.voteRecorded')
+    : infoMessage ? t('featureVote.voteAlreadyRecorded')
+    : error ? t('featureVote.voteFailed')
+    : t('featureVote.featureComingSoon');
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-6">
-          <div className="flex items-start">
-            <div className={`p-2 rounded-full mr-4 ${
-              successMessage ? 'bg-emerald-500/20' :
-              infoMessage ? 'bg-sky-500/20' :
-              error ? 'bg-rose-500/20' :
-              'bg-sky-500/20'
-            }`}>
-              {successMessage ? (
-                <CheckCircle className="w-6 h-6 text-emerald-400" />
-              ) : infoMessage ? (
-                <CheckCircle className="w-6 h-6 text-sky-400" />
-              ) : error ? (
-                <AlertTriangle className="w-6 h-6 text-rose-400" />
-              ) : (
-                <Info className="w-6 h-6 text-sky-400" />
-              )}
+    <ModalShell
+      title={modalTitle}
+      icon={modalIcon}
+      iconColor={modalIconColor}
+      onClose={onClose}
+    >
+          {successMessage ? (
+            <p className="text-emerald-100 mb-4">{successMessage}</p>
+          ) : infoMessage ? (
+            <p className="text-sky-100 mb-4">{infoMessage}</p>
+          ) : error ? (
+            <p className="text-rose-100 mb-4">{error}</p>
+          ) : (
+            <div>
+              <p className="text-slate-300 mb-4">
+                {t('featureVote.featureDescription', { featureName })}
+              </p>
+              <div className="text-xs text-slate-400 mb-6">
+                {children}
+              </div>
             </div>
-            <div className="flex-1">
-              {successMessage ? (
-                <div>
-                  <h2 className="text-xl font-bold text-emerald-200 mb-2">{t('featureVote.voteRecorded')}</h2>
-                  <p className="text-emerald-100 mb-4">{successMessage}</p>
-                </div>
-              ) : infoMessage ? (
-                <div>
-                  <h2 className="text-xl font-bold text-sky-200 mb-2">{t('featureVote.voteAlreadyRecorded')}</h2>
-                  <p className="text-sky-100 mb-4">{infoMessage}</p>
-                </div>
-              ) : error ? (
-                <div>
-                  <h2 className="text-xl font-bold text-rose-200 mb-2">{t('featureVote.voteFailed')}</h2>
-                  <p className="text-rose-100 mb-4">{error}</p>
-                </div>
-              ) : (
-                <div>
-                  <h2 className="text-xl font-bold text-sky-200 mb-2">{t('featureVote.featureComingSoon')}</h2>
-                  <p className="text-slate-300 mb-4">
-                    {t('featureVote.featureDescription', { featureName })}
-                  </p>
-                  <div className="text-xs text-slate-400 mb-6">
-                    {children}
-                  </div>
-                </div>
-              )}
-            </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-200">
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+          )}
 
           {/* Buttons */}
           <div className="flex justify-end space-x-3 mt-2">
@@ -105,9 +83,7 @@ const FeatureVoteModal = ({
               </>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 };
 

@@ -12,3 +12,5 @@ export { EmptyState } from './EmptyState';
 export { SectionHeader } from './SectionHeader';
 export { FormGroup } from './FormGroup';
 export { IconButton } from './IconButton';
+export { TabBar } from './TabBar';
+export { ModalShell } from './ModalShell';

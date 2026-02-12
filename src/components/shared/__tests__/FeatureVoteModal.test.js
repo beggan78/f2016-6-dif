@@ -129,13 +129,13 @@ describe('FeatureVoteModal', () => {
     });
 
     it('should use friendly styling for info message (blue theme with check icon)', () => {
-      render(<FeatureVoteModal 
-        {...defaultProps} 
+      render(<FeatureVoteModal
+        {...defaultProps}
         infoMessage="You already voted for this formation."
       />);
-      
-      // Check for sky-colored text (blue theme)
-      expect(screen.getByText('Vote Already Recorded')).toHaveClass('text-sky-200');
+
+      // ModalShell renders title with text-slate-100 in rich variant; content is text-sky-100
+      expect(screen.getByText('Vote Already Recorded')).toHaveClass('text-slate-100');
       expect(screen.getByText('You already voted for this formation.')).toHaveClass('text-sky-100');
     });
   });

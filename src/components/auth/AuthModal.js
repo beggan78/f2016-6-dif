@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ModalShell } from '../shared/ModalShell';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { PasswordReset } from './PasswordReset';
@@ -62,12 +63,6 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
 
   if (!isOpen) return null;
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const handleSwitchToReset = (email = '') => {
     setEmailContext(email);
     setCurrentMode(AUTH_MODES.RESET);
@@ -129,37 +124,19 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
     }
   };
 
-  return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-600">
-        {/* Modal Header with Close Button */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center">
-          <div className="text-lg font-semibold text-sky-300">
-            {currentMode === AUTH_MODES.LOGIN && t('authModal.titles.login')}
-            {currentMode === AUTH_MODES.SIGNUP && t('authModal.titles.signup')}
-            {currentMode === AUTH_MODES.RESET && t('authModal.titles.reset')}
-            {currentMode === AUTH_MODES.VERIFY && t('authModal.titles.verify')}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label={t('authModal.closeModal')}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+  const modalTitle = currentMode === AUTH_MODES.LOGIN ? t('authModal.titles.login')
+    : currentMode === AUTH_MODES.SIGNUP ? t('authModal.titles.signup')
+    : currentMode === AUTH_MODES.RESET ? t('authModal.titles.reset')
+    : t('authModal.titles.verify');
 
-        {/* Modal Content */}
-        <div className="px-6 py-6">
-          {renderForm()}
-        </div>
-      </div>
-    </div>
+  return (
+    <ModalShell
+      title={modalTitle}
+      onClose={onClose}
+      className="max-h-[90vh] overflow-y-auto"
+    >
+        {renderForm()}
+    </ModalShell>
   );
 }
 

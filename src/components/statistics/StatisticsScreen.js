@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { Card } from '../shared/Card';
+import { TabBar } from '../shared/TabBar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
@@ -395,27 +396,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
       {/* Tab Navigation - only show when not viewing match details */}
       {!selectedMatchId && (
         <div className="border-b border-slate-600">
-          <nav className="flex flex-wrap gap-3 sm:gap-4 md:gap-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'border-sky-400 text-sky-400'
-                      : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} variant="wrap" />
         </div>
       )}
 

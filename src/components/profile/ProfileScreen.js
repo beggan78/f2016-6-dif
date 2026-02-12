@@ -459,7 +459,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                       onKeyDown={handleKeyDown}
                       placeholder={t('personalInfo.namePlaceholder')}
                       disabled={loading}
-                      className={errors.name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                      error={!!errors.name}
                     />
                     {errors.name && (
                       <p className="text-rose-400 text-sm">{errors.name}</p>

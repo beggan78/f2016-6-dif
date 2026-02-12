@@ -7,17 +7,17 @@ import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput, isValidMessageInput } from '../../utils/inputSanitization';
-import { 
-  Mail, 
-  Users, 
-  CheckCircle, 
+import {
+  Mail,
+  Users,
+  CheckCircle,
   AlertTriangle,
-  X,
   Clock,
   UserCheck,
   RefreshCw,
   Trash2
 } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
   const { t } = useTranslation('team');
@@ -262,12 +262,6 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     }
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (error) return error;
@@ -290,36 +284,16 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={handleBackdropClick}
+    <>
+    <ModalShell
+      title={t('inviteModal.header.title')}
+      subtitle={team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : t('inviteModal.header.teamFallback')}
+      icon={Mail}
+      iconColor="sky"
+      onClose={onClose}
+      className="max-h-[90vh] overflow-y-auto"
     >
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-600">
-        {/* Modal Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center z-10">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
-              <Mail className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-sky-300">{t('inviteModal.header.title')}</h2>
-              <p className="text-sm text-slate-400">
-                {team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : t('inviteModal.header.teamFallback')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label={t('inviteModal.header.closeLabel')}
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Modal Content */}
-        <div className="px-6 py-6">
-          <div className="space-y-6">
+      <div className="space-y-6">
             {/* Error Message */}
             {getErrorMessage() && (
               <Alert variant="error" icon={AlertTriangle}>{getErrorMessage()}</Alert>
@@ -344,7 +318,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   }}
                   placeholder={t('inviteModal.form.placeholders.email')}
                   disabled={loading}
-                  className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.email}
                 />
               </FormGroup>
 
@@ -370,7 +344,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                     ] : [])
                   ]}
                   disabled={loading}
-                  className={errors.role ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.role}
                 />
                 <p className="text-slate-500 text-xs mt-1">
                   {t('inviteModal.form.hints.role')}
@@ -567,21 +541,20 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 </div>
               </div>
             </div>
+      </div>
+    </ModalShell>
+
+    {/* Floating Success Toast */}
+    {successMessage && (
+      <div className="fixed top-4 right-4 z-[60] max-w-sm animate-in slide-in-from-right duration-300">
+        <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg border border-emerald-500">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{successMessage}</span>
           </div>
         </div>
       </div>
-
-      {/* Floating Success Toast */}
-      {successMessage && (
-        <div className="fixed top-4 right-4 z-[60] max-w-sm animate-in slide-in-from-right duration-300">
-          <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg border border-emerald-500">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{successMessage}</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    )}
+    </>
   );
 }

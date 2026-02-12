@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, NotificationModal } from '../shared/UI';
+import { Card } from '../shared/Card';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
@@ -438,9 +439,9 @@ export function PlanMatchesScreen({
             {t('planMatches.back')}
           </Button>
         </div>
-        <div className="bg-slate-700 rounded-lg border border-slate-600 p-6 text-slate-300 text-sm">
+        <Card padding="lg" className="text-slate-300 text-sm">
           {t('planMatches.teamRequired')}
-        </div>
+        </Card>
       </div>
     );
   }
@@ -454,9 +455,9 @@ export function PlanMatchesScreen({
             {t('planMatches.back')}
           </Button>
         </div>
-        <div className="bg-slate-700 rounded-lg border border-slate-600 p-6 text-slate-300 text-sm">
+        <Card padding="lg" className="text-slate-300 text-sm">
           {t('planMatches.noMatches')}
-        </div>
+        </Card>
       </div>
     );
   }

@@ -3,13 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { FormGroup } from '../shared/FormGroup';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
-import { 
-  Users, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Users,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   UserCheck
 } from 'lucide-react';
@@ -451,27 +452,18 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-sky-300">{t('accessRequestModal.header.title')}</h2>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-
+    <ModalShell
+      title={t('accessRequestModal.header.title')}
+      onClose={onClose}
+      maxWidth="2xl"
+    >
           {error && (
-            <Alert variant="error" icon={AlertTriangle} className="mt-4">{error}</Alert>
+            <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
           )}
-
 
           {/* Tab Navigation */}
           {tabs.length > 1 && (
-            <div className="flex space-x-1 bg-slate-700 p-1 rounded-lg mt-4">
+            <div className="flex space-x-1 bg-slate-700 p-1 rounded-lg mb-4">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -492,13 +484,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
               ))}
             </div>
           )}
-        </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
           {activeTab === 'request' && renderRequestTab()}
           {activeTab === 'manage' && renderManageTab()}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

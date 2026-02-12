@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ModalShell } from './ModalShell';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 
 export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
@@ -23,9 +24,10 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 border border-slate-600">
-        <h2 className="text-xl font-bold text-sky-400 mb-2">{t('addTemporaryPlayer.title')}</h2>
+    <ModalShell
+      title={t('addTemporaryPlayer.title')}
+      onClose={handleCancel}
+    >
         <p className="text-sm text-slate-400 mb-4">
           {t('addTemporaryPlayer.description')}
         </p>
@@ -64,7 +66,6 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
