@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next';
 import { Calendar, Clock, ChevronDown, Check } from 'lucide-react';
 import { Button, Input } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
 import { TIME_PRESETS, getTimePresets } from '../../constants/timePresets';
 
 const formatDateForInput = (date) => {
@@ -267,29 +268,23 @@ export function TimeFilter({
             {showCustomRange && (
               <div className="border-t border-slate-600 pt-3">
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      {t('timeFilter.startDate')}
-                    </label>
+                  <FormGroup label={t('timeFilter.startDate')}>
                     <Input
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
                       className="text-sm"
                     />
-                  </div>
+                  </FormGroup>
 
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      {t('timeFilter.endDate')}
-                    </label>
+                  <FormGroup label={t('timeFilter.endDate')}>
                     <Input
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
                       className="text-sm"
                     />
-                  </div>
+                  </FormGroup>
 
                   <div className="flex gap-2 pt-2">
                     <Button

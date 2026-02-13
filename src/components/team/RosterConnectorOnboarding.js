@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Link, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Card } from '../shared/Card';
 import { ProviderLogo } from '../connectors/ProviderLogo';
 import { getAllProviders } from '../../constants/connectorProviders';
 import { ComingSoonBadge } from '../shared/ComingSoonBadge';
@@ -20,7 +21,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
   const providers = getAllProviders();
 
   return (
-    <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4 text-center">
+    <Card variant="highlighted" className="text-center">
       {/* Header Section */}
       <div className="flex items-start space-x-3 mb-7">
         <Link className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -60,7 +61,7 @@ export function RosterConnectorOnboarding({ onNavigateToConnectors }) {
           {t('navigation:goTo.connectors')}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 

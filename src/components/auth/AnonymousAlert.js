@@ -64,7 +64,7 @@ export function AnonymousAlert({
   // Inline variant for embedding in existing layouts
   if (variant === 'inline') {
     return (
-      <div className="bg-sky-900/20 border border-sky-600/50 rounded-lg p-4">
+      <Card variant="highlighted">
         <div className="flex items-start space-x-3">
           {icon || (
             <div className="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -85,7 +85,7 @@ export function AnonymousAlert({
             </div>
           </div>
         </div>
-      </div>
+      </Card>
     );
   }
 
