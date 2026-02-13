@@ -50,7 +50,7 @@ export function Tooltip({
       document.removeEventListener('touchstart', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen]); // containerRef omitted - refs are stable and don't need deps
 
   const toggleTooltip = (e) => {
     e.preventDefault();
