@@ -84,4 +84,84 @@ describe('useProviderAvailability', () => {
 
     expect(result.current.providerUnavailableByMatch).toEqual({});
   });
+
+  describe('providerResponseByMatch', () => {
+    it('returns response map per match from availability data', async () => {
+      getMatchPlayerAvailability.mockResolvedValue({
+        success: true,
+        availabilityByMatch: {
+          'match-1': {
+            'player-1': { availability: 'available', response: 'accepted' },
+            'player-2': { availability: 'unavailable', response: 'declined' },
+            'player-3': { availability: 'available', response: 'no_response' }
+          },
+          'match-2': {
+            'player-4': { availability: 'available', response: 'accepted' }
+          }
+        }
+      });
+
+      const { result } = renderHook(() => useProviderAvailability([{ id: 'match-1' }, { id: 'match-2' }]));
+
+      await waitFor(() => {
+        expect(result.current.providerAvailabilityLoading).toBe(false);
+      });
+
+      expect(result.current.providerResponseByMatch).toEqual({
+        'match-1': {
+          'player-1': 'accepted',
+          'player-2': 'declined',
+          'player-3': 'no_response'
+        },
+        'match-2': {
+          'player-4': 'accepted'
+        }
+      });
+    });
+
+    it('excludes matches with no response data', async () => {
+      getMatchPlayerAvailability.mockResolvedValue({
+        success: true,
+        availabilityByMatch: {
+          'match-1': {
+            'player-1': { availability: 'available' }
+          },
+          'match-2': {
+            'player-2': { availability: 'available', response: 'accepted' }
+          }
+        }
+      });
+
+      const { result } = renderHook(() => useProviderAvailability([{ id: 'match-1' }, { id: 'match-2' }]));
+
+      await waitFor(() => {
+        expect(result.current.providerAvailabilityLoading).toBe(false);
+      });
+
+      expect(result.current.providerResponseByMatch).toEqual({
+        'match-2': { 'player-2': 'accepted' }
+      });
+    });
+
+    it('returns empty object on failure', async () => {
+      getMatchPlayerAvailability.mockResolvedValue({
+        success: false,
+        error: 'Database error'
+      });
+
+      const { result } = renderHook(() => useProviderAvailability([{ id: 'match-1' }]));
+
+      await waitFor(() => {
+        expect(result.current.providerAvailabilityLoading).toBe(false);
+      });
+
+      expect(result.current.providerResponseByMatch).toEqual({});
+    });
+
+    it('returns empty object when there are no matches', () => {
+      const { result } = renderHook(() => useProviderAvailability([]));
+
+      expect(result.current.providerResponseByMatch).toEqual({});
+    });
+  });
 });

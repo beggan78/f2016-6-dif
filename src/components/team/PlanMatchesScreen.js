@@ -103,7 +103,7 @@ export function PlanMatchesScreen({
     }
     return matches;
   }, [autoSelectMatchId, matches]);
-  const { providerUnavailableByMatch } = useProviderAvailability(matches);
+  const { providerUnavailableByMatch, providerResponseByMatch } = useProviderAvailability(matches);
   const mergedUnavailableByMatch = useMemo(() => {
     const merged = {};
     const allMatchIds = new Set([
@@ -613,6 +613,11 @@ export function PlanMatchesScreen({
           const selectedIds = selectedPlayersByMatch[match.id] || [];
           const unavailableIds = mergedUnavailableByMatch[match.id] || [];
           const providerUnavailableIds = providerUnavailableByMatch[match.id] || [];
+          const matchResponses = providerResponseByMatch[match.id] || null;
+          const invitationsSent = matchResponses && selectedIds.some(
+            (playerId) => matchResponses[playerId] === 'accepted'
+          );
+          const playerResponses = invitationsSent ? matchResponses : null;
 
           return (
             <MatchCard
@@ -625,6 +630,7 @@ export function PlanMatchesScreen({
               selectedIds={selectedIds}
               unavailableIds={unavailableIds}
               providerUnavailableIds={providerUnavailableIds}
+              playerResponses={playerResponses}
               sortMetric={sortMetric}
               planningStatus={planningStatus[match.id]}
               canPlan={Boolean(defaults)}

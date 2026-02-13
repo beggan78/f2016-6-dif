@@ -16,6 +16,7 @@ export function MatchCard({
   selectedIds,
   unavailableIds,
   providerUnavailableIds,
+  playerResponses,
   planningStatus,
   canPlan,
   isSelectedInOtherMatch,
@@ -301,6 +302,7 @@ export function MatchCard({
                   && String(swapAnimation.sourcePlayerId) === String(player.id)
                 }
                 isBeingDisplaced={isBeingDisplaced(player.id)}
+                responseStatus={playerResponses ? playerResponses[player.id] || null : null}
                 sortMetric={sortMetric}
               />
             ))}
@@ -326,6 +328,7 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(ghostPlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(ghostPlayer.id)}
+                    responseStatus={playerResponses ? playerResponses[ghostPlayer.id] || null : null}
                     sortMetric={sortMetric}
                   />
                 </div>
@@ -344,6 +347,7 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(slideInSourcePlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(slideInSourcePlayer.id)}
+                    responseStatus={playerResponses ? playerResponses[slideInSourcePlayer.id] || null : null}
                     sortMetric={sortMetric}
                   />
                 </div>

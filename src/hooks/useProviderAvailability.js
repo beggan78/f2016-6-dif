@@ -81,5 +81,21 @@ export function useProviderAvailability(matches) {
     return unavailableByMatch;
   }, [availabilityByMatch]);
 
-  return { providerUnavailableByMatch, providerAvailabilityLoading };
+  const providerResponseByMatch = useMemo(() => {
+    const responseByMatch = {};
+    Object.entries(availabilityByMatch || {}).forEach(([matchId, players]) => {
+      const responses = {};
+      Object.entries(players || {}).forEach(([playerId, status]) => {
+        if (status?.response) {
+          responses[playerId] = status.response;
+        }
+      });
+      if (Object.keys(responses).length > 0) {
+        responseByMatch[matchId] = responses;
+      }
+    });
+    return responseByMatch;
+  }, [availabilityByMatch]);
+
+  return { providerUnavailableByMatch, providerResponseByMatch, providerAvailabilityLoading };
 }

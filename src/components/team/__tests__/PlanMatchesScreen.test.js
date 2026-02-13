@@ -113,6 +113,7 @@ describe('PlanMatchesScreen', () => {
 
     mockUseProviderAvailability.mockReturnValue({
       providerUnavailableByMatch: {},
+      providerResponseByMatch: {},
       providerAvailabilityLoading: false
     });
 
@@ -176,6 +177,7 @@ describe('PlanMatchesScreen', () => {
       providerUnavailableByMatch: {
         'match-1': ['p1']
       },
+      providerResponseByMatch: {},
       providerAvailabilityLoading: false
     });
 
@@ -344,6 +346,52 @@ describe('PlanMatchesScreen', () => {
       // lastSquadSize is 10, but roster is only 4, so capped to 4
       const squadInput = screen.getByDisplayValue('4');
       expect(squadInput).toBeInTheDocument();
+    });
+  });
+
+  describe('player response status icons', () => {
+    it('should show response icons when a selected player has accepted', () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {
+          'match-1': {
+            'p1': 'accepted',
+            'p2': 'no_response'
+          }
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Select p1 (accepted) - this triggers the invitationsSent condition
+      fireEvent.click(screen.getByText('Alex Player'));
+
+      // Now p1 should show a check icon in the selected list
+      const selectedCards = screen.getAllByText('Alex Player');
+      expect(selectedCards.length).toBe(2);
+    });
+
+    it('should not show response icons when no selected player has accepted', () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {
+          'match-1': {
+            'p1': 'no_response',
+            'p2': 'no_response'
+          }
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Select p1 (no_response only, no accepted)
+      fireEvent.click(screen.getByText('Alex Player'));
+
+      // Icons should not appear since no selected player has 'accepted'
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-help-circle')).not.toBeInTheDocument();
     });
   });
 
