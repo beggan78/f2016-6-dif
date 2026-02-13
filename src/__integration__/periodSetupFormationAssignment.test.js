@@ -32,77 +32,16 @@ import { FORMATS, FORMATIONS } from '../constants/teamConfiguration';
 const testI18n = createTestI18n();
 
 // ===================================================================
-// MOCKS — paths relative to src/__integration__/
+// MOCKS — shared factories from setup/sharedMockFactories.js
 // ===================================================================
 
-jest.mock('lucide-react', () => ({
-  Users: ({ className, ...props }) => <div data-testid="users-icon" className={className} {...props} />,
-  Play: ({ className, ...props }) => <div data-testid="play-icon" className={className} {...props} />,
-  ArrowLeft: ({ className, ...props }) => <div data-testid="arrow-left-icon" className={className} {...props} />,
-  Shuffle: ({ className, ...props }) => <div data-testid="shuffle-icon" className={className} {...props} />,
-  Save: ({ className, ...props }) => <div data-testid="save-icon" className={className} {...props} />
-}));
-
-jest.mock('../components/shared/UI', () => ({
-  Select: ({ value, onChange, options, placeholder, id, ...props }) => (
-    <select
-      data-testid={id || 'select'}
-      value={value || ''}
-      onChange={(e) => onChange && onChange(e.target.value)}
-      {...props}
-    >
-      {placeholder && <option value="">{placeholder}</option>}
-      {Array.isArray(options)
-        ? options.map(option => {
-            if (typeof option === 'object') {
-              return <option key={option.value} value={option.value}>{option.label}</option>;
-            }
-            return <option key={option} value={option}>{option}</option>;
-          })
-        : null}
-    </select>
-  ),
-  Button: ({ onClick, disabled, children, Icon, ...props }) => (
-    <button data-testid="button" onClick={onClick} disabled={disabled} {...props}>
-      {Icon && <Icon data-testid="button-icon" />}
-      {children}
-    </button>
-  ),
-  ConfirmationModal: ({ isOpen, onConfirm, onCancel, title, message }) =>
-    isOpen ? (
-      <div data-testid="confirmation-modal" role="dialog">
-        <h2>{title}</h2>
-        <p>{message}</p>
-        <button data-testid="modal-confirm" onClick={onConfirm}>Confirm</button>
-        <button data-testid="modal-cancel" onClick={onCancel}>Cancel</button>
-      </div>
-    ) : null
-}));
-
-jest.mock('../utils/formatUtils', () => ({
-  getPlayerLabel: jest.fn((player, periodNumber) => `${player.displayName} (P${periodNumber})`)
-}));
-
-jest.mock('../utils/debugUtils', () => ({
-  randomizeFormationPositions: jest.fn(() => ({
-    leftDefender: '1',
-    rightDefender: '2',
-    leftAttacker: '3',
-    rightAttacker: '4'
-  }))
-}));
-
-jest.mock('../contexts/TeamContext', () => ({
-  useTeam: jest.fn()
-}));
-
-jest.mock('../services/matchStateManager', () => ({
-  getPlayerStats: jest.fn()
-}));
-
-jest.mock('../hooks/usePlayerRecommendationData', () => ({
-  usePlayerRecommendationData: jest.fn()
-}));
+jest.mock('lucide-react', () => require('./setup/sharedMockFactories').lucideReact);
+jest.mock('../components/shared/UI', () => require('./setup/sharedMockFactories').sharedUI);
+jest.mock('../utils/formatUtils', () => require('./setup/sharedMockFactories').formatUtils);
+jest.mock('../utils/debugUtils', () => require('./setup/sharedMockFactories').debugUtils);
+jest.mock('../contexts/TeamContext', () => require('./setup/sharedMockFactories').teamContext);
+jest.mock('../services/matchStateManager', () => require('./setup/sharedMockFactories').matchStateManager);
+jest.mock('../hooks/usePlayerRecommendationData', () => require('./setup/sharedMockFactories').playerRecommendationData);
 
 // Helper to render with i18n
 const renderWithI18n = (ui) => render(<I18nextProvider i18n={testI18n}>{ui}</I18nextProvider>);

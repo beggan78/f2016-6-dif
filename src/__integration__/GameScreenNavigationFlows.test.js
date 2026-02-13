@@ -36,12 +36,13 @@ import {
 
 import { VIEWS } from '../constants/viewConstants';
 import { TEAM_CONFIGS } from '../game/testUtils';
+import { setupGameScreenHooks } from './matchLifecycleUtils';
 
 const originalConsoleError = console.error;
 
-// Mock GameScreen dependencies
+// Mock GameScreen dependencies — shared factories from setup/sharedMockFactories.js
 jest.mock('../hooks/useGameModals');
-jest.mock('../hooks/useGameUIState');  
+jest.mock('../hooks/useGameUIState');
 jest.mock('../hooks/useTeamNameAbbreviation');
 jest.mock('../hooks/useFieldPositionHandlers');
 jest.mock('../hooks/useQuickTapWithScrollDetection');
@@ -50,42 +51,25 @@ jest.mock('../game/handlers/fieldPositionHandlers');
 jest.mock('../game/handlers/timerHandlers');
 jest.mock('../game/handlers/scoreHandlers');
 jest.mock('../game/handlers/goalieHandlers');
-jest.mock('../utils/playerUtils', () => ({
-  ...jest.requireActual('../utils/playerUtils'),
-  hasActiveSubstitutes: jest.fn()
-}));
-
-jest.mock('../components/game/formations/FormationRenderer', () => ({
-  FormationRenderer: ({ renderSection = 'all', ...props }) => {
-    const testId = renderSection === 'all' ? 'formation-renderer' : `formation-renderer-${renderSection}`;
-    return (
-      <div data-testid={testId} {...props}>Mock Formation</div>
-    );
-  }
-}));
-
-// Mock external dependencies that aren't part of the integration test
-jest.mock('../services/audioAlertService', () => ({
-  playSound: jest.fn(),
-  preloadSounds: jest.fn()
-}));
-
-jest.mock('../utils/gameEventLogger', () => ({
-  ...jest.requireActual('../utils/gameEventLogger'),
-  initializeEventLogger: jest.fn(),
-  logEvent: jest.fn(),
-  getGameEvents: jest.fn(() => []),
-  calculateMatchTime: jest.fn(() => '00:00')
-}));
-
-// Mock match services
-jest.mock('../services/matchStateManager', () => ({
-  createMatch: jest.fn(),
-  formatMatchDataFromGameState: jest.fn(() => ({})),
-  updateMatch: jest.fn(),
-  getMatch: jest.fn(),
-  clearStoredState: jest.fn()
-}));
+jest.mock('../utils/playerUtils', () =>
+  require('./setup/sharedMockFactories').createPlayerUtilsMock(
+    jest.requireActual('../utils/playerUtils')
+  )
+);
+jest.mock('../components/game/formations/FormationRenderer', () =>
+  require('./setup/sharedMockFactories').formationRenderer
+);
+jest.mock('../services/audioAlertService', () =>
+  require('./setup/sharedMockFactories').audioAlertService
+);
+jest.mock('../utils/gameEventLogger', () =>
+  require('./setup/sharedMockFactories').createGameEventLoggerMock(
+    jest.requireActual('../utils/gameEventLogger')
+  )
+);
+jest.mock('../services/matchStateManager', () =>
+  require('./setup/sharedMockFactories').matchStateManager
+);
 
 describe('GameScreen Navigation Integration Tests', () => {
   let mockEnvironment;
@@ -107,124 +91,6 @@ describe('GameScreen Navigation Integration Tests', () => {
       originalConsoleError(message, ...args);
     });
   });
-
-  function setupGameScreenHooks() {
-    // Setup game modals hook
-    require('../hooks/useGameModals').useGameModals.mockReturnValue({
-      modals: {
-        fieldPlayer: { isOpen: false, type: null, target: null, playerName: '', sourcePlayerId: null, availablePlayers: [], showPositionOptions: false },
-        substitute: { isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false },
-        substituteSelection: {
-          isOpen: false,
-          fieldPlayerName: '',
-          fieldPlayerId: null,
-          availableSubstitutes: []
-        },
-        goalie: { isOpen: false, currentGoalieName: '', availablePlayers: [] },
-        scoreEdit: { isOpen: false },
-        undoConfirm: { isOpen: false },
-        goalScorer: { isOpen: false, eventId: null, team: 'own', mode: 'new', matchTime: '00:00', periodNumber: 1, existingGoalData: null }
-      },
-      openFieldPlayerModal: jest.fn(),
-      closeFieldPlayerModal: jest.fn(),
-      openSubstituteModal: jest.fn(),
-      closeSubstituteModal: jest.fn(),
-      openGoalieModal: jest.fn(),
-      closeGoalieModal: jest.fn(),
-      openScoreEditModal: jest.fn(),
-      closeScoreEditModal: jest.fn(),
-      openUndoConfirmModal: jest.fn(),
-      closeUndoConfirmModal: jest.fn(),
-      openGoalScorerModal: jest.fn(),
-      closeGoalScorerModal: jest.fn()
-    });
-    
-    // Setup game UI state hook
-    require('../hooks/useGameUIState').useGameUIState.mockReturnValue({
-      animationState: { type: 'none', phase: 'idle', data: {} },
-      setAnimationState: jest.fn(),
-      recentlySubstitutedPlayers: new Set(),
-      setRecentlySubstitutedPlayers: jest.fn(),
-      addRecentlySubstitutedPlayer: jest.fn(),
-      removeRecentlySubstitutedPlayer: jest.fn(),
-      clearRecentlySubstitutedPlayers: jest.fn(),
-      hideNextOffIndicator: false,
-      setHideNextOffIndicator: jest.fn(),
-      lastSubstitution: null,
-      setLastSubstitution: jest.fn(),
-      updateLastSubstitution: jest.fn(),
-      clearLastSubstitution: jest.fn(),
-      shouldSubstituteNow: false,
-      setShouldSubstituteNow: jest.fn(),
-      resetAnimationState: jest.fn()
-    });
-    
-    // Setup other hooks
-    require('../hooks/useTeamNameAbbreviation').useTeamNameAbbreviation.mockReturnValue({
-      scoreRowRef: { current: null },
-      displayOwnTeam: 'Test Team',
-      displayOpponentTeam: 'Test Opponent'
-    });
-    
-    require('../hooks/useFieldPositionHandlers').useFieldPositionHandlers.mockReturnValue({
-      handleFieldPlayerClick: jest.fn(),
-      handleFieldPlayerQuickTap: jest.fn()
-    });
-    
-    require('../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection.mockReturnValue({
-      onTouchStart: jest.fn(),
-      onTouchEnd: jest.fn(),
-      onMouseDown: jest.fn(),
-      onMouseUp: jest.fn(),
-      onMouseLeave: jest.fn()
-    });
-
-    // Setup handler creators
-    require('../game/handlers/substitutionHandlers').createSubstitutionHandlers.mockReturnValue({
-      handleSubstitution: jest.fn(),
-      handleSubstitutionWithHighlight: jest.fn(),
-      handleUndo: jest.fn(),
-      handleSetNextSubstitution: jest.fn(),
-      handleSubstituteNow: jest.fn(),
-      handleCancelFieldPlayerModal: jest.fn(),
-      handleChangePosition: jest.fn(),
-      handleInactivatePlayer: jest.fn(),
-      handleActivatePlayer: jest.fn(),
-      handleCancelSubstituteModal: jest.fn(),
-      handleSetAsNextToGoIn: jest.fn()
-    });
-
-    require('../game/handlers/fieldPositionHandlers').createFieldPositionHandlers.mockReturnValue({
-      handleFieldPlayerClick: jest.fn(),
-      handleFieldPlayerQuickTap: jest.fn(),
-      handleSubstituteClick: jest.fn(),
-      handleGoalieClick: jest.fn()
-    });
-
-    require('../game/handlers/timerHandlers').createTimerHandlers.mockReturnValue({
-      handlePauseTimer: jest.fn(),
-      handleResumeTimer: jest.fn(),
-      handleResetTimer: jest.fn()
-    });
-
-    require('../game/handlers/scoreHandlers').createScoreHandlers.mockReturnValue({
-      handleAddGoalScored: jest.fn(),
-      handleAddGoalConceded: jest.fn(),
-      handleSelectGoalScorer: jest.fn(),
-      handleCorrectGoalScorer: jest.fn(),
-      handleScoreEdit: jest.fn(),
-      handleOpenScoreEdit: jest.fn(),
-      scoreCallback: jest.fn()
-    });
-
-    require('../game/handlers/goalieHandlers').createGoalieHandlers.mockReturnValue({
-      goalieCallback: jest.fn(),
-      handleCancelGoalieModal: jest.fn(),
-      handleSelectNewGoalie: jest.fn()
-    });
-
-    require('../utils/playerUtils').hasActiveSubstitutes.mockReturnValue(true);
-  }
 
   afterEach(() => {
     mockEnvironment.cleanup();

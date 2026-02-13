@@ -28,7 +28,7 @@ import { FORMATS, FORMATIONS } from '../constants/teamConfiguration';
 const testI18n = createTestI18n();
 
 // ===================================================================
-// MOCKS — follow the exact pattern from GameScreenNavigationFlows
+// MOCKS — shared factories from setup/sharedMockFactories.js
 // ===================================================================
 
 jest.mock('../hooks/useGameModals');
@@ -41,40 +41,25 @@ jest.mock('../game/handlers/fieldPositionHandlers');
 jest.mock('../game/handlers/timerHandlers');
 jest.mock('../game/handlers/scoreHandlers');
 jest.mock('../game/handlers/goalieHandlers');
-jest.mock('../utils/playerUtils', () => ({
-  ...jest.requireActual('../utils/playerUtils'),
-  hasActiveSubstitutes: jest.fn()
-}));
-
-jest.mock('../components/game/formations/FormationRenderer', () => ({
-  FormationRenderer: ({ renderSection = 'all', ...props }) => {
-    const testId = renderSection === 'all' ? 'formation-renderer' : `formation-renderer-${renderSection}`;
-    return (
-      <div data-testid={testId} {...props}>Mock Formation</div>
-    );
-  }
-}));
-
-jest.mock('../services/audioAlertService', () => ({
-  playSound: jest.fn(),
-  preloadSounds: jest.fn()
-}));
-
-jest.mock('../utils/gameEventLogger', () => ({
-  ...jest.requireActual('../utils/gameEventLogger'),
-  initializeEventLogger: jest.fn(),
-  logEvent: jest.fn(),
-  getGameEvents: jest.fn(() => []),
-  calculateMatchTime: jest.fn(() => '00:00')
-}));
-
-jest.mock('../services/matchStateManager', () => ({
-  createMatch: jest.fn(),
-  formatMatchDataFromGameState: jest.fn(() => ({})),
-  updateMatch: jest.fn(),
-  getMatch: jest.fn(),
-  clearStoredState: jest.fn()
-}));
+jest.mock('../utils/playerUtils', () =>
+  require('./setup/sharedMockFactories').createPlayerUtilsMock(
+    jest.requireActual('../utils/playerUtils')
+  )
+);
+jest.mock('../components/game/formations/FormationRenderer', () =>
+  require('./setup/sharedMockFactories').formationRenderer
+);
+jest.mock('../services/audioAlertService', () =>
+  require('./setup/sharedMockFactories').audioAlertService
+);
+jest.mock('../utils/gameEventLogger', () =>
+  require('./setup/sharedMockFactories').createGameEventLoggerMock(
+    jest.requireActual('../utils/gameEventLogger')
+  )
+);
+jest.mock('../services/matchStateManager', () =>
+  require('./setup/sharedMockFactories').matchStateManager
+);
 
 // ===================================================================
 // HELPERS

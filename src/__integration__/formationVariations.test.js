@@ -33,98 +33,19 @@ import { TEAM_CONFIGS } from '../game/testUtils';
 import { FORMAT_CONFIGS, FORMATS } from '../constants/teamConfiguration';
 
 // ---------------------------------------------------------------------------
-// Mocks for PeriodSetupScreen
+// Mocks — shared factories from setup/sharedMockFactories.js
 // ---------------------------------------------------------------------------
 
-jest.mock('lucide-react', () => ({
-  Users: (props) => <div data-testid="users-icon" {...props} />,
-  Play: (props) => <div data-testid="play-icon" {...props} />,
-  ArrowLeft: (props) => <div data-testid="arrow-left-icon" {...props} />,
-  Shuffle: (props) => <div data-testid="shuffle-icon" {...props} />,
-  Save: (props) => <div data-testid="save-icon" {...props} />,
-  Square: (props) => <div data-testid="square-icon" {...props} />,
-  Pause: (props) => <div data-testid="pause-icon" {...props} />,
-  SquarePlay: (props) => <div data-testid="square-play-icon" {...props} />,
-  Undo2: (props) => <div data-testid="undo2-icon" {...props} />,
-  RefreshCcw: (props) => <div data-testid="refresh-icon" {...props} />
-}));
+// PeriodSetupScreen dependencies
+jest.mock('lucide-react', () => require('./setup/sharedMockFactories').lucideReact);
+jest.mock('../components/shared/UI', () => require('./setup/sharedMockFactories').sharedUI);
+jest.mock('../utils/formatUtils', () => require('./setup/sharedMockFactories').formatUtils);
+jest.mock('../utils/debugUtils', () => require('./setup/sharedMockFactories').debugUtils);
+jest.mock('../contexts/TeamContext', () => require('./setup/sharedMockFactories').teamContext);
+jest.mock('../services/matchStateManager', () => require('./setup/sharedMockFactories').matchStateManager);
+jest.mock('../hooks/usePlayerRecommendationData', () => require('./setup/sharedMockFactories').playerRecommendationData);
 
-jest.mock('../components/shared/UI', () => ({
-  Select: ({ value, onChange, options, placeholder, id, ...props }) => (
-    <select
-      data-testid={id || 'select'}
-      value={value || ''}
-      onChange={(e) => onChange && onChange(e.target.value)}
-      {...props}
-    >
-      {placeholder && <option value="">{placeholder}</option>}
-      {Array.isArray(options)
-        ? options.map((option) =>
-            typeof option === 'object' ? (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ) : (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            )
-          )
-        : null}
-    </select>
-  ),
-  Button: ({ onClick, disabled, children, Icon, ...props }) => (
-    <button data-testid="button" onClick={onClick} disabled={disabled} {...props}>
-      {Icon && <Icon />}
-      {children}
-    </button>
-  ),
-  ConfirmationModal: ({ isOpen }) =>
-    isOpen ? <div data-testid="confirmation-modal" /> : null,
-  FieldPlayerModal: ({ isOpen }) =>
-    isOpen ? <div data-testid="field-player-modal" /> : null,
-  SubstitutePlayerModal: ({ isOpen }) =>
-    isOpen ? <div data-testid="substitute-player-modal" /> : null,
-  GoalieModal: ({ isOpen }) =>
-    isOpen ? <div data-testid="goalie-modal" /> : null,
-  ScoreManagerModal: ({ isOpen }) =>
-    isOpen ? <div data-testid="score-manager-modal" /> : null,
-  SubstituteSelectionModal: ({ isOpen }) =>
-    isOpen ? <div data-testid="substitute-selection-modal" /> : null
-}));
-
-jest.mock('../utils/formatUtils', () => ({
-  getPlayerLabel: jest.fn(
-    (player, periodNumber) => `${player.displayName} (P${periodNumber})`
-  ),
-  formatPlayerName: jest.fn((player) => player?.displayName || '')
-}));
-
-jest.mock('../utils/debugUtils', () => ({
-  randomizeFormationPositions: jest.fn(() => ({}))
-}));
-
-jest.mock('../contexts/TeamContext', () => ({
-  useTeam: jest.fn()
-}));
-
-jest.mock('../services/matchStateManager', () => ({
-  getPlayerStats: jest.fn(),
-  createMatch: jest.fn(),
-  formatMatchDataFromGameState: jest.fn(() => ({})),
-  updateMatch: jest.fn(),
-  getMatch: jest.fn(),
-  clearStoredState: jest.fn()
-}));
-
-jest.mock('../hooks/usePlayerRecommendationData', () => ({
-  usePlayerRecommendationData: jest.fn()
-}));
-
-// ---------------------------------------------------------------------------
-// Mocks for GameScreen
-// ---------------------------------------------------------------------------
-
+// GameScreen dependencies
 jest.mock('../hooks/useGameModals');
 jest.mock('../hooks/useGameUIState');
 jest.mock('../hooks/useTeamNameAbbreviation');
@@ -135,51 +56,27 @@ jest.mock('../game/handlers/fieldPositionHandlers');
 jest.mock('../game/handlers/timerHandlers');
 jest.mock('../game/handlers/scoreHandlers');
 jest.mock('../game/handlers/goalieHandlers');
-jest.mock('../utils/playerUtils', () => ({
-  ...jest.requireActual('../utils/playerUtils'),
-  hasActiveSubstitutes: jest.fn()
-}));
-
-jest.mock('../components/game/formations/FormationRenderer', () => ({
-  FormationRenderer: ({ renderSection = 'all', ...props }) => {
-    const testId =
-      renderSection === 'all'
-        ? 'formation-renderer'
-        : `formation-renderer-${renderSection}`;
-    return (
-      <div data-testid={testId} {...props}>
-        Mock Formation
-      </div>
-    );
-  }
-}));
-
-jest.mock('../services/audioAlertService', () => ({
-  playSound: jest.fn(),
-  preloadSounds: jest.fn()
-}));
-
-jest.mock('../utils/gameEventLogger', () => ({
-  ...jest.requireActual('../utils/gameEventLogger'),
-  initializeEventLogger: jest.fn(),
-  logEvent: jest.fn(),
-  getGameEvents: jest.fn(() => []),
-  calculateMatchTime: jest.fn(() => '00:00')
-}));
+jest.mock('../utils/playerUtils', () =>
+  require('./setup/sharedMockFactories').createPlayerUtilsMock(
+    jest.requireActual('../utils/playerUtils')
+  )
+);
+jest.mock('../components/game/formations/FormationRenderer', () =>
+  require('./setup/sharedMockFactories').formationRenderer
+);
+jest.mock('../services/audioAlertService', () =>
+  require('./setup/sharedMockFactories').audioAlertService
+);
+jest.mock('../utils/gameEventLogger', () =>
+  require('./setup/sharedMockFactories').createGameEventLoggerMock(
+    jest.requireActual('../utils/gameEventLogger')
+  )
+);
 
 // Additional GameScreen dependency mocks
-jest.mock('../components/shared/GoalScorerModal', () => ({
-  __esModule: true,
-  default: () => null
-}));
-
-jest.mock('../components/game/SubstitutionCountControls', () => ({
-  SubstitutionCountInlineControl: () => null
-}));
-
-jest.mock('../utils/playerSortingUtils', () => ({
-  sortPlayersByGoalScoringRelevance: jest.fn((players) => players)
-}));
+jest.mock('../components/shared/GoalScorerModal', () => require('./setup/sharedMockFactories').goalScorerModal);
+jest.mock('../components/game/SubstitutionCountControls', () => require('./setup/sharedMockFactories').substitutionCountControls);
+jest.mock('../utils/playerSortingUtils', () => require('./setup/sharedMockFactories').playerSortingUtils);
 
 // Mock positionUtils so GameScreen doesn't hit the mocked getModeDefinition
 jest.mock('../game/logic/positionUtils', () => ({
