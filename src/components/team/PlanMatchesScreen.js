@@ -66,6 +66,8 @@ export function PlanMatchesScreen({
 
   // Seed selectedPlayersByMatch from saved initial_config.squadSelection for pending matches
   useEffect(() => {
+    let isActive = true;
+
     const pendingMatchIds = matches
       .filter(m => m.state === 'pending')
       .map(m => m.id)
@@ -77,6 +79,7 @@ export function PlanMatchesScreen({
     pendingMatchIds.forEach(id => fetchedPendingSelectionRef.current.add(id));
 
     getSquadSelectionsForMatches(pendingMatchIds).then(result => {
+      if (!isActive) return;
       if (!result.success || !result.selections) return;
 
       const fetchedSelections = result.selections;
@@ -94,6 +97,8 @@ export function PlanMatchesScreen({
         return didChange ? next : prev;
       });
     });
+
+    return () => { isActive = false; };
   }, [matches, setSelectedPlayersByMatch]);
 
   const autoSelectMatches = useMemo(() => {
