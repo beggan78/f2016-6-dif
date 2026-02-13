@@ -403,31 +403,35 @@ describe('MatchIntegrationService', () => {
       expect(mockSupabase.not).toHaveBeenCalledWith('connected_player.player_id', 'is', null);
     });
 
-    it('maps availability and response by match and player id', async () => {
+    it('maps availability, response, and inviteStatus by match and player id', async () => {
       mockSupabase.not.mockResolvedValue({
         data: [
           {
             upcoming_match_id: 'match-1',
             availability: 'unavailable',
             response: 'declined',
+            invite_status: 'invited',
             connected_player: { player_id: 'player-1' }
           },
           {
             upcoming_match_id: 'match-1',
             availability: 'available',
             response: 'accepted',
+            invite_status: 'invited',
             connected_player: { player_id: 'player-2' }
           },
           {
             upcoming_match_id: 'match-2',
             availability: 'unknown',
             response: 'no_response',
+            invite_status: null,
             connected_player: { player_id: 'player-3' }
           },
           {
             upcoming_match_id: 'match-2',
             availability: 'unavailable',
             response: 'declined',
+            invite_status: 'invited',
             connected_player: { player_id: null }
           }
         ],
@@ -440,14 +444,27 @@ describe('MatchIntegrationService', () => {
         success: true,
         availabilityByMatch: {
           'match-1': {
-            'player-1': { availability: 'unavailable', response: 'declined' },
-            'player-2': { availability: 'available', response: 'accepted' }
+            'player-1': { availability: 'unavailable', response: 'declined', inviteStatus: 'invited' },
+            'player-2': { availability: 'available', response: 'accepted', inviteStatus: 'invited' }
           },
           'match-2': {
-            'player-3': { availability: 'unknown', response: 'no_response' }
+            'player-3': { availability: 'unknown', response: 'no_response', inviteStatus: null }
           }
         }
       });
+    });
+
+    it('includes invite_status in the select query', async () => {
+      mockSupabase.not.mockResolvedValue({
+        data: [],
+        error: null
+      });
+
+      await getMatchPlayerAvailability(['match-1']);
+
+      expect(mockSupabase.select).toHaveBeenCalledWith(
+        expect.stringContaining('invite_status')
+      );
     });
 
     it('returns a database error result when query fails', async () => {

@@ -44,9 +44,11 @@ export function PlanMatchesScreen({
     matches,
     selectedPlayersByMatch,
     sortMetric,
+    inviteSeededMatchIds,
     setSelectedPlayersByMatch,
     setSortMetric,
     setPlannedMatchIds,
+    setInviteSeededMatchIds,
     planningStatus,
     setPlanningStatus
   } = usePlanProgress({
@@ -103,7 +105,7 @@ export function PlanMatchesScreen({
     }
     return matches;
   }, [autoSelectMatchId, matches]);
-  const { providerUnavailableByMatch, providerResponseByMatch } = useProviderAvailability(matches);
+  const { providerUnavailableByMatch, providerResponseByMatch, providerInvitedByMatch, providerAvailabilityLoading } = useProviderAvailability(matches);
   const mergedUnavailableByMatch = useMemo(() => {
     const merged = {};
     const allMatchIds = new Set([
@@ -172,6 +174,65 @@ export function PlanMatchesScreen({
       return didChange ? next : prev;
     });
   }, [matches, setSelectedPlayersByMatch]);
+
+  // Track seeded match IDs locally to avoid re-triggering the effect
+  const inviteSeededRef = useRef(new Set(inviteSeededMatchIds.map(String)));
+
+  // Sync ref when persisted state loads (e.g., from a prior session)
+  useEffect(() => {
+    inviteSeededMatchIds.forEach((id) => inviteSeededRef.current.add(String(id)));
+  }, [inviteSeededMatchIds]);
+
+  // Auto-select invited players for matches that haven't been seeded yet
+  useEffect(() => {
+    if (providerAvailabilityLoading) return;
+    if (matches.length === 0) return;
+
+    const unseededMatchIds = matches
+      .map((m) => String(m.id))
+      .filter((id) => !inviteSeededRef.current.has(id));
+
+    if (unseededMatchIds.length === 0) return;
+
+    // Mark all unseeded matches as seeded in both ref and persisted state
+    unseededMatchIds.forEach((id) => inviteSeededRef.current.add(id));
+    setInviteSeededMatchIds((prev) => [...prev, ...unseededMatchIds]);
+
+    // Build map of invited player IDs per unseeded match
+    const invitedByUnseeded = {};
+    unseededMatchIds.forEach((matchId) => {
+      const invited = providerInvitedByMatch[matchId];
+      if (invited && invited.length > 0) {
+        const unavailableSet = new Set(mergedUnavailableByMatch[matchId] || []);
+        const available = invited.filter((id) => !unavailableSet.has(id));
+        if (available.length > 0) {
+          invitedByUnseeded[matchId] = available;
+        }
+      }
+    });
+
+    if (Object.keys(invitedByUnseeded).length === 0) return;
+
+    setSelectedPlayersByMatch((prev) => {
+      let didChange = false;
+      const next = { ...prev };
+      Object.entries(invitedByUnseeded).forEach(([matchId, playerIds]) => {
+        const current = next[matchId] || [];
+        if (current.length === 0) {
+          next[matchId] = playerIds;
+          didChange = true;
+        }
+      });
+      return didChange ? next : prev;
+    });
+  }, [
+    providerAvailabilityLoading,
+    matches,
+    providerInvitedByMatch,
+    mergedUnavailableByMatch,
+    setInviteSeededMatchIds,
+    setSelectedPlayersByMatch
+  ]);
 
   const rosterPlayers = useMemo(() => {
     return (teamPlayers || [])

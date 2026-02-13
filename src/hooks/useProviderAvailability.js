@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getMatchPlayerAvailability } from '../services/matchIntegrationService';
 
 export function useProviderAvailability(matches) {
   const [availabilityByMatch, setAvailabilityByMatch] = useState({});
-  const [providerAvailabilityLoading, setProviderAvailabilityLoading] = useState(false);
+  const [providerAvailabilityLoading, setProviderAvailabilityLoading] = useState(true);
+  const lastFetchedKeyRef = useRef(null);
 
   const matchIdsKey = useMemo(
     () => {
@@ -32,6 +33,7 @@ export function useProviderAvailability(matches) {
     if (matchIds.length === 0) {
       setAvailabilityByMatch({});
       setProviderAvailabilityLoading(false);
+      lastFetchedKeyRef.current = matchIdsKey;
       return;
     }
 
@@ -55,6 +57,7 @@ export function useProviderAvailability(matches) {
       })
       .finally(() => {
         if (!isActive) return;
+        lastFetchedKeyRef.current = matchIdsKey;
         setProviderAvailabilityLoading(false);
       });
 
@@ -97,5 +100,20 @@ export function useProviderAvailability(matches) {
     return responseByMatch;
   }, [availabilityByMatch]);
 
-  return { providerUnavailableByMatch, providerResponseByMatch, providerAvailabilityLoading };
+  const providerInvitedByMatch = useMemo(() => {
+    const invitedByMatch = {};
+    Object.entries(availabilityByMatch || {}).forEach(([matchId, players]) => {
+      const invitedIds = Object.entries(players || {})
+        .filter(([, status]) => status?.inviteStatus === 'invited')
+        .map(([playerId]) => playerId);
+
+      if (invitedIds.length > 0) {
+        invitedByMatch[matchId] = invitedIds;
+      }
+    });
+    return invitedByMatch;
+  }, [availabilityByMatch]);
+
+  const isLoading = providerAvailabilityLoading || lastFetchedKeyRef.current !== matchIdsKey;
+  return { providerUnavailableByMatch, providerResponseByMatch, providerInvitedByMatch, providerAvailabilityLoading: isLoading };
 }

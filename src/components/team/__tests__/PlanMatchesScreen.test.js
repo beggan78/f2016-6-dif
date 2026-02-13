@@ -114,6 +114,7 @@ describe('PlanMatchesScreen', () => {
     mockUseProviderAvailability.mockReturnValue({
       providerUnavailableByMatch: {},
       providerResponseByMatch: {},
+      providerInvitedByMatch: {},
       providerAvailabilityLoading: false
     });
 
@@ -178,6 +179,7 @@ describe('PlanMatchesScreen', () => {
         'match-1': ['p1']
       },
       providerResponseByMatch: {},
+      providerInvitedByMatch: {},
       providerAvailabilityLoading: false
     });
 
@@ -359,6 +361,7 @@ describe('PlanMatchesScreen', () => {
             'p2': 'no_response'
           }
         },
+        providerInvitedByMatch: {},
         providerAvailabilityLoading: false
       });
 
@@ -381,6 +384,7 @@ describe('PlanMatchesScreen', () => {
             'p2': 'no_response'
           }
         },
+        providerInvitedByMatch: {},
         providerAvailabilityLoading: false
       });
 
@@ -497,6 +501,111 @@ describe('PlanMatchesScreen', () => {
       // Players should still be listed in roster (once each, not selected)
       expect(screen.getAllByText('Alex Player').length).toBe(1);
       expect(screen.getAllByText('Bree Player').length).toBe(1);
+    });
+  });
+
+  describe('invite seeding', () => {
+    it('should auto-select invited players for unseeded matches', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Both invited players should be pre-selected
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+      });
+    });
+
+    it('should not re-seed after user deselects an invited player', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Wait for seeding to complete
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+      });
+
+      // Deselect Alex Player by clicking in the selected area
+      const alexElements = screen.getAllByText('Alex Player');
+      fireEvent.click(alexElements[1]);
+
+      // Alex should now appear only once (in roster, not selected)
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+      });
+
+      // Bree should still be selected
+      expect(screen.getAllByText('Bree Player').length).toBe(2);
+    });
+
+    it('should not auto-select unavailable invited players', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {
+          'match-1': ['p1']
+        },
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Only p2 (Bree) should be auto-selected since p1 is unavailable
+      await waitFor(() => {
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+      });
+      expect(screen.getAllByText('Alex Player').length).toBe(1);
+    });
+
+    it('should not seed while provider availability is loading', () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1']
+        },
+        providerAvailabilityLoading: true
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Players should not be pre-selected while loading
+      expect(screen.getAllByText('Alex Player').length).toBe(1);
+    });
+
+    it('should not change selections for matches with no invited players', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {},
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // No auto-selection should happen
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+        expect(screen.getAllByText('Bree Player').length).toBe(1);
+      });
     });
   });
 });

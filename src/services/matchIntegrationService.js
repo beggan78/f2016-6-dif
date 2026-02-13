@@ -151,6 +151,7 @@ export async function getMatchPlayerAvailability(matchIds) {
         upcoming_match_id,
         availability,
         response,
+        invite_status,
         connected_player:connected_player_id (
           player_id
         )
@@ -180,7 +181,8 @@ export async function getMatchPlayerAvailability(matchIds) {
 
       availabilityByMatch[matchId][playerId] = {
         availability: record.availability,
-        response: record.response
+        response: record.response,
+        inviteStatus: record.invite_status || null
       };
     });
 
