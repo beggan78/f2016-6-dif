@@ -130,6 +130,19 @@ export const FORMATION_TEST_MATRIX = [
 ];
 
 // ===================================================================
+// TEST CONVENTIONS
+// ===================================================================
+
+/**
+ * Return the default goalie player ID for a given teamConfig.
+ *
+ * Convention: mock players are numbered 1..squadSize and the *last*
+ * player (squadSize) is always assigned as goalie.  Extracting
+ * this into a helper makes the assumption explicit and easy to change.
+ */
+export const defaultGoalieId = (teamConfig) => String(teamConfig.squadSize);
+
+// ===================================================================
 // PERIOD SETUP SCREEN HELPERS
 // ===================================================================
 
@@ -197,7 +210,7 @@ export const buildEmptyFormation = (teamConfig, goalieId = null) => {
 export const buildCompleteFormation = (teamConfig) => {
   const fieldPositions = getFieldPositions(teamConfig);
   const substitutePositions = getSubstitutePositions(teamConfig);
-  const goalieId = String(teamConfig.squadSize);
+  const goalieId = defaultGoalieId(teamConfig);
 
   const formation = {};
   let playerId = 1;
@@ -218,7 +231,7 @@ export const buildCompleteFormation = (teamConfig) => {
  */
 export const createPeriodSetupProps = (teamConfig, overrides = {}) => {
   const players = createMockPlayers(teamConfig.squadSize, teamConfig);
-  const goalieId = String(teamConfig.squadSize);
+  const goalieId = defaultGoalieId(teamConfig);
   const formation = overrides.formation || buildEmptyFormation(teamConfig, goalieId);
   const fieldPositions = getFieldPositions(teamConfig);
   const substitutePositions = getSubstitutePositions(teamConfig);

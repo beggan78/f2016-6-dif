@@ -21,6 +21,7 @@ import {
   createPeriodSetupProps,
   buildCompleteFormation,
   buildEmptyFormation,
+  defaultGoalieId,
   FORMATION_TEST_MATRIX
 } from './matchLifecycleUtils';
 import { createMockPlayers } from '../components/__tests__/componentTestUtils';
@@ -251,7 +252,7 @@ describe('PeriodSetupScreen — Formation Assignment Integration', () => {
     });
 
     it('should disable Enter Game when positions have null values', () => {
-      const goalieId = String(teamConfig.squadSize);
+      const goalieId = defaultGoalieId(teamConfig);
       const formation = buildEmptyFormation(teamConfig, goalieId);
       // All field and sub positions are null
       const props = createPeriodSetupProps(teamConfig, { formation });
@@ -350,7 +351,7 @@ describe('PeriodSetupScreen — Formation Assignment Integration', () => {
       renderWithI18n(<PeriodSetupScreen {...props} />);
 
       // Find the goalie select — it has the current goalie value
-      const goalieSelect = screen.getAllByTestId('select').find(s => s.value === String(teamConfig.squadSize));
+      const goalieSelect = screen.getAllByTestId('select').find(s => s.value === defaultGoalieId(teamConfig));
       expect(goalieSelect).toBeDefined();
 
       // Change goalie to player '1' (currently in a field position)
