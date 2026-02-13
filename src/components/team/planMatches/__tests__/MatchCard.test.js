@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MatchCard } from '../MatchCard';
 
 // Mock child components
@@ -19,6 +19,12 @@ jest.mock('../../../shared/UI', () => ({
 jest.mock('../../../shared', () => ({
   Portal: ({ children }) => <div data-testid="portal">{children}</div>,
   Tooltip: ({ children }) => <div data-testid="tooltip">{children}</div>
+}));
+
+jest.mock('lucide-react', () => ({
+  Check: (props) => <svg data-testid="icon-check" {...props} />,
+  X: (props) => <svg data-testid="icon-x" {...props} />,
+  HelpCircle: (props) => <svg data-testid="icon-help-circle" {...props} />
 }));
 
 jest.mock('../PlayerSelector', () => ({
@@ -479,6 +485,59 @@ describe('MatchCard', () => {
 
       const selector = screen.getByTestId('player-selector');
       expect(selector).toBeInTheDocument();
+    });
+  });
+
+  describe('Player Response Status', () => {
+    it('should pass responseStatus to selected player cards when playerResponses provided', () => {
+      const props = {
+        ...defaultProps,
+        playerResponses: {
+          '1': 'accepted',
+          '2': 'declined'
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const player1Card = container.querySelector('[data-drag-item-id="1"]');
+      expect(within(player1Card).getByTestId('icon-check')).toBeInTheDocument();
+
+      const player2Card = container.querySelector('[data-drag-item-id="2"]');
+      expect(within(player2Card).getByTestId('icon-x')).toBeInTheDocument();
+    });
+
+    it('should show no icons when playerResponses is null', () => {
+      const props = {
+        ...defaultProps,
+        playerResponses: null
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      expect(container.querySelector('[data-testid="icon-check"]')).not.toBeInTheDocument();
+      expect(container.querySelector('[data-testid="icon-x"]')).not.toBeInTheDocument();
+      expect(container.querySelector('[data-testid="icon-help-circle"]')).not.toBeInTheDocument();
+    });
+
+    it('should show no icon for player not in playerResponses map', () => {
+      const props = {
+        ...defaultProps,
+        playerResponses: {
+          '1': 'accepted'
+          // Player '2' has no response entry
+        }
+      };
+
+      const { container } = render(<MatchCard {...props} />);
+
+      const player1Card = container.querySelector('[data-drag-item-id="1"]');
+      expect(within(player1Card).getByTestId('icon-check')).toBeInTheDocument();
+
+      const player2Card = container.querySelector('[data-drag-item-id="2"]');
+      expect(within(player2Card).queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(within(player2Card).queryByTestId('icon-x')).not.toBeInTheDocument();
+      expect(within(player2Card).queryByTestId('icon-help-circle')).not.toBeInTheDocument();
     });
   });
 

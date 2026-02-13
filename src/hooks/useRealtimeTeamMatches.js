@@ -105,6 +105,7 @@ export function useRealtimeTeamMatches(teamId) {
                   return prev.map(match =>
                     match.id === updated.id
                       ? {
+                          ...match,
                           id: updated.id,
                           opponent: updated.opponent || 'Internal Match',
                           state: updated.state,

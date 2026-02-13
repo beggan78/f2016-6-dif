@@ -868,6 +868,7 @@
       "noPlayers": "No roster players.",
       "markAvailable": "Mark available",
       "markUnavailable": "Mark unavailable",
+      "providerUnavailable": "Unavailable (reported)",
       "practicesTooltip": "Practices per match"
     },
     "notifications": {

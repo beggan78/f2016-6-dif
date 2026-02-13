@@ -125,3 +125,76 @@ export async function getUpcomingMatchesForTeam(teamId) {
     };
   }
 }
+
+/**
+ * Get provider-reported availability/response for players in upcoming matches.
+ *
+ * @param {Array<string>} matchIds - Upcoming match IDs
+ * @returns {Promise<{success: boolean, availabilityByMatch?: Object, error?: string}>}
+ */
+export async function getMatchPlayerAvailability(matchIds) {
+  try {
+    const normalizedMatchIds = Array.isArray(matchIds)
+      ? matchIds.filter((id) => Boolean(id))
+      : [];
+
+    if (normalizedMatchIds.length === 0) {
+      return {
+        success: true,
+        availabilityByMatch: {}
+      };
+    }
+
+    const { data, error } = await supabase
+      .from('upcoming_match_player')
+      .select(`
+        upcoming_match_id,
+        availability,
+        response,
+        invite_status,
+        connected_player:connected_player_id (
+          player_id
+        )
+      `)
+      .in('upcoming_match_id', normalizedMatchIds)
+      .not('connected_player.player_id', 'is', null);
+
+    if (error) {
+      console.error('Failed to get upcoming match player availability:', error);
+      return {
+        success: false,
+        error: `Database error: ${error.message}`
+      };
+    }
+
+    const availabilityByMatch = {};
+    (data || []).forEach((record) => {
+      const matchId = record.upcoming_match_id;
+      const playerId = record.connected_player?.player_id;
+      if (!matchId || !playerId) {
+        return;
+      }
+
+      if (!availabilityByMatch[matchId]) {
+        availabilityByMatch[matchId] = {};
+      }
+
+      availabilityByMatch[matchId][playerId] = {
+        availability: record.availability,
+        response: record.response,
+        inviteStatus: record.invite_status || null
+      };
+    });
+
+    return {
+      success: true,
+      availabilityByMatch
+    };
+  } catch (error) {
+    console.error('Exception while getting match player availability:', error);
+    return {
+      success: false,
+      error: `Unexpected error: ${error.message}`
+    };
+  }
+}

@@ -15,6 +15,8 @@ export function MatchCard({
   rosterById,
   selectedIds,
   unavailableIds,
+  providerUnavailableIds,
+  playerResponses,
   planningStatus,
   canPlan,
   isSelectedInOtherMatch,
@@ -30,7 +32,8 @@ export function MatchCard({
   onCrossDragEnd,
   crossMatchState,
   swapAnimation,
-  slideInAnimation
+  slideInAnimation,
+  sortMetric
 }) {
   const { t } = useTranslation('team');
   const unavailableSet = useMemo(() => new Set(unavailableIds || []), [unavailableIds]);
@@ -261,11 +264,12 @@ export function MatchCard({
             players={displayRoster}
             selectedIds={selectedIds}
             unavailableIds={unavailableIds}
+            providerUnavailableIds={providerUnavailableIds}
             onToggleSelect={onToggleSelect}
             onToggleUnavailable={onToggleUnavailable}
             isSelectedInOtherMatch={isSelectedInOtherMatch}
             isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere}
-
+            sortMetric={sortMetric}
           />
         </div>
 
@@ -298,6 +302,8 @@ export function MatchCard({
                   && String(swapAnimation.sourcePlayerId) === String(player.id)
                 }
                 isBeingDisplaced={isBeingDisplaced(player.id)}
+                responseStatus={playerResponses ? playerResponses[player.id] || null : null}
+                sortMetric={sortMetric}
               />
             ))}
             {selectedPlayers.length === 0 && (
@@ -322,6 +328,8 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(ghostPlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(ghostPlayer.id)}
+                    responseStatus={playerResponses ? playerResponses[ghostPlayer.id] || null : null}
+                    sortMetric={sortMetric}
                   />
                 </div>
               </Portal>
@@ -339,6 +347,8 @@ export function MatchCard({
                     shift={0}
                     isInMultipleMatches={isPlayerInMultipleMatches(slideInSourcePlayer.id)}
                     isSelectedAndOnlyAvailableHere={isSelectedAndOnlyAvailableHere(slideInSourcePlayer.id)}
+                    responseStatus={playerResponses ? playerResponses[slideInSourcePlayer.id] || null : null}
+                    sortMetric={sortMetric}
                   />
                 </div>
               </Portal>

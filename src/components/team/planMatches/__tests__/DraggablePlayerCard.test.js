@@ -16,6 +16,13 @@ jest.mock('../../../shared', () => ({
   )
 }));
 
+// Mock lucide-react icons
+jest.mock('lucide-react', () => ({
+  Check: (props) => <svg data-testid="icon-check" {...props} />,
+  X: (props) => <svg data-testid="icon-x" {...props} />,
+  HelpCircle: (props) => <svg data-testid="icon-help-circle" {...props} />
+}));
+
 describe('DraggablePlayerCard', () => {
   let defaultProps;
   let mockPlayer;
@@ -56,7 +63,6 @@ describe('DraggablePlayerCard', () => {
       expect(screen.getByText('Test Player')).toBeInTheDocument();
       expect(screen.getByText('#10')).toBeInTheDocument();
       expect(screen.getByText('3.45')).toBeInTheDocument();
-      expect(screen.getByText('85.5%')).toBeInTheDocument();
     });
 
     it('should render without jersey number', () => {
@@ -393,14 +399,14 @@ describe('DraggablePlayerCard', () => {
       expect(screen.getByText('3.46')).toBeInTheDocument();
     });
 
-    it('should format attendance rate with 1 decimal place', () => {
+    it('should format attendance rate with 0 decimal places when sortMetric is attendance', () => {
       const player = {
         ...mockPlayer,
         attendanceRate: 85.56789
       };
-      render(<DraggablePlayerCard {...defaultProps} player={player} />);
+      render(<DraggablePlayerCard {...defaultProps} player={player} sortMetric="attendance" />);
 
-      expect(screen.getByText('85.6%')).toBeInTheDocument();
+      expect(screen.getByText('86%')).toBeInTheDocument();
     });
 
     it('should handle zero practices per match', () => {
@@ -413,14 +419,14 @@ describe('DraggablePlayerCard', () => {
       expect(screen.getByText('0.00')).toBeInTheDocument();
     });
 
-    it('should handle zero attendance rate', () => {
+    it('should handle zero attendance rate when sortMetric is attendance', () => {
       const player = {
         ...mockPlayer,
         attendanceRate: 0
       };
-      render(<DraggablePlayerCard {...defaultProps} player={player} />);
+      render(<DraggablePlayerCard {...defaultProps} player={player} sortMetric="attendance" />);
 
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
+      expect(screen.getByText('0%')).toBeInTheDocument();
     });
 
     it('should handle very long player names with truncation', () => {
@@ -589,6 +595,60 @@ describe('DraggablePlayerCard', () => {
     });
   });
 
+  describe('Response Status Icons', () => {
+    it('should render check icon when responseStatus is accepted', () => {
+      render(<DraggablePlayerCard {...defaultProps} responseStatus="accepted" />);
+
+      expect(screen.getByTestId('icon-check')).toBeInTheDocument();
+      expect(screen.queryByTestId('icon-x')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-help-circle')).not.toBeInTheDocument();
+    });
+
+    it('should render X icon when responseStatus is declined', () => {
+      render(<DraggablePlayerCard {...defaultProps} responseStatus="declined" />);
+
+      expect(screen.getByTestId('icon-x')).toBeInTheDocument();
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-help-circle')).not.toBeInTheDocument();
+    });
+
+    it('should render help circle icon when responseStatus is no_response', () => {
+      render(<DraggablePlayerCard {...defaultProps} responseStatus="no_response" />);
+
+      expect(screen.getByTestId('icon-help-circle')).toBeInTheDocument();
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-x')).not.toBeInTheDocument();
+    });
+
+    it('should render no icon when responseStatus is null', () => {
+      render(<DraggablePlayerCard {...defaultProps} responseStatus={null} />);
+
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-x')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-help-circle')).not.toBeInTheDocument();
+    });
+
+    it('should render no icon when responseStatus is undefined', () => {
+      render(<DraggablePlayerCard {...defaultProps} />);
+
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-x')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-help-circle')).not.toBeInTheDocument();
+    });
+
+    it('should re-render when responseStatus changes', () => {
+      const { rerender } = render(
+        <DraggablePlayerCard {...defaultProps} responseStatus={null} />
+      );
+
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+
+      rerender(<DraggablePlayerCard {...defaultProps} responseStatus="accepted" />);
+
+      expect(screen.getByTestId('icon-check')).toBeInTheDocument();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle player with string id', () => {
       const player = {
@@ -649,7 +709,6 @@ describe('DraggablePlayerCard', () => {
 
       expect(screen.getByText('Minimal Player')).toBeInTheDocument();
       expect(screen.getByText('0.00')).toBeInTheDocument();
-      expect(screen.getByText('0.0%')).toBeInTheDocument();
     });
   });
 });
