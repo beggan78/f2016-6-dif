@@ -38,6 +38,18 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   const [deletingMatchId, setDeletingMatchId] = useState(null);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [planSelectionIds, setPlanSelectionIds] = useState([]);
+  const pendingMatches = activeMatches.filter(match => match.state === 'pending');
+  const plannableMatches = [...upcomingMatches, ...pendingMatches].sort((a, b) => {
+    if (!a.matchDate && !b.matchDate) return 0;
+    if (!a.matchDate) return 1;
+    if (!b.matchDate) return -1;
+    const dateCompare = a.matchDate.localeCompare(b.matchDate);
+    if (dateCompare !== 0) return dateCompare;
+    if (!a.matchTime && !b.matchTime) return 0;
+    if (!a.matchTime) return -1;
+    if (!b.matchTime) return 1;
+    return a.matchTime.localeCompare(b.matchTime);
+  });
 
   const handleCopyLink = async (matchId) => {
     setCopyingMatchId(matchId);
@@ -138,7 +150,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   };
 
   const handlePlanMatch = (match) => {
-    if (upcomingMatches.length <= 1) {
+    if (plannableMatches.length <= 1) {
       onNavigateTo(VIEWS.PLAN_MATCHES, {
         matchesToPlan: [match]
       });
@@ -158,7 +170,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
   };
 
   const confirmPlanSelection = () => {
-    const selectedMatches = upcomingMatches.filter(match => planSelectionIds.includes(match.id));
+    const selectedMatches = plannableMatches.filter(match => planSelectionIds.includes(match.id));
     if (selectedMatches.length === 0) {
       return;
     }
@@ -207,6 +219,14 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
     }
 
     return formatIsoDate(date);
+  };
+
+  const formatActiveMatchSchedule = (match) => {
+    // Pending matches linked to an upcoming provider match should display provider schedule.
+    if (match?.state === 'pending' && match?.matchDate) {
+      return formatUpcomingSchedule(match.matchDate, match.matchTime);
+    }
+    return formatTimestamp(match?.createdAt);
   };
 
   const formatUpcomingMatchTime = (matchTime) => {
@@ -343,7 +363,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                     <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-400 flex-wrap">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3.5 h-3.5" />
-                        <span>{formatTimestamp(match.createdAt)}</span>
+                        <span>{formatActiveMatchSchedule(match)}</span>
                       </div>
                       {match.type && (
                         <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
@@ -359,6 +379,17 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    {isPending && (
+                      <Button
+                        onClick={() => handlePlanMatch(match)}
+                        variant="accent"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        disabled={isDeleting}
+                      >
+                        {t('teamMatches.buttons.plan')}
+                      </Button>
+                    )}
                     {isPending && (
                       <Button
                         onClick={() => handleResumeSetup(match.id)}
@@ -468,8 +499,12 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
           maxWidth="lg"
         >
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-              {upcomingMatches.map((match) => {
+              {plannableMatches.map((match) => {
                 const isSelected = planSelectionIds.includes(match.id);
+                const scheduleLabel = formatUpcomingSchedule(match.matchDate, match.matchTime);
+                const stateLabel = match.state === 'pending'
+                  ? t('teamMatches.states.pending')
+                  : t('teamMatches.states.upcoming');
                 return (
                   <label
                     key={match.id}
@@ -490,7 +525,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                       <div className="min-w-0">
                         <div className="truncate font-medium">{match.opponent}</div>
                         <div className="text-xs text-slate-400">
-                          {formatUpcomingSchedule(match.matchDate, match.matchTime)}
+                          {stateLabel} - {scheduleLabel}
                         </div>
                       </div>
                     </div>

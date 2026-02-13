@@ -1,6 +1,8 @@
 import React from 'react';
+import { Check, X, HelpCircle } from 'lucide-react';
 import { Tooltip } from '../../shared';
 import { useTranslation } from 'react-i18next';
+import { AUTO_SELECT_STRATEGY } from '../../../constants/planMatchesConstants';
 
 const DraggablePlayerCardComponent = ({
   player,
@@ -13,7 +15,9 @@ const DraggablePlayerCardComponent = ({
   isDragActivating,
   isSwapTarget,
   isSwapLanding,
-  isBeingDisplaced
+  isBeingDisplaced,
+  responseStatus,
+  sortMetric
 }) => {
   const { t } = useTranslation('team');
 
@@ -55,16 +59,27 @@ const DraggablePlayerCardComponent = ({
       }}
     >
       <div className="flex items-center gap-2 min-w-0">
+        {responseStatus === 'accepted' && (
+          <Check className="h-3 w-3 flex-shrink-0 text-emerald-400" />
+        )}
+        {responseStatus === 'declined' && (
+          <X className="h-3 w-3 flex-shrink-0 text-rose-400" />
+        )}
+        {responseStatus === 'no_response' && (
+          <HelpCircle className="h-3 w-3 flex-shrink-0 text-amber-400" />
+        )}
         <span className="truncate">{player.displayName}</span>
         {player.jerseyNumber && (
           <span className="text-[10px] text-sky-200/70">#{player.jerseyNumber}</span>
         )}
       </div>
       <div className="flex items-center gap-2 text-[10px] font-mono text-sky-100/80">
-        <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
-          <span>{player.practicesPerMatch.toFixed(2)}</span>
-        </Tooltip>
-        <span>{player.attendanceRate.toFixed(1)}%</span>
+        {sortMetric === AUTO_SELECT_STRATEGY.ATTENDANCE
+          ? <span>{player.attendanceRate.toFixed(0)}%</span>
+          : <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
+              <span>{player.practicesPerMatch.toFixed(2)}</span>
+            </Tooltip>
+        }
       </div>
     </div>
   );
@@ -81,9 +96,11 @@ export const DraggablePlayerCard = React.memo(
     prevProps.isSwapTarget === nextProps.isSwapTarget &&
     prevProps.isSwapLanding === nextProps.isSwapLanding &&
     prevProps.isBeingDisplaced === nextProps.isBeingDisplaced &&
+    prevProps.responseStatus === nextProps.responseStatus &&
     prevProps.player?.id === nextProps.player?.id &&
     prevProps.player?.displayName === nextProps.player?.displayName &&
     prevProps.player?.jerseyNumber === nextProps.player?.jerseyNumber &&
     prevProps.player?.practicesPerMatch === nextProps.player?.practicesPerMatch &&
-    prevProps.player?.attendanceRate === nextProps.player?.attendanceRate
+    prevProps.player?.attendanceRate === nextProps.player?.attendanceRate &&
+    prevProps.sortMetric === nextProps.sortMetric
 );

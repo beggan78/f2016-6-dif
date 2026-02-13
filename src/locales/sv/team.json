@@ -868,6 +868,7 @@
       "noPlayers": "Inga truppspelare.",
       "markAvailable": "Markera tillgänglig",
       "markUnavailable": "Markera ej tillgänglig",
+      "providerUnavailable": "Ej tillgänglig (rapporterad)",
       "practicesTooltip": "Träningar per match"
     },
     "notifications": {

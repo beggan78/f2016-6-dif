@@ -1,15 +1,17 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, NotificationModal } from '../shared/UI';
 import { Card } from '../shared/Card';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { getMinimumPlayersForFormat } from '../../constants/teamConfiguration';
 import { planUpcomingMatch } from '../../services/matchPlanningService';
+import { getSquadSelectionsForMatches } from '../../services/matchStateManager';
 import { useAutoSelectPreferences } from '../../hooks/useAutoSelectPreferences';
 import { useAttendanceStats } from '../../hooks/useAttendanceStats';
 import { usePlanProgress } from '../../hooks/usePlanProgress';
 import { usePlanningDefaults } from '../../hooks/usePlanningDefaults';
 import { useUnavailablePlayersByMatch } from '../../hooks/useUnavailablePlayersByMatch';
+import { useProviderAvailability } from '../../hooks/useProviderAvailability';
 import { useCrossMatchDrag } from '../../hooks/useCrossMatchDrag';
 import { MatchCard } from './planMatches/MatchCard';
 import { AutoSelectModal } from './planMatches/AutoSelectModal';
@@ -30,7 +32,12 @@ export function PlanMatchesScreen({
   const [showAutoSelectModal, setShowAutoSelectModal] = useState(false);
   const [autoSelectMatchId, setAutoSelectMatchId] = useState(null);
 
-  const { unavailablePlayersByMatch, setUnavailablePlayersByMatch } = useUnavailablePlayersByMatch(currentTeam?.id);
+  const {
+    unavailablePlayersByMatch,
+    providerAvailableOverridesByMatch,
+    setUnavailablePlayersByMatch,
+    setProviderAvailableOverridesByMatch
+  } = useUnavailablePlayersByMatch(currentTeam?.id);
   const { autoSelectSettings, targetCounts, lastSquadSize, setAutoSelectSettings, setTargetCounts, setLastSquadSize } = useAutoSelectPreferences(
     currentTeam?.id
   );
@@ -38,9 +45,11 @@ export function PlanMatchesScreen({
     matches,
     selectedPlayersByMatch,
     sortMetric,
+    inviteSeededMatchIds,
     setSelectedPlayersByMatch,
     setSortMetric,
     setPlannedMatchIds,
+    setInviteSeededMatchIds,
     planningStatus,
     setPlanningStatus
   } = usePlanProgress({
@@ -48,6 +57,51 @@ export function PlanMatchesScreen({
     matchesToPlan,
     debugEnabled: DEBUG_ENABLED
   });
+  // Track which pending match IDs have been fetched for saved squad selections
+  const fetchedPendingSelectionRef = useRef(new Set());
+
+  // Reset tracked IDs when team changes
+  useEffect(() => {
+    fetchedPendingSelectionRef.current = new Set();
+  }, [currentTeam?.id]);
+
+  // Seed selectedPlayersByMatch from saved initial_config.squadSelection for pending matches
+  useEffect(() => {
+    let isActive = true;
+
+    const pendingMatchIds = matches
+      .filter(m => m.state === 'pending')
+      .map(m => m.id)
+      .filter(id => !fetchedPendingSelectionRef.current.has(id));
+
+    if (pendingMatchIds.length === 0) return;
+
+    // Mark as fetched immediately to prevent duplicate requests
+    pendingMatchIds.forEach(id => fetchedPendingSelectionRef.current.add(id));
+
+    getSquadSelectionsForMatches(pendingMatchIds).then(result => {
+      if (!isActive) return;
+      if (!result.success || !result.selections) return;
+
+      const fetchedSelections = result.selections;
+      if (Object.keys(fetchedSelections).length === 0) return;
+
+      setSelectedPlayersByMatch(prev => {
+        let didChange = false;
+        const next = { ...prev };
+        Object.entries(fetchedSelections).forEach(([matchId, playerIds]) => {
+          if (!next[matchId] || next[matchId].length === 0) {
+            next[matchId] = playerIds;
+            didChange = true;
+          }
+        });
+        return didChange ? next : prev;
+      });
+    });
+
+    return () => { isActive = false; };
+  }, [matches, setSelectedPlayersByMatch]);
+
   const autoSelectMatches = useMemo(() => {
     if (matches.length > 1) {
       return matches;
@@ -57,6 +111,29 @@ export function PlanMatchesScreen({
     }
     return matches;
   }, [autoSelectMatchId, matches]);
+  const { providerUnavailableByMatch, providerResponseByMatch, providerInvitedByMatch, providerAvailabilityLoading } = useProviderAvailability(matches);
+  const mergedUnavailableByMatch = useMemo(() => {
+    const merged = {};
+    const allMatchIds = new Set([
+      ...Object.keys(unavailablePlayersByMatch || {}),
+      ...Object.keys(providerAvailableOverridesByMatch || {}),
+      ...Object.keys(providerUnavailableByMatch || {}),
+      ...matches.map((match) => String(match.id))
+    ]);
+
+    allMatchIds.forEach((matchId) => {
+      const manualIds = unavailablePlayersByMatch[matchId] || [];
+      const providerIds = providerUnavailableByMatch[matchId] || [];
+      const providerOverrideSet = new Set(providerAvailableOverridesByMatch[matchId] || []);
+      const effectiveProviderIds = providerIds.filter((playerId) => !providerOverrideSet.has(playerId));
+      const uniqueIds = Array.from(new Set([...manualIds, ...effectiveProviderIds]));
+      if (uniqueIds.length > 0) {
+        merged[matchId] = uniqueIds;
+      }
+    });
+
+    return merged;
+  }, [matches, providerAvailableOverridesByMatch, providerUnavailableByMatch, unavailablePlayersByMatch]);
 
   const endDate = useMemo(() => new Date(), []);
   const startDate = useMemo(() => {
@@ -103,6 +180,65 @@ export function PlanMatchesScreen({
       return didChange ? next : prev;
     });
   }, [matches, setSelectedPlayersByMatch]);
+
+  // Track seeded match IDs locally to avoid re-triggering the effect
+  const inviteSeededRef = useRef(new Set(inviteSeededMatchIds.map(String)));
+
+  // Sync ref when persisted state loads (e.g., from a prior session)
+  useEffect(() => {
+    inviteSeededMatchIds.forEach((id) => inviteSeededRef.current.add(String(id)));
+  }, [inviteSeededMatchIds]);
+
+  // Auto-select invited players for matches that haven't been seeded yet
+  useEffect(() => {
+    if (providerAvailabilityLoading) return;
+    if (matches.length === 0) return;
+
+    const unseededMatchIds = matches
+      .map((m) => String(m.id))
+      .filter((id) => !inviteSeededRef.current.has(id));
+
+    if (unseededMatchIds.length === 0) return;
+
+    // Mark all unseeded matches as seeded in both ref and persisted state
+    unseededMatchIds.forEach((id) => inviteSeededRef.current.add(id));
+    setInviteSeededMatchIds((prev) => [...prev, ...unseededMatchIds]);
+
+    // Build map of invited player IDs per unseeded match
+    const invitedByUnseeded = {};
+    unseededMatchIds.forEach((matchId) => {
+      const invited = providerInvitedByMatch[matchId];
+      if (invited && invited.length > 0) {
+        const unavailableSet = new Set(mergedUnavailableByMatch[matchId] || []);
+        const available = invited.filter((id) => !unavailableSet.has(id));
+        if (available.length > 0) {
+          invitedByUnseeded[matchId] = available;
+        }
+      }
+    });
+
+    if (Object.keys(invitedByUnseeded).length === 0) return;
+
+    setSelectedPlayersByMatch((prev) => {
+      let didChange = false;
+      const next = { ...prev };
+      Object.entries(invitedByUnseeded).forEach(([matchId, playerIds]) => {
+        const current = next[matchId] || [];
+        if (current.length === 0) {
+          next[matchId] = playerIds;
+          didChange = true;
+        }
+      });
+      return didChange ? next : prev;
+    });
+  }, [
+    providerAvailabilityLoading,
+    matches,
+    providerInvitedByMatch,
+    mergedUnavailableByMatch,
+    setInviteSeededMatchIds,
+    setSelectedPlayersByMatch
+  ]);
 
   const rosterPlayers = useMemo(() => {
     return (teamPlayers || [])
@@ -186,7 +322,7 @@ export function PlanMatchesScreen({
     return `${matchDate} ${trimmed}`;
   };
 
-  const getUnavailableSet = useCallback((matchId) => new Set(unavailablePlayersByMatch[matchId] || []), [unavailablePlayersByMatch]);
+  const getUnavailableSet = useCallback((matchId) => new Set(mergedUnavailableByMatch[matchId] || []), [mergedUnavailableByMatch]);
 
   const togglePlayerSelection = useCallback((matchId, playerId) => {
     const unavailableSet = getUnavailableSet(matchId);
@@ -209,6 +345,56 @@ export function PlanMatchesScreen({
   }, [getUnavailableSet, setSelectedPlayersByMatch]);
 
   const togglePlayerUnavailable = useCallback((matchId, playerId) => {
+    const providerUnavailableSet = new Set(providerUnavailableByMatch[matchId] || []);
+    const providerOverrideSet = new Set(providerAvailableOverridesByMatch[matchId] || []);
+
+    if (providerUnavailableSet.has(playerId)) {
+      const isOverrideActive = providerOverrideSet.has(playerId);
+
+      setProviderAvailableOverridesByMatch((prev) => {
+        const current = new Set(prev[matchId] || []);
+        if (isOverrideActive) {
+          current.delete(playerId);
+        } else {
+          current.add(playerId);
+        }
+        return {
+          ...prev,
+          [matchId]: Array.from(current)
+        };
+      });
+
+      if (!isOverrideActive) {
+        setUnavailablePlayersByMatch((prev) => {
+          const current = new Set(prev[matchId] || []);
+          if (!current.has(playerId)) {
+            return prev;
+          }
+          current.delete(playerId);
+          return {
+            ...prev,
+            [matchId]: Array.from(current)
+          };
+        });
+      }
+
+      if (isOverrideActive) {
+        setSelectedPlayersByMatch((prev) => {
+          const current = new Set(prev[matchId] || []);
+          if (current.has(playerId)) {
+            current.delete(playerId);
+            return {
+              ...prev,
+              [matchId]: Array.from(current)
+            };
+          }
+          return prev;
+        });
+      }
+
+      return;
+    }
+
     const wasUnavailable = (unavailablePlayersByMatch[matchId] || []).includes(playerId);
 
     setUnavailablePlayersByMatch((prev) => {
@@ -237,7 +423,14 @@ export function PlanMatchesScreen({
         return prev;
       });
     }
-  }, [setSelectedPlayersByMatch, setUnavailablePlayersByMatch, unavailablePlayersByMatch]);
+  }, [
+    providerAvailableOverridesByMatch,
+    providerUnavailableByMatch,
+    setProviderAvailableOverridesByMatch,
+    setSelectedPlayersByMatch,
+    setUnavailablePlayersByMatch,
+    unavailablePlayersByMatch
+  ]);
 
   const handleReorderSelectedPlayers = useCallback((matchId, newOrderedIds) => {
     setSelectedPlayersByMatch((prev) => ({
@@ -261,7 +454,7 @@ export function PlanMatchesScreen({
 
   const { registerContainer, handleDragMove, handleDragEnd, crossMatchState, swapAnimation, slideInAnimation } = useCrossMatchDrag({
     selectedPlayersByMatch,
-    unavailablePlayersByMatch,
+    unavailablePlayersByMatch: mergedUnavailableByMatch,
     onSwapPlayers: handleSwapPlayers
   });
 
@@ -281,14 +474,14 @@ export function PlanMatchesScreen({
       rosterWithStats,
       metric,
       targetCount: targetCounts[matchId] || 0,
-      unavailableIds: unavailablePlayersByMatch[matchId]
+      unavailableIds: mergedUnavailableByMatch[matchId]
     });
 
     setSelectedPlayersByMatch((prev) => ({
       ...prev,
       [matchId]: selected
     }));
-  }, [rosterWithStats, targetCounts, unavailablePlayersByMatch, setSelectedPlayersByMatch]);
+  }, [mergedUnavailableByMatch, rosterWithStats, targetCounts, setSelectedPlayersByMatch]);
 
   const runAutoSelectMultipleMatches = useCallback((metric, ensureCoverage) => {
     const nextSelections = autoSelectMultipleMatches({
@@ -296,7 +489,7 @@ export function PlanMatchesScreen({
       metric,
       matches,
       targetCounts,
-      unavailableByMatch: unavailablePlayersByMatch,
+      unavailableByMatch: mergedUnavailableByMatch,
       ensureCoverage
     });
 
@@ -304,7 +497,7 @@ export function PlanMatchesScreen({
       ...prev,
       ...nextSelections
     }));
-  }, [matches, rosterWithStats, targetCounts, unavailablePlayersByMatch, setSelectedPlayersByMatch]);
+  }, [matches, mergedUnavailableByMatch, rosterWithStats, targetCounts, setSelectedPlayersByMatch]);
 
   const isPlayerInMultipleMatches = useCallback((playerId) => {
     const matchesWithPlayer = matches.filter(match =>
@@ -333,9 +526,9 @@ export function PlanMatchesScreen({
 
     // Player must be unavailable in at least one other match
     return matches.some(other =>
-      other.id !== matchId && (unavailablePlayersByMatch[other.id] || []).includes(playerId)
+      other.id !== matchId && (mergedUnavailableByMatch[other.id] || []).includes(playerId)
     );
-  }, [matches, selectedPlayersByMatch, unavailablePlayersByMatch]);
+  }, [matches, mergedUnavailableByMatch, selectedPlayersByMatch]);
 
   const handleAutoSelect = () => {
     setAutoSelectMatchId(null);
@@ -485,7 +678,13 @@ export function PlanMatchesScreen({
       <div className={`grid gap-4 ${matches.length > 1 ? 'lg:grid-cols-2' : ''}`}>
         {matches.map((match) => {
           const selectedIds = selectedPlayersByMatch[match.id] || [];
-          const unavailableIds = unavailablePlayersByMatch[match.id] || [];
+          const unavailableIds = mergedUnavailableByMatch[match.id] || [];
+          const providerUnavailableIds = providerUnavailableByMatch[match.id] || [];
+          const matchResponses = providerResponseByMatch[match.id] || null;
+          const invitationsSent = matchResponses && selectedIds.some(
+            (playerId) => matchResponses[playerId] === 'accepted'
+          );
+          const playerResponses = invitationsSent ? matchResponses : null;
 
           return (
             <MatchCard
@@ -497,6 +696,9 @@ export function PlanMatchesScreen({
               rosterById={rosterById}
               selectedIds={selectedIds}
               unavailableIds={unavailableIds}
+              providerUnavailableIds={providerUnavailableIds}
+              playerResponses={playerResponses}
+              sortMetric={sortMetric}
               planningStatus={planningStatus[match.id]}
               canPlan={Boolean(defaults)}
               onPlanMatch={() => handlePlanMatch(match)}

@@ -36,6 +36,7 @@ describe('useUnavailablePlayersByMatch', () => {
     const { result } = renderHook(() => useUnavailablePlayersByMatch('team-1'));
 
     expect(result.current.unavailablePlayersByMatch).toEqual({});
+    expect(result.current.providerAvailableOverridesByMatch).toEqual({});
   });
 
   it('updates unavailable players map when changed', () => {
@@ -73,5 +74,45 @@ describe('useUnavailablePlayersByMatch', () => {
     const prevState = { matches: { match1: ['p1'] }, teamId: 'team-1' };
 
     expect(updater(prevState)).toBe(prevState);
+  });
+
+  it('returns stored provider overrides when available', () => {
+    currentUnavailableState = {
+      matches: {},
+      providerAvailableOverridesByMatch: {
+        match1: ['p2']
+      }
+    };
+
+    const { result } = renderHook(() => useUnavailablePlayersByMatch('team-1'));
+
+    expect(result.current.providerAvailableOverridesByMatch).toEqual({
+      match1: ['p2']
+    });
+  });
+
+  it('updates provider override map when changed', () => {
+    areSelectionMapsEqual.mockReturnValue(false);
+    currentUnavailableState = { matches: {}, providerAvailableOverridesByMatch: {} };
+
+    const { result } = renderHook(() => useUnavailablePlayersByMatch('team-1'));
+    setUnavailableState.mockClear();
+
+    act(() => {
+      result.current.setProviderAvailableOverridesByMatch({ match1: ['p2'] });
+    });
+
+    const updater = setUnavailableState.mock.calls[0][0];
+    const nextState = updater({
+      matches: {},
+      providerAvailableOverridesByMatch: {},
+      teamId: null
+    });
+
+    expect(nextState).toEqual({
+      matches: {},
+      providerAvailableOverridesByMatch: { match1: ['p2'] },
+      teamId: 'team-1'
+    });
   });
 });

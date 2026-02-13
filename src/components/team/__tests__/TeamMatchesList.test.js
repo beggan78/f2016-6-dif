@@ -414,11 +414,12 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
+      expect(screen.getByText('Plan')).toBeInTheDocument();
       expect(screen.getByText('Resume Setup')).toBeInTheDocument();
       expect(screen.getByText('Delete')).toBeInTheDocument();
     });
 
-    it('should not show Resume Setup or Delete buttons for running matches', () => {
+    it('should not show plan, Resume Setup or Delete buttons for running matches', () => {
       mockUseRealtimeTeamMatches.mockReturnValue({
         matches: [mockMatches[0]],
         loading: false,
@@ -428,6 +429,7 @@ describe('TeamMatchesList', () => {
 
       render(<TeamMatchesList {...defaultProps} />);
 
+      expect(screen.queryByText('Plan')).not.toBeInTheDocument();
       expect(screen.queryByText('Resume Setup')).not.toBeInTheDocument();
       expect(screen.queryByText('Delete')).not.toBeInTheDocument();
     });
@@ -529,6 +531,27 @@ describe('TeamMatchesList', () => {
       render(<TeamMatchesList {...defaultProps} />);
 
       expect(screen.getByText('2026-01-01')).toBeInTheDocument();
+    });
+
+    it('should prefer upcoming match schedule for linked pending matches', () => {
+      const pendingLinkedMatch = {
+        ...mockMatches[1],
+        createdAt: new Date().toISOString(),
+        matchDate: '2030-05-01',
+        matchTime: '18:00:00'
+      };
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [pendingLinkedMatch],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      expect(screen.getByText('2030-05-01 18:00')).toBeInTheDocument();
+      expect(screen.queryByText(/Today at/)).not.toBeInTheDocument();
     });
 
     it('should render multiple matches correctly', () => {
@@ -712,6 +735,30 @@ describe('TeamMatchesList', () => {
       });
     });
 
+    it('should navigate to plan matches when only one pending match exists', () => {
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [mockMatches[1]],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: [],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      const planButton = screen.getByText('Plan');
+      fireEvent.click(planButton);
+
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.PLAN_MATCHES, {
+        matchesToPlan: [mockMatches[1]]
+      });
+    });
+
     it('should open multi-match modal when multiple upcoming matches exist', () => {
       const multipleUpcoming = [
         mockUpcomingMatches[0],
@@ -747,6 +794,48 @@ describe('TeamMatchesList', () => {
       fireEvent.click(screen.getByText('Plan Selected'));
       expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.PLAN_MATCHES, {
         matchesToPlan: [multipleUpcoming[0]]
+      });
+    });
+
+    it('should include pending matches in modal selection when planning together', () => {
+      const pendingMatch = {
+        id: 'pending-1',
+        opponent: 'Resume FC',
+        state: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      const multipleUpcoming = [
+        mockUpcomingMatches[0],
+        {
+          id: 'upcoming-2',
+          opponent: 'Weekend United',
+          matchDate: '2030-05-02',
+          matchTime: '12:30:00',
+          venue: 'Side Field'
+        }
+      ];
+
+      mockUseRealtimeTeamMatches.mockReturnValue({
+        matches: [pendingMatch],
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+      mockUseUpcomingTeamMatches.mockReturnValue({
+        matches: multipleUpcoming,
+        loading: false,
+        error: null,
+        refetch: jest.fn()
+      });
+
+      render(<TeamMatchesList {...defaultProps} />);
+
+      fireEvent.click(screen.getAllByText('Plan')[0]);
+      fireEvent.click(screen.getByLabelText('Select Future FC'));
+      fireEvent.click(screen.getByText('Plan Selected'));
+
+      expect(defaultProps.onNavigateTo).toHaveBeenCalledWith(VIEWS.PLAN_MATCHES, {
+        matchesToPlan: [multipleUpcoming[0], pendingMatch]
       });
     });
   });

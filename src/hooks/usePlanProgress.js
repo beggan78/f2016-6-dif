@@ -15,7 +15,8 @@ const PLAN_PROGRESS_DEFAULT_STATE = {
   matches: [],
   selectedPlayersByMatch: {},
   sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
-  plannedMatchIds: []
+  plannedMatchIds: [],
+  inviteSeededMatchIds: []
 };
 
 export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
@@ -25,6 +26,9 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
     PLAN_PROGRESS_DEFAULT_STATE,
     teamId
   );
+
+  const planProgressRef = useRef(planProgress);
+  planProgressRef.current = planProgress;
 
   const matches = useMemo(() => {
     if (Array.isArray(planProgress?.matches) && planProgress.matches.length > 0) {
@@ -49,6 +53,10 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
   const plannedMatchIds = useMemo(() => {
     return Array.isArray(planProgress?.plannedMatchIds) ? planProgress.plannedMatchIds : [];
   }, [planProgress?.plannedMatchIds]);
+
+  const inviteSeededMatchIds = useMemo(() => {
+    return Array.isArray(planProgress?.inviteSeededMatchIds) ? planProgress.inviteSeededMatchIds : [];
+  }, [planProgress?.inviteSeededMatchIds]);
 
   const setMatches = useCallback((updater) => {
     setPlanProgress((prev) => {
@@ -118,11 +126,27 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
     });
   }, [teamId, setPlanProgress]);
 
+  const setInviteSeededMatchIds = useCallback((updater) => {
+    setPlanProgress((prev) => {
+      const base = prev && typeof prev === 'object' ? prev : PLAN_PROGRESS_DEFAULT_STATE;
+      const prevIds = Array.isArray(base.inviteSeededMatchIds) ? base.inviteSeededMatchIds : [];
+      const nextIds = typeof updater === 'function' ? updater(prevIds) : updater;
+      if (areIdListsEqual(prevIds, nextIds)) {
+        return prev;
+      }
+      return {
+        ...base,
+        teamId: teamId ?? null,
+        inviteSeededMatchIds: nextIds
+      };
+    });
+  }, [teamId, setPlanProgress]);
+
   const lastMatchesToPlanRef = useRef(null);
 
   useEffect(() => {
     lastMatchesToPlanRef.current = null;
-  }, [teamId, planProgress?.teamId]);
+  }, [teamId]);
 
   useEffect(() => {
     if (!teamId) {
@@ -135,6 +159,7 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
       setSelectedPlayersByMatch(reconciled.selectedPlayersByMatch);
       setSortMetric(reconciled.sortMetric);
       setPlannedMatchIds(reconciled.plannedMatchIds);
+      setInviteSeededMatchIds(reconciled.inviteSeededMatchIds);
       setPlanningStatus((prev) => (
         areStatusMapsEqual(prev, reconciled.planningStatus) ? prev : reconciled.planningStatus
       ));
@@ -158,14 +183,14 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
     const reconciled = reconcilePlanProgress({
       currentTeamId: teamId,
       matchesToPlan,
-      planProgress
+      planProgress: planProgressRef.current
     });
 
     if (debugEnabled) {
       console.debug('[PlanMatchesScreen] plan progress load', {
         teamId,
         matchesToPlanCount: Array.isArray(matchesToPlan) ? matchesToPlan.length : 0,
-        storedMatchCount: Array.isArray(planProgress?.matches) ? planProgress.matches.length : 0,
+        storedMatchCount: Array.isArray(planProgressRef.current?.matches) ? planProgressRef.current.matches.length : 0,
         resolvedMatchCount: reconciled.matches.length
       });
     }
@@ -174,29 +199,32 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
     setSelectedPlayersByMatch(reconciled.selectedPlayersByMatch);
     setSortMetric(reconciled.sortMetric);
     setPlannedMatchIds(reconciled.plannedMatchIds);
+    setInviteSeededMatchIds(reconciled.inviteSeededMatchIds);
     setPlanningStatus((prev) => (
       areStatusMapsEqual(prev, reconciled.planningStatus) ? prev : reconciled.planningStatus
     ));
   }, [
     debugEnabled,
     matchesToPlan,
-    planProgress,
     setMatches,
+    setInviteSeededMatchIds,
     setPlanningStatus,
     setPlannedMatchIds,
     setSelectedPlayersByMatch,
     setSortMetric,
     teamId
-  ]);
+  ]); // planProgress read via planProgressRef to avoid re-firing on internal state changes
 
   return {
     matches,
     selectedPlayersByMatch,
     sortMetric,
     plannedMatchIds,
+    inviteSeededMatchIds,
     setSelectedPlayersByMatch,
     setSortMetric,
     setPlannedMatchIds,
+    setInviteSeededMatchIds,
     planningStatus,
     setPlanningStatus
   };

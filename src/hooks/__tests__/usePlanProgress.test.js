@@ -43,6 +43,7 @@ describe('usePlanProgress', () => {
       selectedPlayersByMatch: {},
       sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
       plannedMatchIds: [],
+      inviteSeededMatchIds: [],
       planningStatus: {}
     });
   });
@@ -52,7 +53,8 @@ describe('usePlanProgress', () => {
       matches: [{ id: 'stored-1', opponent: 'Stored', matchDate: '2030-01-02', matchTime: '19:00:00' }],
       selectedPlayersByMatch: { 'stored-1': ['p1'] },
       sortMetric: AUTO_SELECT_STRATEGY.ATTENDANCE,
-      plannedMatchIds: ['stored-1']
+      plannedMatchIds: ['stored-1'],
+      inviteSeededMatchIds: ['stored-1']
     };
 
     const { result } = renderHook(() => usePlanProgress({ teamId: 'team-1', matchesToPlan }));
@@ -61,6 +63,7 @@ describe('usePlanProgress', () => {
     expect(result.current.selectedPlayersByMatch).toEqual({ 'stored-1': ['p1'] });
     expect(result.current.sortMetric).toBe(AUTO_SELECT_STRATEGY.ATTENDANCE);
     expect(result.current.plannedMatchIds).toEqual(['stored-1']);
+    expect(result.current.inviteSeededMatchIds).toEqual(['stored-1']);
   });
 
   it('falls back to matchesToPlan and defaults when planProgress is empty', () => {
@@ -68,7 +71,8 @@ describe('usePlanProgress', () => {
       matches: [],
       selectedPlayersByMatch: null,
       sortMetric: 'invalid',
-      plannedMatchIds: null
+      plannedMatchIds: null,
+      inviteSeededMatchIds: null
     };
 
     const { result } = renderHook(() => usePlanProgress({ teamId: 'team-1', matchesToPlan }));
@@ -77,6 +81,7 @@ describe('usePlanProgress', () => {
     expect(result.current.selectedPlayersByMatch).toEqual({});
     expect(result.current.sortMetric).toBe(AUTO_SELECT_STRATEGY.PRACTICES);
     expect(result.current.plannedMatchIds).toEqual([]);
+    expect(result.current.inviteSeededMatchIds).toEqual([]);
   });
 
   it('updates selectedPlayersByMatch when changed', () => {
@@ -165,12 +170,53 @@ describe('usePlanProgress', () => {
     expect(updater(prevState)).toBe(prevState);
   });
 
+  it('updates inviteSeededMatchIds with updater function', () => {
+    areIdListsEqual.mockReturnValue(false);
+    currentPlanProgress = { inviteSeededMatchIds: [] };
+
+    const { result } = renderHook(() => usePlanProgress({ teamId: 'team-1', matchesToPlan }));
+    setPlanProgress.mockClear();
+
+    act(() => {
+      result.current.setInviteSeededMatchIds(prev => [...prev, 'match-1']);
+    });
+
+    const updater = setPlanProgress.mock.calls[0][0];
+    const baseState = {
+      matches: [],
+      teamId: null,
+      inviteSeededMatchIds: []
+    };
+
+    const updated = updater(baseState);
+    expect(updated.inviteSeededMatchIds).toEqual(['match-1']);
+    expect(updated.teamId).toBe('team-1');
+  });
+
+  it('skips inviteSeededMatchIds update when lists are equal', () => {
+    areIdListsEqual.mockReturnValue(true);
+    currentPlanProgress = { inviteSeededMatchIds: ['match-1'] };
+
+    const { result } = renderHook(() => usePlanProgress({ teamId: 'team-1', matchesToPlan }));
+    setPlanProgress.mockClear();
+
+    act(() => {
+      result.current.setInviteSeededMatchIds(['match-1']);
+    });
+
+    const updater = setPlanProgress.mock.calls[0][0];
+    const prevState = { inviteSeededMatchIds: ['match-1'], teamId: 'team-1' };
+
+    expect(updater(prevState)).toBe(prevState);
+  });
+
   it('reconciles plan progress when matches change', async () => {
     const reconciled = {
       matches: matchesToPlan,
       selectedPlayersByMatch: { 'match-1': ['p1'] },
       sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
       plannedMatchIds: ['match-1'],
+      inviteSeededMatchIds: [],
       planningStatus: { 'match-1': 'done' }
     };
 
@@ -199,6 +245,7 @@ describe('usePlanProgress', () => {
       selectedPlayersByMatch: {},
       sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
       plannedMatchIds: [],
+      inviteSeededMatchIds: [],
       planningStatus: {}
     });
     areStatusMapsEqual.mockReturnValue(true);
@@ -220,6 +267,55 @@ describe('usePlanProgress', () => {
     });
   });
 
+  it('does not re-reconcile when planProgress reference changes but matchesToPlan stays the same', async () => {
+    const storedSelections = { 'match-1': ['p1', 'p2'] };
+    currentPlanProgress = {
+      teamId: 'team-1',
+      matches: matchesToPlan,
+      selectedPlayersByMatch: storedSelections,
+      sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
+      plannedMatchIds: [],
+      inviteSeededMatchIds: []
+    };
+
+    areMatchListsEqual
+      .mockImplementationOnce(() => false)
+      .mockImplementation(() => true);
+    reconcilePlanProgress.mockReturnValue({
+      matches: matchesToPlan,
+      selectedPlayersByMatch: storedSelections,
+      sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
+      plannedMatchIds: [],
+      inviteSeededMatchIds: [],
+      planningStatus: {}
+    });
+    areStatusMapsEqual.mockReturnValue(true);
+
+    const { result, rerender } = renderHook(
+      ({ teamId }) => usePlanProgress({ teamId, matchesToPlan }),
+      { initialProps: { teamId: 'team-1' } }
+    );
+
+    await waitFor(() => {
+      expect(reconcilePlanProgress).toHaveBeenCalledTimes(1);
+    });
+
+    // Simulate planProgress getting a new object reference (e.g. usePersistentState double-load)
+    // by re-rendering with the same teamId -- the ref-based approach means the effect won't re-fire
+    currentPlanProgress = {
+      ...currentPlanProgress,
+      selectedPlayersByMatch: { 'match-1': ['p1', 'p2'] }
+    };
+    rerender({ teamId: 'team-1' });
+
+    await waitFor(() => {
+      expect(reconcilePlanProgress).toHaveBeenCalledTimes(1);
+    });
+
+    // Selections should still be intact
+    expect(result.current.selectedPlayersByMatch).toEqual(storedSelections);
+  });
+
   it('reconciles again when teamId changes', async () => {
     areMatchListsEqual.mockReturnValue(false);
     reconcilePlanProgress.mockReturnValue({
@@ -227,6 +323,7 @@ describe('usePlanProgress', () => {
       selectedPlayersByMatch: {},
       sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
       plannedMatchIds: [],
+      inviteSeededMatchIds: [],
       planningStatus: {}
     });
     areStatusMapsEqual.mockReturnValue(false);

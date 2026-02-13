@@ -20,18 +20,29 @@ jest.mock('../../../hooks/usePlanningDefaults', () => ({
   usePlanningDefaults: jest.fn()
 }));
 
+jest.mock('../../../hooks/useProviderAvailability', () => ({
+  useProviderAvailability: jest.fn()
+}));
+
 jest.mock('../../../services/matchPlanningService', () => ({
   planUpcomingMatch: jest.fn()
 }));
 
+jest.mock('../../../services/matchStateManager', () => ({
+  getSquadSelectionsForMatches: jest.fn()
+}));
+
 const STORAGE_KEY = 'sport-wizard-plan-match-auto-select-settings';
+const UNAVAILABLE_STORAGE_KEY = 'sport-wizard-plan-match-unavailable-players';
 
 describe('PlanMatchesScreen', () => {
   let defaultProps;
   let mockUseTeam;
   let mockUseAttendanceStats;
   let mockUsePlanningDefaults;
+  let mockUseProviderAvailability;
   let mockPlanUpcomingMatch;
+  let mockGetSquadSelectionsForMatches;
 
   const mockTeam = {
     id: 'team-1',
@@ -74,7 +85,11 @@ describe('PlanMatchesScreen', () => {
     mockUseTeam = require('../../../contexts/TeamContext').useTeam;
     mockUseAttendanceStats = require('../../../hooks/useAttendanceStats').useAttendanceStats;
     mockUsePlanningDefaults = require('../../../hooks/usePlanningDefaults').usePlanningDefaults;
+    mockUseProviderAvailability = require('../../../hooks/useProviderAvailability').useProviderAvailability;
     mockPlanUpcomingMatch = require('../../../services/matchPlanningService').planUpcomingMatch;
+    mockGetSquadSelectionsForMatches = require('../../../services/matchStateManager').getSquadSelectionsForMatches;
+
+    mockGetSquadSelectionsForMatches.mockResolvedValue({ success: true, selections: {} });
 
     mockUseTeam.mockReturnValue({
       currentTeam: mockTeam,
@@ -94,6 +109,13 @@ describe('PlanMatchesScreen', () => {
     mockUsePlanningDefaults.mockReturnValue({
       defaults: { format: '5v5' },
       defaultsError: null
+    });
+
+    mockUseProviderAvailability.mockReturnValue({
+      providerUnavailableByMatch: {},
+      providerResponseByMatch: {},
+      providerInvitedByMatch: {},
+      providerAvailabilityLoading: false
     });
 
     mockPlanUpcomingMatch.mockResolvedValue({ success: true });
@@ -145,6 +167,56 @@ describe('PlanMatchesScreen', () => {
 
     const unavailableButton = within(alexRow).getByLabelText('Mark unavailable');
     fireEvent.click(unavailableButton);
+
+    fireEvent.click(screen.getByText('Alex Player'));
+
+    expect(screen.getAllByText('Alex Player').length).toBe(1);
+  });
+
+  it('should allow overriding provider unavailable players and persist override locally', async () => {
+    mockUseProviderAvailability.mockReturnValue({
+      providerUnavailableByMatch: {
+        'match-1': ['p1']
+      },
+      providerResponseByMatch: {},
+      providerInvitedByMatch: {},
+      providerAvailabilityLoading: false
+    });
+
+    render(<PlanMatchesScreen {...defaultProps} />);
+
+    const getAlexRosterRow = () => {
+      const row = screen
+        .getAllByText('Alex Player')
+        .map((node) => node.closest('[role="button"]'))
+        .filter(Boolean)
+        .find((candidate) => (
+          within(candidate).queryByLabelText('Mark available')
+          || within(candidate).queryByLabelText('Mark unavailable')
+        ));
+
+      if (!row) {
+        throw new Error('Expected Alex Player roster row to be present.');
+      }
+
+      return row;
+    };
+
+    const alexRow = getAlexRosterRow();
+    const markAvailableButton = within(alexRow).getByLabelText('Mark available');
+    fireEvent.click(markAvailableButton);
+
+    fireEvent.click(screen.getByText('Alex Player'));
+
+    expect(screen.getAllByText('Alex Player').length).toBe(2);
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem(UNAVAILABLE_STORAGE_KEY));
+      expect(stored.providerAvailableOverridesByMatch['match-1']).toEqual(['p1']);
+    });
+
+    const updatedAlexRow = getAlexRosterRow();
+    fireEvent.click(within(updatedAlexRow).getByLabelText('Mark unavailable'));
 
     fireEvent.click(screen.getByText('Alex Player'));
 
@@ -276,6 +348,264 @@ describe('PlanMatchesScreen', () => {
       // lastSquadSize is 10, but roster is only 4, so capped to 4
       const squadInput = screen.getByDisplayValue('4');
       expect(squadInput).toBeInTheDocument();
+    });
+  });
+
+  describe('player response status icons', () => {
+    it('should show response icons when a selected player has accepted', () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {
+          'match-1': {
+            'p1': 'accepted',
+            'p2': 'no_response'
+          }
+        },
+        providerInvitedByMatch: {},
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Select p1 (accepted) - this triggers the invitationsSent condition
+      fireEvent.click(screen.getByText('Alex Player'));
+
+      // Now p1 should show a check icon in the selected list
+      const selectedCards = screen.getAllByText('Alex Player');
+      expect(selectedCards.length).toBe(2);
+    });
+
+    it('should not show response icons when no selected player has accepted', () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {
+          'match-1': {
+            'p1': 'no_response',
+            'p2': 'no_response'
+          }
+        },
+        providerInvitedByMatch: {},
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Select p1 (no_response only, no accepted)
+      fireEvent.click(screen.getByText('Alex Player'));
+
+      // Icons should not appear since no selected player has 'accepted'
+      expect(screen.queryByTestId('icon-check')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('icon-help-circle')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('saved squad selection pre-population', () => {
+    const pendingMatchesToPlan = [
+      {
+        id: 'match-1',
+        opponent: 'Opponent FC',
+        state: 'pending',
+        matchDate: '2030-01-01',
+        matchTime: '18:00:00'
+      }
+    ];
+
+    it('should fetch saved selections for pending matches', async () => {
+      mockGetSquadSelectionsForMatches.mockResolvedValue({
+        success: true,
+        selections: { 'match-1': ['p1', 'p2'] }
+      });
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={pendingMatchesToPlan}
+        />
+      );
+
+      await waitFor(() => {
+        expect(mockGetSquadSelectionsForMatches).toHaveBeenCalledWith(['match-1']);
+      });
+
+      // Both players should appear in the selected area (rendered twice: roster + selected)
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+      });
+    });
+
+    it('should not fetch when matches are not pending', () => {
+      const runningMatches = [
+        {
+          id: 'match-1',
+          opponent: 'Opponent FC',
+          state: 'running',
+          matchDate: '2030-01-01',
+          matchTime: '18:00:00'
+        }
+      ];
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={runningMatches}
+        />
+      );
+
+      expect(mockGetSquadSelectionsForMatches).not.toHaveBeenCalled();
+    });
+
+    it('should not overwrite existing selections', async () => {
+      mockGetSquadSelectionsForMatches.mockResolvedValue({
+        success: true,
+        selections: { 'match-1': ['p2'] }
+      });
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={pendingMatchesToPlan}
+        />
+      );
+
+      // Manually select p1 before DB fetch resolves
+      fireEvent.click(screen.getByText('Alex Player'));
+      expect(screen.getAllByText('Alex Player').length).toBe(2);
+
+      // Wait for the fetch to complete - it should not overwrite the manual selection
+      await waitFor(() => {
+        expect(mockGetSquadSelectionsForMatches).toHaveBeenCalled();
+      });
+
+      // p1 (Alex) should still be selected (manual), not replaced by p2 from DB
+      expect(screen.getAllByText('Alex Player').length).toBe(2);
+    });
+
+    it('should handle failed DB fetch gracefully', async () => {
+      mockGetSquadSelectionsForMatches.mockResolvedValue({
+        success: false,
+        error: 'DB error'
+      });
+
+      render(
+        <PlanMatchesScreen
+          {...defaultProps}
+          matchesToPlan={pendingMatchesToPlan}
+        />
+      );
+
+      await waitFor(() => {
+        expect(mockGetSquadSelectionsForMatches).toHaveBeenCalled();
+      });
+
+      // Players should still be listed in roster (once each, not selected)
+      expect(screen.getAllByText('Alex Player').length).toBe(1);
+      expect(screen.getAllByText('Bree Player').length).toBe(1);
+    });
+  });
+
+  describe('invite seeding', () => {
+    it('should auto-select invited players for unseeded matches', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Both invited players should be pre-selected
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+      });
+    });
+
+    it('should not re-seed after user deselects an invited player', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Wait for seeding to complete
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+      });
+
+      // Deselect Alex Player by clicking in the selected area
+      const alexElements = screen.getAllByText('Alex Player');
+      fireEvent.click(alexElements[1]);
+
+      // Alex should now appear only once (in roster, not selected)
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+      });
+
+      // Bree should still be selected
+      expect(screen.getAllByText('Bree Player').length).toBe(2);
+    });
+
+    it('should not auto-select unavailable invited players', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {
+          'match-1': ['p1']
+        },
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Only p2 (Bree) should be auto-selected since p1 is unavailable
+      await waitFor(() => {
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+      });
+      expect(screen.getAllByText('Alex Player').length).toBe(1);
+    });
+
+    it('should not seed while provider availability is loading', () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1']
+        },
+        providerAvailabilityLoading: true
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Players should not be pre-selected while loading
+      expect(screen.getAllByText('Alex Player').length).toBe(1);
+    });
+
+    it('should not change selections for matches with no invited players', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {},
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // No auto-selection should happen
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+        expect(screen.getAllByText('Bree Player').length).toBe(1);
+      });
     });
   });
 });

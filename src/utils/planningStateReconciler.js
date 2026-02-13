@@ -15,7 +15,8 @@ export const reconcilePlanProgress = ({
       selectedPlayersByMatch: {},
       planningStatus: {},
       sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
-      plannedMatchIds: []
+      plannedMatchIds: [],
+      inviteSeededMatchIds: []
     };
   }
 
@@ -33,22 +34,21 @@ export const reconcilePlanProgress = ({
     [...nextMatchIds].every(id => storedMatchIds.has(id));
   const shouldApplyStored = storedForTeam && (!incomingMatches || storedMatchesAlign);
 
-  if (!shouldApplyStored && incomingMatches) {
+  if (!shouldApplyStored && incomingMatches && !storedForTeam) {
     return {
       matches: nextMatches,
       selectedPlayersByMatch: {},
       planningStatus: {},
       sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
-      plannedMatchIds: []
+      plannedMatchIds: [],
+      inviteSeededMatchIds: []
     };
   }
 
   const storedSelections = storedForTeam?.selectedPlayersByMatch;
   const filteredSelections = storedSelections && typeof storedSelections === 'object'
     ? Object.entries(storedSelections).reduce((acc, [matchId, playerIds]) => {
-      if (nextMatchIds.has(String(matchId))) {
-        acc[matchId] = Array.isArray(playerIds) ? playerIds : [];
-      }
+      acc[matchId] = Array.isArray(playerIds) ? playerIds : [];
       return acc;
     }, {})
     : {};
@@ -61,13 +61,14 @@ export const reconcilePlanProgress = ({
   const storedPlannedIds = Array.isArray(storedForTeam?.plannedMatchIds)
     ? storedForTeam.plannedMatchIds
     : [];
-  const filteredPlannedIds = storedPlannedIds.filter((matchId) => nextMatchIds.has(String(matchId)));
 
-  const planningStatus = filteredPlannedIds.length > 0
-    ? filteredPlannedIds.reduce((acc, matchId) => {
-      if (nextMatchIds.has(String(matchId))) {
-        acc[matchId] = 'done';
-      }
+  const storedSeededIds = Array.isArray(storedForTeam?.inviteSeededMatchIds)
+    ? storedForTeam.inviteSeededMatchIds
+    : [];
+
+  const planningStatus = storedPlannedIds.length > 0
+    ? storedPlannedIds.reduce((acc, matchId) => {
+      acc[matchId] = 'done';
       return acc;
     }, {})
     : {};
@@ -77,6 +78,7 @@ export const reconcilePlanProgress = ({
     selectedPlayersByMatch: filteredSelections,
     planningStatus,
     sortMetric: resolvedSortMetric,
-    plannedMatchIds: filteredPlannedIds
+    plannedMatchIds: storedPlannedIds,
+    inviteSeededMatchIds: storedSeededIds
   };
 };
