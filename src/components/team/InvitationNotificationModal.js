@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
@@ -159,9 +160,9 @@ export function InvitationNotificationModal({
           {/* Invitations List */}
           <div className="space-y-4">
             {invitations.map((invitation) => (
-              <div
+              <Card
                 key={invitation.id}
-                className="border border-slate-600 rounded-lg p-4 bg-slate-700/50"
+                variant="subtle"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -230,7 +231,7 @@ export function InvitationNotificationModal({
                     )}
                   </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 

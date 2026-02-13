@@ -3,6 +3,7 @@ import { ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
 import { ClubAutocomplete } from './ClubAutocomplete';
 import { ClubJoinModal } from './ClubJoinModal';
@@ -488,11 +489,11 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           </div>
         )}
 
-        <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 text-center">
+        <Card variant="subtle" className="text-center">
           <p className="text-slate-300 text-sm">
             {t('wizard.playerCreation.laterNote')}
           </p>
-        </div>
+        </Card>
 
         <div className="flex justify-end">
           <Button
@@ -551,7 +552,7 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
 
   return (
     <>
-      <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
+      <Card padding="lg">
         {error && (
           <Alert variant="error" className="mb-4">{error}</Alert>
         )}
@@ -560,9 +561,9 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
         {successMessage && (
           <Alert variant="success" className="mb-4">{successMessage}</Alert>
         )}
-        
+
         {renderCurrentStep()}
-      </div>
+      </Card>
 
       {/* Club Join Modal */}
       {showClubJoinModal && clubToJoin && (

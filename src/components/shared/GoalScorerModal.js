@@ -7,6 +7,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Users, Trophy, Sword, Shield, RotateCcw, ArrowDownUp, Hand } from 'lucide-react';
 import { ModalShell } from './ModalShell';
+import { Card } from './Card';
 import { getPlayerName } from '../../utils/playerUtils';
 import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -155,7 +156,7 @@ const GoalScorerModal = ({
           <p className="text-sm text-slate-400 -mt-2 mb-4">{modalConfig.subtitle}</p>
           {/* Current scorer display for correct/view modes */}
           {(mode === 'correct' || mode === 'view') && (currentScorerId !== undefined || existingGoalData) && (
-            <div className="mb-6 p-4 bg-slate-700 rounded-lg border border-slate-600">
+            <Card className="mb-6">
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-4 h-4 text-sky-400" />
                 <span className="text-sm font-medium text-sky-300">{t('modals:goalScorer.currentScorer')}</span>
@@ -166,7 +167,7 @@ const GoalScorerModal = ({
                   : t('modals:goalScorer.noScorerRecorded')
                 }
               </p>
-            </div>
+            </Card>
           )}
 
           {/* Player selection */}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
 import { FormGroup } from '../shared/FormGroup';
 import { Alert } from '../shared/Alert';
+import { ModalShell } from '../shared/ModalShell';
 import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
@@ -192,16 +193,7 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
   const RoleIcon = getRoleIcon(invitationContext?.role);
 
   return (
-    <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 max-w-md w-full p-6">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-xl font-bold text-sky-300">{t('invitation.title')}</h2>
-          <p className="text-slate-400 mt-2">{t('invitation.subtitle')}</p>
-        </div>
+    <ModalShell title={t('invitation.title')} subtitle={t('invitation.subtitle')} icon={Mail} iconColor="sky">
 
         {/* Invitation Details */}
         {invitationContext && (
@@ -229,25 +221,20 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
         {/* Status-specific content */}
         {passwordSetupComplete ? (
           <div className="space-y-4">
-            <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-4 mb-4">
-              <div className="flex items-start space-x-2">
-                <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
-                <div>
-                  <p className="text-emerald-200 text-lg font-medium mb-2">{t('invitation.passwordSuccess.title')}</p>
-                  <p className="text-emerald-300 text-sm mb-3">
-                    {t('invitation.passwordSuccess.message')}
-                  </p>
-                  <div className="bg-emerald-800/50 rounded-lg p-3 mb-3">
-                    <p className="text-emerald-200 text-sm font-medium">{t('invitation.passwordSuccess.nextStepsTitle')}</p>
-                    <ul className="text-emerald-300 text-sm mt-1 space-y-1">
-                      <li>• {t('invitation.passwordSuccess.step1')}</li>
-                      <li>• {t('invitation.passwordSuccess.step2', { email: user?.email })}</li>
-                      <li>• {t('invitation.passwordSuccess.step3')}</li>
-                    </ul>
-                  </div>
-                </div>
+            <Alert variant="success" icon={CheckCircle} className="mb-4">
+              <p className="text-emerald-200 text-lg font-medium mb-2">{t('invitation.passwordSuccess.title')}</p>
+              <p className="text-emerald-300 text-sm mb-3">
+                {t('invitation.passwordSuccess.message')}
+              </p>
+              <div className="bg-emerald-800/50 rounded-lg p-3 mb-3">
+                <p className="text-emerald-200 text-sm font-medium">{t('invitation.passwordSuccess.nextStepsTitle')}</p>
+                <ul className="text-emerald-300 text-sm mt-1 space-y-1">
+                  <li>• {t('invitation.passwordSuccess.step1')}</li>
+                  <li>• {t('invitation.passwordSuccess.step2', { email: user?.email })}</li>
+                  <li>• {t('invitation.passwordSuccess.step3')}</li>
+                </ul>
               </div>
-            </div>
+            </Alert>
 
             <Button
               onClick={handleSignOutAndRedirect}
@@ -261,15 +248,10 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
           </div>
         ) : invitationStatus.type === 'account_setup' && needsSetup && (
           <div className="space-y-4">
-            <div className="bg-sky-900/50 border border-sky-600 rounded-lg p-3 mb-4">
-              <div className="flex items-start space-x-2">
-                <CheckCircle className="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sky-200 text-sm font-medium">{t('invitation.accountSetup.statusTitle')}</p>
-                  <p className="text-sky-300 text-sm">{t('invitation.accountSetup.statusMessage')}</p>
-                </div>
-              </div>
-            </div>
+            <Alert variant="info" icon={CheckCircle} className="mb-4">
+              <p className="text-sky-200 text-sm font-medium">{t('invitation.accountSetup.statusTitle')}</p>
+              <p className="text-sky-300 text-sm">{t('invitation.accountSetup.statusMessage')}</p>
+            </Alert>
 
             <form onSubmit={handlePasswordSetup} className="space-y-4">
               <FormGroup label={t('invitation.accountSetup.passwordLabel')} htmlFor="password">
@@ -316,15 +298,10 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
 
         {invitationStatus.type === 'ready_to_process' && user && (
           <div className="space-y-4">
-            <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3 mb-4">
-              <div className="flex items-start space-x-2">
-                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-emerald-200 text-sm font-medium">{t('invitation.readyToJoin.statusTitle')}</p>
-                  <p className="text-emerald-300 text-sm">{t('invitation.readyToJoin.statusMessage')}</p>
-                </div>
-              </div>
-            </div>
+            <Alert variant="success" icon={CheckCircle} className="mb-4">
+              <p className="text-emerald-200 text-sm font-medium">{t('invitation.readyToJoin.statusTitle')}</p>
+              <p className="text-emerald-300 text-sm">{t('invitation.readyToJoin.statusMessage')}</p>
+            </Alert>
 
             {error && (
               <Alert variant="error" icon={AlertTriangle}>{error}</Alert>
@@ -362,7 +339,6 @@ export function InvitationWelcome({ invitationParams, onInvitationProcessed, onR
             {t('invitation.validity')}
           </p>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

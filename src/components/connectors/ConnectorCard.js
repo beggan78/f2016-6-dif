@@ -117,7 +117,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
 
       {/* Latest Sync Job Status */}
       {latestSyncJob && (
-        <div className="bg-slate-800 rounded-lg p-3 mb-4 border border-slate-600">
+        <Card variant="dark" padding="sm" className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-slate-300 text-sm font-medium">{t('connectorCard.connectionCreated')}</span>
             <StatusBadge
@@ -141,7 +141,7 @@ export function ConnectorCard({ connector, onManualSync, onDisconnect, onRetry, 
               </div>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Error Display */}

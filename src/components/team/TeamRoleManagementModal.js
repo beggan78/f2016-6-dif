@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Avatar } from '../shared/Avatar';
+import { Card } from '../shared/Card';
 import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -250,27 +252,21 @@ export function TeamRoleManagementModal({
               const canRemove = !isCurrentUserMember && !isAdminMember;
 
               return (
-                <div
+                <Card
                   key={member.id}
-                  className={`p-4 bg-slate-700 rounded-lg border ${
-                    hasChange ? 'border-amber-500' : 'border-slate-600'
-                  }`}
+                  className={hasChange ? 'border-amber-500' : ''}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center relative ${
-                          isAdminMember ? 'bg-emerald-600' : 'bg-sky-600'
-                        }`}>
-                          <span className="text-white font-medium">
-                            {(member.user?.name || member.user?.email)?.charAt(0).toUpperCase() || '?'}
-                          </span>
+                        <Avatar size="lg" color={isAdminMember ? 'emerald' : 'sky'} className="relative">
+                          {(member.user?.name || member.user?.email)?.charAt(0).toUpperCase() || '?'}
                           {isAdminMember && (
                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
                               <Shield className="w-2.5 h-2.5 text-amber-900" />
                             </div>
                           )}
-                        </div>
+                        </Avatar>
                         <div>
                           <div className="flex items-center space-x-2">
                             <p className="text-slate-100 font-medium">
@@ -351,7 +347,7 @@ export function TeamRoleManagementModal({
                       </button>
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
