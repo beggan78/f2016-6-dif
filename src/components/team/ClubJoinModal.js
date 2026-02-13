@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
@@ -82,7 +83,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
             )}
           </div>
 
-          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 mb-6">
+          <Card variant="subtle" className="mb-6">
             <div className="flex items-start gap-3">
               <Users className="h-5 w-5 text-sky-400 mt-0.5 flex-shrink-0" />
               <div>
@@ -96,7 +97,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
                 </ul>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Actions */}
           <div className="flex gap-3">

@@ -173,6 +173,63 @@ describe('TabBar', () => {
     });
   });
 
+  describe('pill variant', () => {
+    it('should apply pill variant container class', () => {
+      const { container } = render(
+        <TabBar tabs={defaultTabs} activeTab="tab1" onTabChange={() => {}} variant="pill" />
+      );
+
+      expect(container.firstChild).toHaveClass('bg-slate-700', 'p-1', 'rounded-lg');
+    });
+
+    it('should not have overflow-x-auto container class', () => {
+      const { container } = render(
+        <TabBar tabs={defaultTabs} activeTab="tab1" onTabChange={() => {}} variant="pill" />
+      );
+
+      expect(container.firstChild).not.toHaveClass('overflow-x-auto');
+    });
+
+    it('should apply active styling for active tab', () => {
+      render(<TabBar tabs={defaultTabs} activeTab="tab1" onTabChange={() => {}} variant="pill" />);
+
+      const activeButton = screen.getByText('First Tab').closest('button');
+      expect(activeButton).toHaveClass('bg-slate-600', 'text-slate-100');
+    });
+
+    it('should apply inactive styling for non-active tabs', () => {
+      render(<TabBar tabs={defaultTabs} activeTab="tab1" onTabChange={() => {}} variant="pill" />);
+
+      const inactiveButton = screen.getByText('Second Tab').closest('button');
+      expect(inactiveButton).toHaveClass('text-slate-300');
+    });
+
+    it('should apply flex-1 to tab buttons', () => {
+      render(<TabBar tabs={defaultTabs} activeTab="tab1" onTabChange={() => {}} variant="pill" />);
+
+      const button = screen.getByText('First Tab').closest('button');
+      expect(button).toHaveClass('flex-1');
+    });
+
+    it('should render badge with pill-style classes', () => {
+      const tabsWithBadge = [
+        { id: 'badged', label: 'Badged Tab', badge: 5 },
+      ];
+      render(<TabBar tabs={tabsWithBadge} activeTab="badged" onTabChange={() => {}} variant="pill" />);
+
+      const badge = screen.getByText('5');
+      expect(badge).toHaveClass('bg-sky-500', 'text-sky-100');
+    });
+
+    it('should call onTabChange on click', () => {
+      const onTabChange = jest.fn();
+      render(<TabBar tabs={defaultTabs} activeTab="tab1" onTabChange={onTabChange} variant="pill" />);
+
+      fireEvent.click(screen.getByText('Second Tab'));
+      expect(onTabChange).toHaveBeenCalledWith('tab2');
+    });
+  });
+
   describe('defaults', () => {
     it('should default to scroll variant', () => {
       const { container } = render(

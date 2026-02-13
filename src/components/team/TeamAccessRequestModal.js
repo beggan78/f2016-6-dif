@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Select } from '../shared/UI';
+import { Button, Select, Textarea } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
@@ -191,11 +191,10 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
           </FormGroup>
 
           <FormGroup label={t('accessRequestModal.request.form.messageLabel')}>
-            <textarea
+            <Textarea
               value={requestForm.message}
               onChange={(e) => setRequestForm(prev => ({ ...prev, message: e.target.value }))}
               placeholder={t('accessRequestModal.request.form.messagePlaceholder')}
-              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none"
               rows={4}
               maxLength={500}
             />

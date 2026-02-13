@@ -4,6 +4,7 @@ import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { Avatar } from '../shared/Avatar';
 import { Card } from '../shared/Card';
+import { EmptyState } from '../shared/EmptyState';
 import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -353,9 +354,7 @@ export function TeamRoleManagementModal({
           </div>
 
           {members.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
-              {t('roleManagement.noMembers')}
-            </div>
+            <EmptyState title={t('roleManagement.noMembers')} />
           )}
         </div>
 

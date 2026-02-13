@@ -8,6 +8,7 @@ const variantStyles = {
     inactive: 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-600/30',
     tab: 'flex items-center space-x-2 px-2 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative flex-shrink-0 whitespace-nowrap',
     iconSize: 'w-4 h-4',
+    badge: 'absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center',
   },
   wrap: {
     nav: 'flex flex-wrap gap-3 sm:gap-4 md:gap-8',
@@ -16,6 +17,16 @@ const variantStyles = {
     inactive: 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300',
     tab: 'flex items-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap',
     iconSize: 'h-5 w-5',
+    badge: 'absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center',
+  },
+  pill: {
+    nav: 'flex space-x-1',
+    container: 'bg-slate-700 p-1 rounded-lg',
+    active: 'bg-slate-600 text-slate-100',
+    inactive: 'text-slate-300 hover:text-slate-100 hover:bg-slate-600',
+    tab: 'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors',
+    iconSize: 'w-4 h-4',
+    badge: 'bg-sky-500 text-sky-100 text-xs px-2 py-1 rounded-full',
   },
 };
 
@@ -37,7 +48,7 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'scroll', class
               {Icon && <Icon className={styles.iconSize} />}
               <span>{tab.label}</span>
               {tab.badge != null && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className={styles.badge}>
                   {tab.badge}
                 </span>
               )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Input } from './UI';
 import { ModalShell } from './ModalShell';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 
@@ -37,12 +38,10 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
             <label htmlFor="playerName" className="block text-sm font-medium text-slate-300 mb-2">
               {t('addTemporaryPlayer.playerNameLabel')}
             </label>
-            <input
-              type="text"
+            <Input
               id="playerName"
               value={playerName}
               onChange={(e) => setPlayerName(sanitizeNameInput(e.target.value))}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
               placeholder={t('addTemporaryPlayer.playerNamePlaceholder')}
               maxLength={50}
               autoFocus
