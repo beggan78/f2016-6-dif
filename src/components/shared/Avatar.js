@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const SIZE_STYLES = {
   sm: 'w-6 h-6 text-xs',
@@ -20,3 +21,10 @@ export function Avatar({ size = 'md', color = 'sky', className = '', children })
     </div>
   );
 }
+
+Avatar.propTypes = {
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
+  color: PropTypes.oneOf(['sky', 'emerald', 'slate']),
+  className: PropTypes.string,
+  children: PropTypes.node.isRequired,
+};

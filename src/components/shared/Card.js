@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const VARIANT_STYLES = {
   default: 'bg-slate-700 border-slate-600',
@@ -20,3 +21,10 @@ export function Card({ variant = 'default', padding = 'md', className = '', chil
     </div>
   );
 }
+
+Card.propTypes = {
+  variant: PropTypes.oneOf(['default', 'dark', 'highlighted', 'subtle']),
+  padding: PropTypes.oneOf(['sm', 'md', 'lg']),
+  className: PropTypes.string,
+  children: PropTypes.node.isRequired,
+};

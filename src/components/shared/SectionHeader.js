@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 export function SectionHeader({ title, actions, border = false, icon: Icon, className = '' }) {
   return (
@@ -11,3 +12,11 @@ export function SectionHeader({ title, actions, border = false, icon: Icon, clas
     </div>
   );
 }
+
+SectionHeader.propTypes = {
+  title: PropTypes.string.isRequired,
+  actions: PropTypes.node,
+  border: PropTypes.bool,
+  icon: PropTypes.elementType,
+  className: PropTypes.string,
+};

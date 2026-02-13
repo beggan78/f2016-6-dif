@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 export function EmptyState({ icon: Icon, title, message, actions, className = '' }) {
   return (
@@ -16,3 +17,11 @@ export function EmptyState({ icon: Icon, title, message, actions, className = ''
     </div>
   );
 }
+
+EmptyState.propTypes = {
+  icon: PropTypes.elementType,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+  actions: PropTypes.node,
+  className: PropTypes.string,
+};

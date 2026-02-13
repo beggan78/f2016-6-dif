@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Users, UserPen, Dice5, Settings, Share2, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -424,3 +425,20 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     </div>
   );
 }
+
+HamburgerMenu.propTypes = {
+  onRestartMatch: PropTypes.func.isRequired,
+  onAddPlayer: PropTypes.func.isRequired,
+  onNavigateToTacticalBoard: PropTypes.func.isRequired,
+  currentView: PropTypes.string.isRequired,
+  teamConfig: PropTypes.object,
+  allPlayers: PropTypes.array,
+  selectedSquadIds: PropTypes.array,
+  onNavigateTo: PropTypes.func,
+  authModal: PropTypes.object,
+  onOpenTeamAdminModal: PropTypes.func,
+  onOpenPreferencesModal: PropTypes.func,
+  onSignOut: PropTypes.func.isRequired,
+  currentMatchId: PropTypes.string,
+  matchState: PropTypes.string,
+};

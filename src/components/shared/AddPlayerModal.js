@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Input } from './UI';
 import { ModalShell } from './ModalShell';
@@ -68,3 +69,9 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
     </ModalShell>
   );
 }
+
+AddPlayerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onAddPlayer: PropTypes.func.isRequired,
+};

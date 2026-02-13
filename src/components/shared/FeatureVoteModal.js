@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { ThumbsUp, Info, CheckCircle, AlertTriangle, LogIn } from 'lucide-react';
 import { ModalShell } from './ModalShell';
@@ -85,6 +86,20 @@ const FeatureVoteModal = ({
           </div>
     </ModalShell>
   );
+};
+
+FeatureVoteModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  featureName: PropTypes.string.isRequired,
+  loading: PropTypes.bool,
+  error: PropTypes.string,
+  successMessage: PropTypes.string,
+  infoMessage: PropTypes.string,
+  isAuthenticated: PropTypes.bool,
+  authModal: PropTypes.object,
+  children: PropTypes.node,
 };
 
 export default FeatureVoteModal;

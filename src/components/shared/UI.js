@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown } from 'lucide-react';
 import { ModalShell } from './ModalShell';
@@ -27,6 +28,20 @@ export const Input = React.forwardRef(({ value, onChange, placeholder, id, disab
 
 Input.displayName = 'Input';
 
+Input.propTypes = {
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  type: PropTypes.string,
+  className: PropTypes.string,
+  error: PropTypes.bool,
+  onFocus: PropTypes.func,
+  onBlur: PropTypes.func,
+  onKeyDown: PropTypes.func,
+};
+
 export const Textarea = React.forwardRef(({ value, onChange, placeholder, id, disabled, className = '', error = false, rows = 3, ...props }, ref) => {
   return (
     <textarea
@@ -44,6 +59,17 @@ export const Textarea = React.forwardRef(({ value, onChange, placeholder, id, di
 });
 
 Textarea.displayName = 'Textarea';
+
+Textarea.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+  error: PropTypes.bool,
+  rows: PropTypes.number,
+};
 
 export function Select({ value, onChange, options, placeholder, id, disabled, error = false, className = '' }) {
   return (
@@ -68,6 +94,17 @@ export function Select({ value, onChange, options, placeholder, id, disabled, er
     </div>
   );
 }
+
+Select.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.array.isRequired,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  error: PropTypes.bool,
+  className: PropTypes.string,
+};
 
 export function MultiSelect({
   value = [],
@@ -222,6 +259,16 @@ export function MultiSelect({
   );
 }
 
+MultiSelect.propTypes = {
+  value: PropTypes.array,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.array,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+};
+
 export function Button({
   onClick,
   children,
@@ -262,6 +309,17 @@ export function Button({
   );
 }
 
+Button.propTypes = {
+  onClick: PropTypes.func,
+  children: PropTypes.node.isRequired,
+  Icon: PropTypes.elementType,
+  variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'accent']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+  type: PropTypes.string,
+};
+
 export function ConfirmationModal({
   isOpen,
   onConfirm,
@@ -293,6 +351,19 @@ export function ConfirmationModal({
   );
 }
 
+ConfirmationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  confirmText: PropTypes.string,
+  cancelText: PropTypes.string,
+  variant: PropTypes.string,
+  confirmDisabled: PropTypes.bool,
+  cancelDisabled: PropTypes.bool,
+};
+
 export function NotificationModal({ isOpen, onClose, title, message, buttonText }) {
   const { t } = useTranslation('shared');
 
@@ -309,6 +380,14 @@ export function NotificationModal({ isOpen, onClose, title, message, buttonText 
     </ModalShell>
   );
 }
+
+NotificationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  buttonText: PropTypes.string,
+};
 
 export function ThreeOptionModal({
   isOpen,
@@ -345,6 +424,21 @@ export function ThreeOptionModal({
     </ModalShell>
   );
 }
+
+ThreeOptionModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onPrimary: PropTypes.func.isRequired,
+  onSecondary: PropTypes.func.isRequired,
+  onTertiary: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  primaryText: PropTypes.string,
+  secondaryText: PropTypes.string,
+  tertiaryText: PropTypes.string,
+  primaryVariant: PropTypes.string,
+  secondaryVariant: PropTypes.string,
+  tertiaryVariant: PropTypes.string,
+};
 
 export function FieldPlayerModal({
   isOpen,
@@ -443,6 +537,21 @@ export function FieldPlayerModal({
   );
 }
 
+FieldPlayerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onSetNext: PropTypes.func.isRequired,
+  onRemoveFromNext: PropTypes.func.isRequired,
+  onSubNow: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onChangePosition: PropTypes.func.isRequired,
+  playerName: PropTypes.string.isRequired,
+  availablePlayers: PropTypes.array,
+  showPositionChange: PropTypes.bool,
+  showPositionOptions: PropTypes.bool,
+  showSubstitutionOptions: PropTypes.bool,
+  canSubstitute: PropTypes.bool,
+  isPlayerAboutToSubOff: PropTypes.bool,
+};
 
 export function SubstitutePlayerModal({
   isOpen,
@@ -523,6 +632,21 @@ export function SubstitutePlayerModal({
   );
 }
 
+SubstitutePlayerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onInactivate: PropTypes.func.isRequired,
+  onActivate: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSetAsNextToGoIn: PropTypes.func.isRequired,
+  onChangeNextPosition: PropTypes.func.isRequired,
+  playerName: PropTypes.string.isRequired,
+  isCurrentlyInactive: PropTypes.bool.isRequired,
+  canSetAsNextToGoIn: PropTypes.bool,
+  canChangeNextPosition: PropTypes.bool,
+  availableNextPositions: PropTypes.array,
+  showPositionSelection: PropTypes.bool,
+};
+
 export function GoalieModal({
   isOpen,
   onCancel,
@@ -558,6 +682,14 @@ export function GoalieModal({
     </ModalShell>
   );
 }
+
+GoalieModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSelectGoalie: PropTypes.func.isRequired,
+  currentGoalieName: PropTypes.string.isRequired,
+  availablePlayers: PropTypes.array,
+};
 
 export function ScoreEditModal({
   isOpen,
@@ -665,6 +797,16 @@ export function ScoreEditModal({
     </ModalShell>
   );
 }
+
+ScoreEditModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  ownScore: PropTypes.number.isRequired,
+  opponentScore: PropTypes.number.isRequired,
+  ownTeamName: PropTypes.string,
+  opponentTeam: PropTypes.string,
+};
 
 export function ScoreManagerModal({
   isOpen,
@@ -856,6 +998,26 @@ export function ScoreManagerModal({
   );
 }
 
+ScoreManagerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  ownScore: PropTypes.number.isRequired,
+  opponentScore: PropTypes.number.isRequired,
+  ownTeamName: PropTypes.string,
+  opponentTeam: PropTypes.string,
+  matchEvents: PropTypes.array,
+  goalScorers: PropTypes.object,
+  allPlayers: PropTypes.array,
+  onAddGoalScored: PropTypes.func.isRequired,
+  onAddGoalConceded: PropTypes.func.isRequired,
+  onEditGoalScorer: PropTypes.func.isRequired,
+  onDeleteGoal: PropTypes.func.isRequired,
+  calculateMatchTime: PropTypes.func,
+  formatTime: PropTypes.func,
+  getPlayerName: PropTypes.func,
+  allowScorerSelection: PropTypes.bool,
+};
+
 export function SubstituteSelectionModal({
   isOpen,
   onCancel,
@@ -890,6 +1052,14 @@ export function SubstituteSelectionModal({
     </ModalShell>
   );
 }
+
+SubstituteSelectionModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSelectSubstitute: PropTypes.func.isRequired,
+  fieldPlayerName: PropTypes.string.isRequired,
+  availableSubstitutes: PropTypes.array,
+};
 
 export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, className = '', disabled = false, id }) {
   const percentage = ((value - min) / (max - min)) * 100;
@@ -958,3 +1128,14 @@ export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, classNam
     </div>
   );
 }
+
+Slider.propTypes = {
+  value: PropTypes.number.isRequired,
+  onChange: PropTypes.func.isRequired,
+  min: PropTypes.number,
+  max: PropTypes.number,
+  step: PropTypes.number,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  id: PropTypes.string,
+};

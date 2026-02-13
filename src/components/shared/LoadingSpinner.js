@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const SIZE_STYLES = {
   sm: 'h-4 w-4',
@@ -14,3 +15,9 @@ export function LoadingSpinner({ size = 'lg', message, className = '' }) {
     </div>
   );
 }
+
+LoadingSpinner.propTypes = {
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  message: PropTypes.string,
+  className: PropTypes.string,
+};

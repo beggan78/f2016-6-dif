@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const VARIANT_STYLES = {
   default: 'text-slate-400 hover:text-slate-200',
@@ -28,3 +29,13 @@ export function IconButton({ onClick, icon: Icon, label, variant = 'default', si
     </button>
   );
 }
+
+IconButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  icon: PropTypes.elementType.isRequired,
+  label: PropTypes.string.isRequired,
+  variant: PropTypes.oneOf(['default', 'danger']),
+  size: PropTypes.oneOf(['sm', 'md']),
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+};

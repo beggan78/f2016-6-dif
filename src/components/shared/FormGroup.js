@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 export function FormGroup({ label, htmlFor, error, required, children, className = '' }) {
   return (
@@ -14,3 +15,12 @@ export function FormGroup({ label, htmlFor, error, required, children, className
     </div>
   );
 }
+
+FormGroup.propTypes = {
+  label: PropTypes.string,
+  htmlFor: PropTypes.string,
+  error: PropTypes.string,
+  required: PropTypes.bool,
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+};

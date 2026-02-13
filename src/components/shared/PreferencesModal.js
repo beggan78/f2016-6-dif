@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Settings, Volume2, Play, Globe, Palette, Loader } from 'lucide-react';
 import { ModalShell } from './ModalShell';
@@ -319,3 +320,8 @@ export function PreferencesModal({ isOpen, onClose }) {
     </ModalShell>
   );
 }
+
+PreferencesModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

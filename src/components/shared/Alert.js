@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const VARIANT_STYLES = {
   error: 'bg-rose-900/30 border-rose-600/50 text-rose-300',
@@ -17,3 +18,10 @@ export function Alert({ variant = 'error', icon: Icon, children, className = '' 
     </div>
   );
 }
+
+Alert.propTypes = {
+  variant: PropTypes.oneOf(['error', 'success', 'info', 'warning']),
+  icon: PropTypes.elementType,
+  children: PropTypes.node.isRequired,
+  className: PropTypes.string,
+};

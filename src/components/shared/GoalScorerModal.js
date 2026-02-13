@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Users, Trophy, Sword, Shield, RotateCcw, ArrowDownUp, Hand } from 'lucide-react';
 import { ModalShell } from './ModalShell';
@@ -273,6 +274,20 @@ const GoalScorerModal = ({
         </div>
     </ModalShell>
   );
+};
+
+GoalScorerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSelectScorer: PropTypes.func,
+  onCorrectGoal: PropTypes.func,
+  eligiblePlayers: PropTypes.array,
+  mode: PropTypes.oneOf(['new', 'correct', 'view']),
+  eventId: PropTypes.string,
+  currentScorerId: PropTypes.string,
+  existingGoalData: PropTypes.object,
+  matchTime: PropTypes.string,
+  goalType: PropTypes.oneOf(['scored', 'conceded']),
 };
 
 export default GoalScorerModal;

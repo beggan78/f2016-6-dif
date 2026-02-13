@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
 import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
@@ -160,3 +161,14 @@ export function ModalShell({
     </div>
   );
 }
+
+ModalShell.propTypes = {
+  children: PropTypes.node.isRequired,
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  icon: PropTypes.elementType,
+  iconColor: PropTypes.oneOf(['sky', 'rose', 'emerald', 'amber', 'blue']),
+  onClose: PropTypes.func,
+  maxWidth: PropTypes.oneOf(['sm', 'md', 'lg', '2xl']),
+  className: PropTypes.string,
+};

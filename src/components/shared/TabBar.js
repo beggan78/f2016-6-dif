@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const variantStyles = {
   scroll: {
@@ -59,3 +60,18 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'scroll', class
     </div>
   );
 }
+
+TabBar.propTypes = {
+  tabs: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      icon: PropTypes.elementType,
+      badge: PropTypes.number,
+    })
+  ).isRequired,
+  activeTab: PropTypes.string.isRequired,
+  onTabChange: PropTypes.func.isRequired,
+  variant: PropTypes.oneOf(['scroll', 'wrap', 'pill']),
+  className: PropTypes.string,
+};
