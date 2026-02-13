@@ -197,7 +197,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         </div>
         
         {mode !== RESET_MODES.UPDATE && (
-          <div className="bg-sky-900/50 border border-sky-600 rounded-lg p-4">
+          <Alert variant="info">
             <div className="space-y-2 text-sky-200 text-sm">
               <p>{t('auth:passwordReset.code.success.sentTo')} <strong>{email}</strong></p>
               <p>{t('auth:passwordReset.code.success.instructions')}</p>
@@ -205,7 +205,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                 {t('auth:passwordReset.code.success.spamNote')}
               </p>
             </div>
-          </div>
+          </Alert>
         )}
 
         {mode === RESET_MODES.UPDATE ? (

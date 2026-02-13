@@ -2,6 +2,7 @@ import React from 'react';
 import { Users, Plus, Building, ChevronRight } from 'lucide-react';
 import { Button } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { SectionHeader } from '../shared/SectionHeader';
 import { EmptyState } from '../shared/EmptyState';
@@ -20,9 +21,9 @@ export function TeamSelector({ onCreateNew }) {
 
   if (loading) {
     return (
-      <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
+      <Card padding="lg">
         <LoadingSpinner size="sm" message={t('teamSelector.loading')} />
-      </div>
+      </Card>
     );
   }
 

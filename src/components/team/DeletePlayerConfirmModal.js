@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '../shared/UI';
 import { Card } from '../shared/Card';
+import { Avatar } from '../shared/Avatar';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { ModalShell } from '../shared/ModalShell';
 import { useTranslation } from 'react-i18next';
@@ -25,11 +26,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
           {/* Player Info */}
           <Card padding="md" className="mb-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-lg">
-                  {displayInitial}
-                </span>
-              </div>
+              <Avatar size="xl">{displayInitial}</Avatar>
               <div className="flex-1">
                 <h3 className="text-slate-100 font-medium">{displayName}</h3>
                 <div className="flex items-center space-x-4 text-sm text-slate-400">

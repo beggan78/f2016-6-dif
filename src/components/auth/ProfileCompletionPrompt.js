@@ -1,6 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { User } from 'lucide-react';
 import { Button } from '../shared/UI';
+import { ModalShell } from '../shared/ModalShell';
 import { Card } from '../shared/Card';
 import { VIEWS } from '../../constants/viewConstants';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,19 +34,7 @@ export function ProfileCompletionPrompt({ setView, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 max-w-md w-full p-6">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-sky-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-sky-300">{t('profileCompletion.welcome')}</h2>
-          <p className="text-slate-400 mt-2">{t('profileCompletion.subtitle')}</p>
-        </div>
-
+    <ModalShell title={t('profileCompletion.welcome')} subtitle={t('profileCompletion.subtitle')} icon={User} iconColor="sky">
         {/* Benefits */}
         <Card className="mb-6">
           <h3 className="text-sm font-semibold text-slate-300 mb-3">{t('profileCompletion.benefitsTitle')}</h3>
@@ -93,7 +83,6 @@ export function ProfileCompletionPrompt({ setView, onClose }) {
         <p className="text-xs text-slate-500 mt-4 text-center">
           {t('profileCompletion.finePrint')}
         </p>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

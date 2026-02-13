@@ -26,10 +26,12 @@ import {
   BarChart3
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
+import { IconButton } from '../shared/IconButton';
 import { Alert } from '../shared/Alert';
 import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
 import { Tooltip, TabBar } from '../shared';
+import { Avatar } from '../shared/Avatar';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
@@ -1085,9 +1087,9 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                       <tr key={player.id} className="bg-slate-800/30 border-l-2 border-slate-600">
                         <td className="px-4 py-3">
                           <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-slate-600">
+                            <Avatar size="md" color="slate" className="mr-3">
                               <Ghost className="w-4 h-4 text-slate-400" />
-                            </div>
+                            </Avatar>
                             <div className="flex flex-col">
                               <span className="font-medium text-slate-400 italic">
                                 {player.display_name}
@@ -1158,13 +1160,9 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                   }`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                          player.on_roster ? 'bg-sky-600' : 'bg-slate-500'
-                        }`}>
-                          <span className="text-white text-sm font-medium">
-                            {player.display_name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                        <Avatar size="md" color={player.on_roster ? 'sky' : 'slate'} className="mr-3">
+                          {player.display_name.charAt(0).toUpperCase()}
+                        </Avatar>
                         <span className={`font-medium ${
                           player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
                         }`}>
@@ -1258,13 +1256,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         >
                           <Repeat className="w-4 h-4" />
                         </button>
-                        <button
+                        <IconButton
                           onClick={() => handleDeletePlayer(player)}
-                          className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                          title={t('teamManagement.roster.player.removeTitle')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          icon={Trash2}
+                          label={t('teamManagement.roster.player.removeTitle')}
+                          variant="danger"
+                          size="sm"
+                        />
                       </div>
                     </td>
                   </tr>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
 import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
@@ -317,11 +318,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3 mb-4">
+          <Card variant="subtle" padding="sm" className="mb-4">
             <p className="text-xs text-slate-400">
               {t('accessRequestModal.manage.privacyNotice')}
             </p>
-          </div>
+          </Card>
           {pendingRequests.map((request) => (
             <div key={request.id} className="p-4">
               <div className="space-y-4">
@@ -350,10 +351,10 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                 </div>
 
                 {request.message && (
-                  <div className="p-3 bg-slate-700 rounded-lg">
+                  <Card padding="sm">
                     <p className="text-sm text-slate-200 font-medium mb-1">{t('accessRequestModal.manage.request.messageLabel')}</p>
                     <p className="text-sm text-slate-300">"{request.message}"</p>
-                  </div>
+                  </Card>
                 )}
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-600">
@@ -396,7 +397,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
           ) : (
             <div className="space-y-3">
               {teamMembers.map((member) => (
-                <div key={member.id} className="p-3 bg-slate-700 rounded-lg">
+                <Card key={member.id} padding="sm">
                   <div className="flex items-center justify-between">
                     <div>
                       <h5 className="font-medium text-slate-100">{member.user.name}</h5>
@@ -428,7 +429,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}

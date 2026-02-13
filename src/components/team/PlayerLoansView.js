@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, ChevronDown, ChevronUp, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, ConfirmationModal, MultiSelect, Select } from '../shared/UI';
+import { IconButton } from '../shared/IconButton';
 import { Alert } from '../shared/Alert';
+import { Avatar } from '../shared/Avatar';
 import { SectionHeader } from '../shared/SectionHeader';
 import { PlayerLoanModal } from './PlayerLoanModal';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
@@ -622,14 +624,13 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
+                      <IconButton
                         onClick={() => handleDeleteMatchConfirm(match)}
-                        className="p-1 text-slate-400 hover:text-rose-400"
-                        aria-label={t('loansView.match.deleteLabel')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        icon={Trash2}
+                        label={t('loansView.match.deleteLabel')}
+                        variant="danger"
+                        size="sm"
+                      />
                     </div>
                   )}
                 </div>
@@ -646,15 +647,15 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                           player.isDeleted ? 'bg-slate-700/60' : 'bg-slate-700'
                         }`}
                       >
-                        <div className="w-6 h-6 bg-sky-600 rounded-full flex items-center justify-center shrink-0">
+                        <Avatar size="sm">
                           {player.jerseyNumber ? (
-                            <span className="text-white text-xs font-semibold">
+                            <span className="font-semibold">
                               {player.jerseyNumber}
                             </span>
                           ) : (
-                            <User className="w-3 h-3 text-white" />
+                            <User className="w-3 h-3" />
                           )}
-                        </div>
+                        </Avatar>
                         <span
                           className={`text-sm ${
                             player.isDeleted ? 'text-slate-400' : 'text-slate-200'
