@@ -41,25 +41,15 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
     }
   }, [isOpen]);
 
-  // Handle ESC key press
+  // Prevent body scroll when modal is open
   useEffect(() => {
-    const handleEscKey = (event) => {
-      if (event.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
     if (isOpen) {
-      document.addEventListener('keydown', handleEscKey);
-      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
     }
-
     return () => {
-      document.removeEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
