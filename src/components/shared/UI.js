@@ -8,37 +8,20 @@ import { TEAM_CONFIG } from '../../constants/teamConstants';
 
 export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', error = false, onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
-    <>
-      <input
-        ref={ref}
-        type={type}
-        id={id}
-        value={value}
-        onChange={onChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
-        disabled={disabled}
-        placeholder={placeholder}
-        className={`w-full px-3 py-1.5 bg-slate-600 border rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors leading-tight h-[38px] ${error ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : 'border-slate-500 focus:ring-sky-400 focus:border-sky-500'} ${className}`}
-        {...props}
-      />
-      {type === 'date' && (
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            input[type="date"]::-webkit-datetime-edit-text,
-            input[type="date"]::-webkit-datetime-edit-month-field,
-            input[type="date"]::-webkit-datetime-edit-day-field,
-            input[type="date"]::-webkit-datetime-edit-year-field {
-              color: #94a3b8;
-            }
-            input[type="date"]::-webkit-calendar-picker-indicator {
-              filter: invert(0.6);
-            }
-          `
-        }} />
-      )}
-    </>
+    <input
+      ref={ref}
+      type={type}
+      id={id}
+      value={value}
+      onChange={onChange}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={`w-full px-3 py-1.5 bg-slate-600 border rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors leading-tight h-[38px] ${error ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : 'border-slate-500 focus:ring-sky-400 focus:border-sky-500'} ${className}`}
+      {...props}
+    />
   );
 });
 
