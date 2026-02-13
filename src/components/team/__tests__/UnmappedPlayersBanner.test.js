@@ -44,9 +44,9 @@ describe('UnmappedPlayersBanner', () => {
       const { container } = render(<UnmappedPlayersBanner {...defaultProps} />);
       const banner = container.firstChild;
 
-      expect(banner).toHaveClass('bg-sky-900/20');
+      expect(banner).toHaveClass('bg-sky-900/30');
       expect(banner).toHaveClass('border');
-      expect(banner).toHaveClass('border-sky-600');
+      expect(banner).toHaveClass('border-sky-600/50');
       expect(banner).toHaveClass('rounded-lg');
       expect(banner).toHaveClass('p-4');
       expect(banner).toHaveClass('text-center');
