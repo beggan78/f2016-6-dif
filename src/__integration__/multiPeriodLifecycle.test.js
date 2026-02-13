@@ -25,8 +25,7 @@ import {
   createPeriodSetupProps,
   buildCompleteFormation,
   setupGameScreenHooks,
-  createGameScreenProps,
-  buildDefinition
+  createGameScreenProps
 } from './matchLifecycleUtils';
 
 import {
@@ -107,11 +106,6 @@ jest.mock('../utils/debugUtils', () => ({
     leftAttacker: '3',
     rightAttacker: '4'
   }))
-}));
-
-jest.mock('../constants/gameModes', () => ({
-  getOutfieldPositions: jest.fn(),
-  getModeDefinition: jest.fn()
 }));
 
 jest.mock('../contexts/TeamContext', () => ({

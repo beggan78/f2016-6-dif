@@ -18,11 +18,12 @@ import {
   setupPeriodSetupMocks,
   createPeriodSetupProps,
   buildCompleteFormation,
-  buildDefinition,
   setupGameScreenHooks,
   createGameScreenProps,
   renderWithI18n
 } from './matchLifecycleUtils';
+
+import { getModeDefinition } from '../constants/gameModes';
 
 import {
   setupComponentTestEnvironment
@@ -101,11 +102,6 @@ jest.mock('../utils/formatUtils', () => ({
 
 jest.mock('../utils/debugUtils', () => ({
   randomizeFormationPositions: jest.fn(() => ({}))
-}));
-
-jest.mock('../constants/gameModes', () => ({
-  getOutfieldPositions: jest.fn(),
-  getModeDefinition: jest.fn()
 }));
 
 jest.mock('../contexts/TeamContext', () => ({
@@ -201,11 +197,11 @@ const getFieldPlayerCount = (teamConfig) => {
 };
 
 /**
- * Build mock players array using buildDefinition (avoids mocked getModeDefinition).
+ * Build mock players array using real getModeDefinition.
  * Mirrors the role-distribution logic of createMockPlayers from game/testUtils.
  */
 const buildMockPlayers = (teamConfig) => {
-  const definition = buildDefinition(teamConfig);
+  const definition = getModeDefinition(teamConfig);
   const { fieldPositions, substitutePositions } = definition;
   const count = teamConfig.squadSize;
   const players = [];
@@ -256,11 +252,11 @@ const buildMockPlayers = (teamConfig) => {
 };
 
 /**
- * Build mock formation using buildDefinition (avoids mocked getModeDefinition).
+ * Build mock formation using real getModeDefinition.
  * Mirrors the formation-building logic of createMockFormation from game/testUtils.
  */
 const buildMockFormation = (teamConfig) => {
-  const definition = buildDefinition(teamConfig);
+  const definition = getModeDefinition(teamConfig);
   const { fieldPositions, substitutePositions } = definition;
   const formation = {};
   let playerId = 1;

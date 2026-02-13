@@ -18,6 +18,7 @@ import {
 import { TEAM_CONFIGS } from '../game/testUtils';
 import { FORMATS, FORMATIONS } from '../constants/teamConfiguration';
 import { VENUE_TYPES } from '../constants/matchVenues';
+import { getModeDefinition } from '../constants/gameModes';
 
 // ===================================================================
 // SHARED I18N SETUP
@@ -133,72 +134,31 @@ export const FORMATION_TEST_MATRIX = [
 // ===================================================================
 
 /**
- * Build field positions array from a teamConfig, matching the pattern
- * used in PeriodSetupScreen.test.js buildDefinition.
+ * Get field positions from production getModeDefinition.
  */
-const buildFieldPositions = (teamConfig) => {
-  if (!teamConfig) return [];
-
-  if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
-    return ['defender', 'left', 'right', 'attacker'];
-  }
-
-  if (teamConfig.format === FORMATS.FORMAT_7V7) {
-    if (teamConfig.formation === FORMATIONS.FORMATION_2_3_1) {
-      return ['leftDefender', 'rightDefender', 'leftMidfielder', 'centerMidfielder', 'rightMidfielder', 'attacker'];
-    }
-    return ['leftDefender', 'rightDefender', 'leftMidfielder', 'rightMidfielder', 'leftAttacker', 'rightAttacker'];
-  }
-
-  return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
+const getFieldPositions = (teamConfig) => {
+  const definition = getModeDefinition(teamConfig);
+  return definition ? definition.fieldPositions : [];
 };
 
 /**
- * Build substitute position keys from a teamConfig.
+ * Get substitute positions from production getModeDefinition.
  */
-const buildSubstitutePositions = (teamConfig) => {
-  if (!teamConfig) return [];
-
-  const format = teamConfig.format === FORMATS.FORMAT_7V7 ? FORMATS.FORMAT_7V7 : FORMATS.FORMAT_5V5;
-  const fieldPlayers = format === FORMATS.FORMAT_7V7 ? 6 : 4;
-  const goalieCount = 1;
-  const substituteCount = Math.max(0, (teamConfig.squadSize || 0) - (fieldPlayers + goalieCount));
-  return Array.from({ length: substituteCount }, (_, i) => `substitute_${i + 1}`);
-};
-
-/**
- * Build a mode definition mock matching PeriodSetupScreen expectations.
- */
-export const buildDefinition = (teamConfig) => {
-  if (!teamConfig) return null;
-
-  const fieldPositions = buildFieldPositions(teamConfig);
-  const substitutePositions = buildSubstitutePositions(teamConfig);
-
-  return {
-    fieldPositions,
-    substitutePositions
-  };
+const getSubstitutePositions = (teamConfig) => {
+  const definition = getModeDefinition(teamConfig);
+  return definition ? definition.substitutePositions : [];
 };
 
 /**
  * Configure all mocks required by PeriodSetupScreen:
- * - getModeDefinition / getOutfieldPositions (gameModes)
  * - useTeam (TeamContext)
  * - usePlayerRecommendationData
  * - matchStateManager.getPlayerStats
  */
 export const setupPeriodSetupMocks = (teamConfig) => {
-  const { getOutfieldPositions, getModeDefinition } = require('../constants/gameModes');
   const { useTeam } = require('../contexts/TeamContext');
   const { getPlayerStats } = require('../services/matchStateManager');
   const { usePlayerRecommendationData } = require('../hooks/usePlayerRecommendationData');
-
-  getModeDefinition.mockImplementation(buildDefinition);
-  getOutfieldPositions.mockImplementation((tc) => {
-    const def = buildDefinition(tc);
-    return def ? [...def.fieldPositions, ...def.substitutePositions] : [];
-  });
 
   useTeam.mockReturnValue({
     currentTeam: { id: 'team-123' },
@@ -219,8 +179,8 @@ export const setupPeriodSetupMocks = (teamConfig) => {
  * Field and substitute positions are set to null; goalie uses the last player id.
  */
 export const buildEmptyFormation = (teamConfig, goalieId = null) => {
-  const fieldPositions = buildFieldPositions(teamConfig);
-  const substitutePositions = buildSubstitutePositions(teamConfig);
+  const fieldPositions = getFieldPositions(teamConfig);
+  const substitutePositions = getSubstitutePositions(teamConfig);
 
   const formation = {};
   fieldPositions.forEach(pos => { formation[pos] = null; });
@@ -235,8 +195,8 @@ export const buildEmptyFormation = (teamConfig, goalieId = null) => {
  * Players are numbered 1..N with goalie assigned to squadSize.
  */
 export const buildCompleteFormation = (teamConfig) => {
-  const fieldPositions = buildFieldPositions(teamConfig);
-  const substitutePositions = buildSubstitutePositions(teamConfig);
+  const fieldPositions = getFieldPositions(teamConfig);
+  const substitutePositions = getSubstitutePositions(teamConfig);
   const goalieId = String(teamConfig.squadSize);
 
   const formation = {};
@@ -260,8 +220,8 @@ export const createPeriodSetupProps = (teamConfig, overrides = {}) => {
   const players = createMockPlayers(teamConfig.squadSize, teamConfig);
   const goalieId = String(teamConfig.squadSize);
   const formation = overrides.formation || buildEmptyFormation(teamConfig, goalieId);
-  const fieldPositions = buildFieldPositions(teamConfig);
-  const substitutePositions = buildSubstitutePositions(teamConfig);
+  const fieldPositions = getFieldPositions(teamConfig);
+  const substitutePositions = getSubstitutePositions(teamConfig);
   const outfieldCount = fieldPositions.length + substitutePositions.length;
 
   return {

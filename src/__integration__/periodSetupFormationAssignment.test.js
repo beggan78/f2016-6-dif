@@ -21,7 +21,6 @@ import {
   createPeriodSetupProps,
   buildCompleteFormation,
   buildEmptyFormation,
-  buildDefinition,
   FORMATION_TEST_MATRIX
 } from './matchLifecycleUtils';
 import { createMockPlayers } from '../components/__tests__/componentTestUtils';
@@ -90,11 +89,6 @@ jest.mock('../utils/debugUtils', () => ({
     leftAttacker: '3',
     rightAttacker: '4'
   }))
-}));
-
-jest.mock('../constants/gameModes', () => ({
-  getOutfieldPositions: jest.fn(),
-  getModeDefinition: jest.fn()
 }));
 
 jest.mock('../contexts/TeamContext', () => ({
