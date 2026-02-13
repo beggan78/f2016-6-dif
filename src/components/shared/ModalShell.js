@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 const iconColorMap = {
@@ -16,6 +16,9 @@ const maxWidthMap = {
   '2xl': 'max-w-2xl',
 };
 
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 export function ModalShell({
   children,
   title,
@@ -29,6 +32,49 @@ export function ModalShell({
   const isRich = Boolean(Icon);
   const maxWidthClass = maxWidthMap[maxWidth] || maxWidthMap.md;
   const colors = iconColorMap[iconColor] || iconColorMap.sky;
+  const dialogRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+
+  useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement;
+
+    if (dialogRef.current && !dialogRef.current.contains(document.activeElement)) {
+      dialogRef.current.focus();
+    }
+
+    return () => {
+      if (
+        previouslyFocusedRef.current &&
+        document.body.contains(previouslyFocusedRef.current)
+      ) {
+        previouslyFocusedRef.current.focus();
+      }
+    };
+  }, []);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape' && onClose) {
+      e.stopPropagation();
+      onClose();
+      return;
+    }
+
+    if (e.key === 'Tab' && dialogRef.current) {
+      const focusable = dialogRef.current.querySelectorAll(FOCUSABLE_SELECTOR);
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  };
 
   const handleBackdropClick = (e) => {
     if (onClose && e.target === e.currentTarget) {
@@ -46,10 +92,13 @@ export function ModalShell({
         onClick={handleBackdropClick}
       >
         <div
+          ref={dialogRef}
           className={`bg-slate-800 rounded-lg shadow-xl ${maxWidthClass} w-full border border-slate-600 relative ${className}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
+          tabIndex={-1}
+          onKeyDown={handleKeyDown}
           onClick={(e) => e.stopPropagation()}
         >
           {onClose && (
@@ -92,10 +141,13 @@ export function ModalShell({
       onClick={handleBackdropClick}
     >
       <div
+        ref={dialogRef}
         className={`bg-slate-800 rounded-lg shadow-xl ${maxWidthClass} w-full border border-slate-600 ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-slate-600 flex items-center justify-between">

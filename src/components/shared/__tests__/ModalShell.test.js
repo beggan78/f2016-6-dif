@@ -215,6 +215,101 @@ describe('ModalShell', () => {
     });
   });
 
+  describe('Focus management', () => {
+    it('should call onClose on Escape keydown', () => {
+      const onClose = jest.fn();
+      render(
+        <ModalShell title="Title" onClose={onClose}><p>content</p></ModalShell>
+      );
+      const dialog = screen.getByRole('dialog');
+      fireEvent.keyDown(dialog, { key: 'Escape' });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not throw when Escape is pressed without onClose', () => {
+      render(
+        <ModalShell title="Title"><p>content</p></ModalShell>
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(() => {
+        fireEvent.keyDown(dialog, { key: 'Escape' });
+      }).not.toThrow();
+    });
+
+    it('should trap focus: Tab from last focusable wraps to first', () => {
+      render(
+        <ModalShell title="Title" onClose={jest.fn()}>
+          <button>First</button>
+          <button>Last</button>
+        </ModalShell>
+      );
+      const lastButton = screen.getByText('Last');
+      lastButton.focus();
+
+      fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' });
+
+      // First focusable is the close (X) button
+      const dialog = screen.getByRole('dialog');
+      const focusable = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      expect(document.activeElement).toBe(focusable[0]);
+    });
+
+    it('should trap focus: Shift+Tab from first focusable wraps to last', () => {
+      render(
+        <ModalShell title="Title" onClose={jest.fn()}>
+          <button>First</button>
+          <button>Last</button>
+        </ModalShell>
+      );
+      const dialog = screen.getByRole('dialog');
+      const focusable = dialog.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      focusable[0].focus();
+
+      fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+
+      expect(document.activeElement).toBe(focusable[focusable.length - 1]);
+    });
+
+    it('should restore focus to previously focused element on unmount', () => {
+      const outerButton = document.createElement('button');
+      outerButton.textContent = 'Outer';
+      document.body.appendChild(outerButton);
+      outerButton.focus();
+
+      const { unmount } = render(
+        <ModalShell title="Title"><p>content</p></ModalShell>
+      );
+
+      // Dialog should have focus now
+      expect(document.activeElement).toBe(screen.getByRole('dialog'));
+
+      unmount();
+
+      expect(document.activeElement).toBe(outerButton);
+      document.body.removeChild(outerButton);
+    });
+
+    it('should auto-focus the dialog container on mount', () => {
+      render(
+        <ModalShell title="Title"><p>content</p></ModalShell>
+      );
+      expect(document.activeElement).toBe(screen.getByRole('dialog'));
+    });
+
+    it('should not steal focus from autoFocus elements inside the dialog', () => {
+      render(
+        <ModalShell title="Title">
+          <input data-testid="auto-input" autoFocus />
+        </ModalShell>
+      );
+      expect(document.activeElement).toBe(screen.getByTestId('auto-input'));
+    });
+  });
+
   describe('className merging', () => {
     it('should merge custom className into the card element', () => {
       render(

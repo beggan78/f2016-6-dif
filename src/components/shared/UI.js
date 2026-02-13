@@ -296,7 +296,7 @@ export function ConfirmationModal({
   if (!isOpen) return null;
 
   return (
-    <ModalShell title={title}>
+    <ModalShell title={title} onClose={onCancel}>
       <p className="text-slate-200 mb-6">{message}</p>
       <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
         <Button onClick={onCancel} variant="secondary" className="sm:order-1" disabled={cancelDisabled}>
@@ -316,7 +316,7 @@ export function NotificationModal({ isOpen, onClose, title, message, buttonText 
   if (!isOpen) return null;
 
   return (
-    <ModalShell title={title}>
+    <ModalShell title={title} onClose={onClose}>
       <p className="text-slate-200 mb-6">{message}</p>
       <div className="flex justify-center">
         <Button onClick={onClose} variant="primary">
@@ -388,7 +388,7 @@ export function FieldPlayerModal({
   };
 
   return (
-    <ModalShell title={showPositionOptions ? t('fieldPlayer.changePositionTitle') : t('fieldPlayer.title')}>
+    <ModalShell title={showPositionOptions ? t('fieldPlayer.changePositionTitle') : t('fieldPlayer.title')} onClose={onCancel}>
       {showPositionOptions ? (
         <>
           <p className="text-slate-200 mb-6">
@@ -485,7 +485,7 @@ export function SubstitutePlayerModal({
   };
 
   return (
-    <ModalShell title={showPositionSelection ? t('substitute.changeNextPositionTitle') : t('substitute.title')}>
+    <ModalShell title={showPositionSelection ? t('substitute.changeNextPositionTitle') : t('substitute.title')} onClose={onCancel}>
       {showPositionSelection ? (
         <>
           <p className="text-slate-200 mb-6">
@@ -552,7 +552,7 @@ export function GoalieModal({
   if (!isOpen) return null;
 
   return (
-    <ModalShell title={t('modals:goalie.title')}>
+    <ModalShell title={t('modals:goalie.title')} onClose={onCancel}>
       <p className="text-slate-200 mb-6">
         {t('modals:goalie.message', { goalieName: currentGoalieName })}
       </p>
@@ -610,7 +610,7 @@ export function ScoreEditModal({
   if (!isOpen) return null;
 
   return (
-    <ModalShell title={t('scoreEdit.title')}>
+    <ModalShell title={t('scoreEdit.title')} onClose={handleCancel}>
       <div className="space-y-4">
         <div className="flex items-center justify-between space-x-4">
           <div className="flex-1">
@@ -885,7 +885,7 @@ export function SubstituteSelectionModal({
   if (!isOpen) return null;
 
   return (
-    <ModalShell title={t('substituteSelection.title')}>
+    <ModalShell title={t('substituteSelection.title')} onClose={onCancel}>
       <p className="text-slate-200 mb-6">
         {t('substituteSelection.message', { fieldPlayerName })}
       </p>
