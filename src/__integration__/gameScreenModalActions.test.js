@@ -142,7 +142,7 @@ describe('GameScreen Modal Actions - Integration', () => {
     describe('multi-sub mode (substitutionCount = 2)', () => {
       FORMATION_VARIANTS.forEach(({ name, teamConfig }) => {
         it(`[${name}] animates player into "next to go off" group and updates queue`, () => {
-          const { handlers, deps } = createHandlerSetup(teamConfig, {}, 2);
+          const { handlers, deps, gameState } = createHandlerSetup(teamConfig, {}, 2);
           const fieldPlayerModal = {
             type: 'player',
             target: 'leftDefender',
@@ -156,6 +156,16 @@ describe('GameScreen Modal Actions - Integration', () => {
 
           // State updaters should be called with transformed values
           expect(deps.stateUpdaters.setRotationQueue).toHaveBeenCalled();
+          const newQueue = deps.stateUpdaters.setRotationQueue.mock.calls[0][0];
+
+          // Player '3' should be moved to front of queue
+          expect(newQueue[0]).toBe('3');
+          // Original first two players shifted down by one
+          expect(newQueue[1]).toBe('1');
+          expect(newQueue[2]).toBe('2');
+          // No players lost
+          expect(newQueue.length).toBe(gameState.rotationQueue.length);
+
           expect(deps.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
         });
       });
@@ -195,6 +205,22 @@ describe('GameScreen Modal Actions - Integration', () => {
 
           // Should update rotation queue and next player tracking
           expect(deps.stateUpdaters.setRotationQueue).toHaveBeenCalled();
+          const newQueue = deps.stateUpdaters.setRotationQueue.mock.calls[0][0];
+
+          // Removed player moved from position 0 to position 1
+          const expectedNewLeaderId = gameState.rotationQueue[1];
+          expect(newQueue[0]).toBe(expectedNewLeaderId);
+          expect(newQueue[1]).toBe(firstPlayerId);
+          expect(newQueue.length).toBe(gameState.rotationQueue.length);
+
+          // Next player tracking updated to new queue leader
+          expect(deps.stateUpdaters.setNextPlayerIdToSubOut).toHaveBeenCalledWith(expectedNewLeaderId);
+          const definition = require('../constants/gameModes').getModeDefinition(teamConfig);
+          const expectedPosition = definition.fieldPositions.find(
+            pos => gameState.formation[pos] === expectedNewLeaderId
+          );
+          expect(deps.stateUpdaters.setNextPlayerToSubOut).toHaveBeenCalledWith(expectedPosition, true);
+
           expect(deps.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
         });
       });
@@ -215,6 +241,14 @@ describe('GameScreen Modal Actions - Integration', () => {
         jest.advanceTimersByTime(ANIMATION_DURATION);
 
         expect(deps.stateUpdaters.setRotationQueue).toHaveBeenCalled();
+        const newQueue = deps.stateUpdaters.setRotationQueue.mock.calls[0][0];
+
+        // Player removed from "next 2" group: inserted at position substitutionCount (2)
+        expect(newQueue[0]).toBe('2');
+        expect(newQueue[1]).toBe('3');
+        expect(newQueue[2]).toBe(firstPlayerId); // '1' moved to position 2
+        expect(newQueue.length).toBe(gameState.rotationQueue.length);
+
         expect(deps.modalHandlers.closeFieldPlayerModal).toHaveBeenCalled();
       });
     });
