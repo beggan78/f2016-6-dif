@@ -52,7 +52,7 @@ export const Textarea = React.forwardRef(({ value, onChange, placeholder, id, di
       disabled={disabled}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full p-3 bg-slate-700 border rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent resize-none ${error ? 'border-rose-500 focus:ring-rose-400' : 'border-slate-600 focus:ring-sky-500'} ${className}`}
+      className={`w-full p-3 bg-slate-700 border rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent resize-none ${error ? 'border-rose-500 focus:ring-rose-400' : 'border-slate-500 focus:ring-sky-500'} ${className}`}
       {...props}
     />
   );
