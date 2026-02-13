@@ -44,6 +44,24 @@ export const Input = React.forwardRef(({ value, onChange, placeholder, id, disab
 
 Input.displayName = 'Input';
 
+export const Textarea = React.forwardRef(({ value, onChange, placeholder, id, disabled, className = '', error = false, rows = 3, ...props }, ref) => {
+  return (
+    <textarea
+      ref={ref}
+      id={id}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      rows={rows}
+      className={`w-full p-3 bg-slate-700 border rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent resize-none ${error ? 'border-rose-500 focus:ring-rose-400' : 'border-slate-600 focus:ring-sky-500'} ${className}`}
+      {...props}
+    />
+  );
+});
+
+Textarea.displayName = 'Textarea';
+
 export function Select({ value, onChange, options, placeholder, id, disabled, error = false, className = '' }) {
   return (
     <div className={`relative ${className}`}>

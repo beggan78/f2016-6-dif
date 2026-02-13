@@ -30,7 +30,7 @@ import { IconButton } from '../shared/IconButton';
 import { Alert } from '../shared/Alert';
 import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
-import { Tooltip, TabBar } from '../shared';
+import { Tooltip, TabBar, EmptyState, LoadingSpinner } from '../shared';
 import { Avatar } from '../shared/Avatar';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
@@ -255,10 +255,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
           </Button>
         </div>
         <div className="p-2 bg-slate-700 rounded-lg border border-slate-600">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-            <span className="text-slate-300">{t('teamManagement.loading.teamInfo')}</span>
-          </div>
+          <LoadingSpinner size="sm" message={t('teamManagement.loading.teamInfo')} />
         </div>
       </div>
     );
@@ -526,9 +523,7 @@ function TeamOverview({ team, members }) {
             </div>
           ))}
           {members.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
-              {t('teamManagement.overview.noUsers')}
-            </div>
+            <EmptyState title={t('teamManagement.overview.noUsers')} />
           )}
         </div>
       </div>
@@ -981,10 +976,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-200">{t('teamManagement.roster.title')}</h3>
         </div>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="ml-3 text-slate-300">{t('teamManagement.roster.loadingRoster')}</span>
-        </div>
+        <LoadingSpinner size="sm" message={t('teamManagement.roster.loadingRoster')} className="py-8" />
       </div>
     );
   }

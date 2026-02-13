@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Input } from '../shared/UI';
 import { Card } from '../shared/Card';
 import { SectionHeader } from '../shared/SectionHeader';
+import { TabBar } from '../shared/TabBar';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import { Users, Building2, UserPlus, Clock, CheckCircle, XCircle, Search } from 'lucide-react';
@@ -268,9 +269,9 @@ export function ClubMembershipManager() {
   );
 
   const tabs = [
-    { id: 'my-clubs', label: t('clubMembership.tabs.myClubs'), count: myClubs.length },
-    { id: 'search', label: t('clubMembership.tabs.findClubs'), count: null },
-    { id: 'pending', label: t('clubMembership.tabs.requests'), count: pendingRequests.length }
+    { id: 'my-clubs', label: t('clubMembership.tabs.myClubs'), badge: myClubs.length > 0 ? myClubs.length : null },
+    { id: 'search', label: t('clubMembership.tabs.findClubs') },
+    { id: 'pending', label: t('clubMembership.tabs.requests'), badge: pendingRequests.length > 0 ? pendingRequests.length : null }
   ];
 
   return (
@@ -290,26 +291,7 @@ export function ClubMembershipManager() {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-slate-700 p-1 rounded-lg">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === tab.id
-                ? 'bg-slate-600 text-slate-100'
-                : 'text-slate-300 hover:text-slate-100 hover:bg-slate-600'
-            }`}
-          >
-            {tab.label}
-            {tab.count !== null && tab.count > 0 && (
-              <span className="bg-sky-500 text-sky-100 text-xs px-2 py-1 rounded-full">
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} variant="pill" />
 
       {/* Tab Content */}
       <div>

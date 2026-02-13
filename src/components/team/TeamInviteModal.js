@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Input, Select } from '../shared/UI';
+import { Button, Input, Select, Textarea } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { EmptyState } from '../shared/EmptyState';
 import { FormGroup } from '../shared/FormGroup';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { useTeam } from '../../contexts/TeamContext';
@@ -357,7 +359,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 htmlFor="invite-message"
                 error={errors.message}
               >
-                <textarea
+                <Textarea
                   id="invite-message"
                   value={formData.message}
                   onChange={(e) => {
@@ -370,9 +372,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                     }
                   }}
                   placeholder={t('inviteModal.form.placeholders.message')}
-                  className={`w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none ${
-                    errors.message ? 'border-rose-500 focus:ring-rose-400' : ''
-                  }`}
+                  error={!!errors.message}
                   rows={3}
                   maxLength={500}
                   disabled={loading}
@@ -415,16 +415,14 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 {loadingInvitations ? (
                   <LoadingSpinner size="md" message={t('inviteModal.invitations.loading')} className="py-4" />
                 ) : pendingInvitations.length === 0 ? (
-                  <div className="text-center py-4 text-slate-400">
-                    <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">{t('inviteModal.invitations.noPending')}</p>
-                  </div>
+                  <EmptyState icon={Mail} title={t('inviteModal.invitations.noPending')} className="py-4 bg-transparent border-0" />
                 ) : (
                   <div className="space-y-3">
                     {pendingInvitations.map((invitation) => (
-                      <div
+                      <Card
                         key={invitation.id}
-                        className="bg-slate-700/50 border border-slate-600 rounded-lg p-3"
+                        variant="subtle"
+                        padding="sm"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -453,7 +451,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                             <span className="text-amber-400 text-xs font-medium">{t('inviteModal.invitations.status.pending')}</span>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 )}
@@ -474,9 +472,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
 
                   <div className="space-y-3">
                     {expiredInvitations.map((invitation) => (
-                      <div
+                      <Card
                         key={invitation.id}
-                        className="bg-slate-700/50 border border-rose-600/30 rounded-lg p-3"
+                        variant="subtle"
+                        padding="sm"
+                        className="border-rose-600/30"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -519,7 +519,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                             </button>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 </div>
@@ -527,7 +527,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
             </div>
 
             {/* Info Box */}
-            <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+            <Card>
               <div className="flex items-start space-x-3">
                 <Users className="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5" />
                 <div>
@@ -540,7 +540,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   </ul>
                 </div>
               </div>
-            </div>
+            </Card>
       </div>
     </ModalShell>
 

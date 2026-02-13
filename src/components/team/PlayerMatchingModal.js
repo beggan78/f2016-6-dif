@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button, Select } from '../shared/UI';
 import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
 import { Link } from 'lucide-react';
 import { ModalShell } from '../shared/ModalShell';
@@ -86,7 +87,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
           )}
 
           {/* Roster Player Info */}
-          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4">
+          <Card variant="subtle">
             <h3 className="text-sm font-medium text-slate-300 mb-2">{t('playerMatching.rosterPlayer')}</h3>
             <div className="text-lg font-semibold text-slate-100">
               {rosterPlayer.jersey_number && `#${rosterPlayer.jersey_number} - `}
@@ -95,7 +96,7 @@ export function PlayerMatchingModal({ rosterPlayer, unmatchedExternalPlayers, on
             <div className="text-sm text-slate-400 mt-1">
               {rosterPlayer.first_name} {rosterPlayer.last_name}
             </div>
-          </div>
+          </Card>
 
           {/* Provider Player Selection */}
           <FormGroup label={t('playerMatching.selectProviderLabel')}>
