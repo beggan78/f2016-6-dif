@@ -38,16 +38,10 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     message: ''
   });
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessageOriginal] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [expiredInvitations, setExpiredInvitations] = useState([]);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
-  
-  // Simplified setSuccessMessage wrapper for basic logging
-  const setSuccessMessage = (value) => {
-    console.log('✅ [TeamInviteModal] Setting success message:', value);
-    setSuccessMessageOriginal(value);
-  };
 
   // Format date for display
   const formatDate = (dateString) => {
