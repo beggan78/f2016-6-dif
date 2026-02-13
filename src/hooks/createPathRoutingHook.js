@@ -52,12 +52,12 @@ export function createPathRoutingHook({ path, navigateTarget, activeViews, hookN
         return;
       }
 
-      if (initialPathRef.current === path) {
+      if (initialPathRef.current === path && !viewSet.has(view)) {
         navigateToView?.(navigateTarget);
       }
 
       initialRouteHandledRef.current = true;
-    }, [navigateToView]);
+    }, [navigateToView, view]);
 
     useEffect(() => {
       if (typeof window === 'undefined') {

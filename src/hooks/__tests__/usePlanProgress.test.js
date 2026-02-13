@@ -316,6 +316,47 @@ describe('usePlanProgress', () => {
     expect(result.current.selectedPlayersByMatch).toEqual(storedSelections);
   });
 
+  it('skips reconciliation on refresh (empty matchesToPlan with teamId)', async () => {
+    areMatchListsEqual.mockReturnValue(false);
+    currentPlanProgress = {
+      teamId: 'team-1',
+      matches: [{ id: 'm1', opponent: 'Stored', matchDate: '2030-01-01', matchTime: '18:00:00' }],
+      selectedPlayersByMatch: { 'm1': ['p1'] },
+      sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
+      plannedMatchIds: ['m1'],
+      inviteSeededMatchIds: []
+    };
+
+    renderHook(() => usePlanProgress({ teamId: 'team-1', matchesToPlan: [] }));
+
+    await waitFor(() => {
+      // The no-team reconciliation call should not happen (teamId is present),
+      // and the with-team reconciliation should be skipped due to empty matchesToPlan
+      const teamCalls = reconcilePlanProgress.mock.calls.filter(
+        call => call[0].currentTeamId === 'team-1'
+      );
+      expect(teamCalls).toHaveLength(0);
+    });
+  });
+
+  it('restores planningStatus from persisted plannedMatchIds', async () => {
+    areMatchListsEqual.mockReturnValue(false);
+    currentPlanProgress = {
+      teamId: 'team-1',
+      matches: [{ id: 'm1', opponent: 'Stored', matchDate: '2030-01-01', matchTime: '18:00:00' }],
+      selectedPlayersByMatch: {},
+      sortMetric: AUTO_SELECT_STRATEGY.PRACTICES,
+      plannedMatchIds: ['m1'],
+      inviteSeededMatchIds: []
+    };
+
+    const { result } = renderHook(() => usePlanProgress({ teamId: 'team-1', matchesToPlan: [] }));
+
+    await waitFor(() => {
+      expect(result.current.planningStatus).toEqual({ 'm1': 'done' });
+    });
+  });
+
   it('reconciles again when teamId changes', async () => {
     areMatchListsEqual.mockReturnValue(false);
     reconcilePlanProgress.mockReturnValue({

@@ -178,6 +178,14 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
       }
       return;
     }
+
+    // On page refresh, matchesToPlan is empty (navigationData lost).
+    // Skip reconciliation to let usePersistentState restore stored matches.
+    if (!Array.isArray(matchesToPlan) || matchesToPlan.length === 0) {
+      lastMatchesToPlanRef.current = matchesToPlan;
+      return;
+    }
+
     lastMatchesToPlanRef.current = matchesToPlan;
 
     const reconciled = reconcilePlanProgress({
@@ -214,6 +222,24 @@ export const usePlanProgress = ({ teamId, matchesToPlan, debugEnabled }) => {
     setSortMetric,
     teamId
   ]); // planProgress read via planProgressRef to avoid re-firing on internal state changes
+
+  // Restore planningStatus from persisted plannedMatchIds on page refresh.
+  // The reconciler (which normally derives planningStatus) is skipped when matchesToPlan is empty,
+  // so this effect ensures "done" statuses are rebuilt from the persisted list.
+  useEffect(() => {
+    if (plannedMatchIds.length === 0) return;
+    setPlanningStatus(prev => {
+      let didChange = false;
+      const next = { ...prev };
+      plannedMatchIds.forEach(id => {
+        if (!next[id]) {
+          next[id] = 'done';
+          didChange = true;
+        }
+      });
+      return didChange ? next : prev;
+    });
+  }, [plannedMatchIds]);
 
   return {
     matches,

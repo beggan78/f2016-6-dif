@@ -101,6 +101,24 @@ describe('usePlanMatchesRouting', () => {
     replaceSpy.mockRestore();
   });
 
+  it('does not override persisted PLAN_MATCHES view on /plan URL refresh', () => {
+    const navigateToView = jest.fn();
+    window.history.replaceState({}, '', '/plan');
+
+    renderHook(() => usePlanMatchesRouting(VIEWS.PLAN_MATCHES, navigateToView));
+
+    expect(navigateToView).not.toHaveBeenCalled();
+  });
+
+  it('does not override persisted TEAM_MATCHES view on /plan URL refresh', () => {
+    const navigateToView = jest.fn();
+    window.history.replaceState({}, '', '/plan');
+
+    renderHook(() => usePlanMatchesRouting(VIEWS.TEAM_MATCHES, navigateToView));
+
+    expect(navigateToView).not.toHaveBeenCalled();
+  });
+
   it('navigates via sessionStorage fallback when redirect is /plan', async () => {
     const navigateToView = jest.fn();
     sessionStorage.setItem('redirect', '/plan');
