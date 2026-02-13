@@ -88,11 +88,6 @@ jest.mock('../../../utils/debugUtils', () => ({
   }))
 }));
 
-jest.mock('../../../constants/gameModes', () => ({
-  getOutfieldPositions: jest.fn(),
-  getModeDefinition: jest.fn()
-}));
-
 jest.mock('../../../contexts/TeamContext', () => ({
   useTeam: jest.fn()
 }));
@@ -110,7 +105,6 @@ describe('PeriodSetupScreen', () => {
   let mockPlayers;
 
   beforeEach(() => {
-    const { getOutfieldPositions, getModeDefinition } = require('../../../constants/gameModes');
     const { useTeam } = require('../../../contexts/TeamContext');
     const { getPlayerStats } = require('../../../services/matchStateManager');
     const { usePlayerRecommendationData } = require('../../../hooks/usePlayerRecommendationData');
@@ -128,50 +122,6 @@ describe('PeriodSetupScreen', () => {
       playerStats: null,
       loading: false,
       error: null
-    });
-
-    const buildFieldPositions = (teamConfig) => {
-      if (!teamConfig) return [];
-
-      if (teamConfig.formation === FORMATIONS.FORMATION_1_2_1) {
-        return ['defender', 'left', 'right', 'attacker'];
-      }
-
-      if (teamConfig.format === FORMATS.FORMAT_7V7) {
-        return ['leftDefender', 'rightDefender', 'leftMidfielder', 'rightMidfielder', 'leftAttacker', 'rightAttacker'];
-      }
-
-      return ['leftDefender', 'rightDefender', 'leftAttacker', 'rightAttacker'];
-    };
-
-    const buildSubstitutePositions = (teamConfig) => {
-      if (!teamConfig) {
-        return [];
-      }
-
-      const format = teamConfig.format === FORMATS.FORMAT_7V7 ? FORMATS.FORMAT_7V7 : FORMATS.FORMAT_5V5;
-      const fieldPlayers = format === FORMATS.FORMAT_7V7 ? 6 : 4;
-      const goalieCount = 1;
-      const substituteCount = Math.max(0, (teamConfig.squadSize || 0) - (fieldPlayers + goalieCount));
-      return Array.from({ length: substituteCount }, (_, i) => `substitute_${i + 1}`);
-    };
-
-    const buildDefinition = (teamConfig) => {
-      if (!teamConfig) return null;
-
-      const fieldPositions = buildFieldPositions(teamConfig);
-      const substitutePositions = buildSubstitutePositions(teamConfig);
-
-      return {
-        fieldPositions,
-        substitutePositions
-      };
-    };
-
-    getModeDefinition.mockImplementation(buildDefinition);
-    getOutfieldPositions.mockImplementation((teamConfig) => {
-      const definition = buildDefinition(teamConfig);
-      return definition ? [...definition.fieldPositions, ...definition.substitutePositions] : [];
     });
 
     // Create realistic mock players for 7-player team

@@ -35,9 +35,19 @@ export const TEAM_CONFIGS = {
     squadSize: 10,
     formation: '2-2'
   },
+  INDIVIDUAL_6_1_2_1: {
+    format: '5v5',
+    squadSize: 6,
+    formation: '1-2-1'
+  },
   INDIVIDUAL_7_1_2_1: {
     format: '5v5',
     squadSize: 7,
+    formation: '1-2-1'
+  },
+  INDIVIDUAL_9_1_2_1: {
+    format: '5v5',
+    squadSize: 9,
     formation: '1-2-1'
   },
   INDIVIDUAL_7V7_MIN: {
@@ -48,6 +58,11 @@ export const TEAM_CONFIGS = {
   INDIVIDUAL_7V7_222: {
     format: '7v7',
     squadSize: 9,
+    formation: '2-2-2'
+  },
+  INDIVIDUAL_7V7_222_10: {
+    format: '7v7',
+    squadSize: 10,
     formation: '2-2-2'
   },
   INDIVIDUAL_7V7_231: {
