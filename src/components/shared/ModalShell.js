@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { lockScroll, unlockScroll } from '../../utils/scrollLock';
 
 const iconColorMap = {
   sky: { bg: 'bg-sky-500/20', text: 'text-sky-400' },
@@ -34,6 +35,11 @@ export function ModalShell({
   const colors = iconColorMap[iconColor] || iconColorMap.sky;
   const dialogRef = useRef(null);
   const previouslyFocusedRef = useRef(null);
+
+  useEffect(() => {
+    lockScroll();
+    return () => unlockScroll();
+  }, []);
 
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement;

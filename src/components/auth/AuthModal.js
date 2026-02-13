@@ -41,16 +41,6 @@ export function AuthModal({ isOpen, onClose, initialMode = AUTH_MODES.LOGIN, ini
     }
   }, [isOpen]);
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const handleSwitchToReset = (email = '') => {
