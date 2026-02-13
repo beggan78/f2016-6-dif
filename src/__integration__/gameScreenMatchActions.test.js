@@ -1,9 +1,12 @@
 /**
  * GameScreen Match Actions Integration Tests
  *
- * Tests for core match actions: substitutions, goals, lifecycle controls,
- * and formation variations. Verifies that GameScreen correctly wires
- * handler factories and renders interactive elements for each match state.
+ * True integration tests: clicking UI elements triggers REAL handler logic
+ * (substitution, score, timer, goalie, field position handlers) and we verify
+ * actual state transformations via mock state updaters.
+ *
+ * Handler factories are NOT mocked — only hooks, side-effect services, and
+ * DOM-heavy components (FormationRenderer) are mocked.
  */
 
 import React from 'react';
@@ -18,17 +21,17 @@ import { GameScreen } from '../components/game/GameScreen';
 import {
   createMockPlayers,
   createMockFormation,
-  createMockGameScreenProps,
-  setupComponentTestEnvironment
+  createMockGameScreenProps
 } from '../components/__tests__/componentTestUtils';
-import { setupGameScreenHooks, createGameScreenProps } from './matchLifecycleUtils';
+import { setupGameScreenHooksWithRealHandlers, createGameScreenProps } from './matchLifecycleUtils';
 import { TEAM_CONFIGS } from '../game/testUtils';
-import { FORMATS, FORMATIONS } from '../constants/teamConfiguration';
+import { ANIMATION_DURATION, GLOW_DURATION } from '../game/animation/animationSupport';
+import { getModeDefinition } from '../constants/gameModes';
 
 const testI18n = createTestI18n();
 
 // ===================================================================
-// MOCKS — shared factories from setup/sharedMockFactories.js
+// MOCKS — hooks + side effects only (handler factories are REAL)
 // ===================================================================
 
 jest.mock('../hooks/useGameModals');
@@ -36,11 +39,11 @@ jest.mock('../hooks/useGameUIState');
 jest.mock('../hooks/useTeamNameAbbreviation');
 jest.mock('../hooks/useFieldPositionHandlers');
 jest.mock('../hooks/useQuickTapWithScrollDetection');
-jest.mock('../game/handlers/substitutionHandlers');
-jest.mock('../game/handlers/fieldPositionHandlers');
-jest.mock('../game/handlers/timerHandlers');
-jest.mock('../game/handlers/scoreHandlers');
-jest.mock('../game/handlers/goalieHandlers');
+
+// Side-effect mocks
+jest.mock('../utils/timeUtils', () => ({
+  getCurrentTimestamp: jest.fn(() => 5000)
+}));
 jest.mock('../utils/playerUtils', () =>
   require('./setup/sharedMockFactories').createPlayerUtilsMock(
     jest.requireActual('../utils/playerUtils')
@@ -75,12 +78,12 @@ const renderWithI18n = (ui) =>
 // ===================================================================
 
 describe('GameScreen Match Actions', () => {
-  let handlers;
+  let modalMocks, uiStateMocks;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
-    setupComponentTestEnvironment();
-    handlers = setupGameScreenHooks();
+    ({ modalMocks, uiStateMocks } = setupGameScreenHooksWithRealHandlers());
 
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation((message, ...args) => {
@@ -92,133 +95,169 @@ describe('GameScreen Match Actions', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
   // -----------------------------------------------------------------
-  // Substitutions
+  // Substitutions — real handler logic
   // -----------------------------------------------------------------
 
   describe('Substitutions', () => {
-    it('should render SUB button and call handleSubstitutionWithHighlight when clicked', () => {
+    it('should execute real substitution when clicking SUB button', () => {
       const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
         matchState: 'running'
       });
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The button text is "SUB 1 PLAYER" for substitutionCount=1
       const subButton = screen.getByText('SUB 1 PLAYER');
       expect(subButton).toBeInTheDocument();
 
       fireEvent.click(subButton);
 
-      expect(handlers.substitutionHandlers.handleSubstitutionWithHighlight).toHaveBeenCalled();
-    });
-
-    it('should pass handleSubstituteClick via fieldPositionHandlers', () => {
-      const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
-        matchState: 'running'
+      // Advance past animation duration to flush setTimeout in animateStateChange
+      act(() => {
+        jest.advanceTimersByTime(ANIMATION_DURATION + GLOW_DURATION);
       });
 
-      renderWithI18n(<GameScreen {...props} />);
+      // Real substitution handler ran — verify state transformations
+      expect(props.setFormation).toHaveBeenCalled();
+      const newFormation = props.setFormation.mock.calls[0][0];
 
-      // The createFieldPositionHandlers factory was called and its mock is wired in
-      const { createFieldPositionHandlers } = require('../game/handlers/fieldPositionHandlers');
-      expect(createFieldPositionHandlers).toHaveBeenCalled();
+      // Default state: nextPlayerIdToSubOut='1' at leftDefender,
+      // first substitute is player '5' at substitute_1.
+      // After substitution: player 5 takes leftDefender, player 1 goes to substitute
+      expect(newFormation.leftDefender).toBe('5');
 
-      // The returned handler object contains handleSubstituteClick
-      expect(handlers.fieldPositionHandlers.handleSubstituteClick).toBeDefined();
-      expect(typeof handlers.fieldPositionHandlers.handleSubstituteClick).toBe('function');
+      // Player stats updated
+      expect(props.setAllPlayers).toHaveBeenCalled();
+      const updatedPlayers = props.setAllPlayers.mock.calls[0][0];
+      const playerMovedToField = updatedPlayers.find(p => p.id === '5');
+      expect(playerMovedToField.stats.currentPositionKey).toBe('leftDefender');
+
+      // Rotation queue updated
+      expect(props.setRotationQueue).toHaveBeenCalled();
+
+      // Last substitution stored for undo
+      expect(uiStateMocks.setLastSubstitution).toHaveBeenCalled();
+
+      // Sub timer reset
+      expect(props.resetSubTimer).toHaveBeenCalled();
     });
-  });
 
-  // -----------------------------------------------------------------
-  // Position changes
-  // -----------------------------------------------------------------
+    it('should execute substitution correctly with 1-2-1 formation', () => {
+      const teamConfig = TEAM_CONFIGS.INDIVIDUAL_7_1_2_1;
+      const definition = getModeDefinition(teamConfig);
+      const firstFieldPos = definition.fieldPositions[0];
 
-  describe('Position changes', () => {
-    it('should wire handleFieldPlayerClick from fieldPositionHandlers', () => {
-      const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
-        matchState: 'running'
-      });
+      const formation = createMockFormation(teamConfig);
+      const allPlayers = createMockPlayers(teamConfig.squadSize, teamConfig);
+      const firstFieldPlayerId = formation[firstFieldPos];
+      const firstSubId = formation[definition.substitutePositions[0]];
 
-      renderWithI18n(<GameScreen {...props} />);
-
-      const { createFieldPositionHandlers } = require('../game/handlers/fieldPositionHandlers');
-      expect(createFieldPositionHandlers).toHaveBeenCalled();
-      expect(handlers.fieldPositionHandlers.handleFieldPlayerClick).toBeDefined();
-    });
-  });
-
-  // -----------------------------------------------------------------
-  // Rotation order
-  // -----------------------------------------------------------------
-
-  describe('Rotation order', () => {
-    it('should provide setNextPlayerToSubOut and setNextPlayerIdToSubOut props', () => {
-      const mockSetNext = jest.fn();
-      const mockSetNextId = jest.fn();
-
-      const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
+      const props = createGameScreenProps(teamConfig, {
         matchState: 'running',
-        setNextPlayerToSubOut: mockSetNext,
-        setNextPlayerIdToSubOut: mockSetNextId,
-        nextPlayerToSubOut: 'leftDefender',
-        nextPlayerIdToSubOut: '1'
+        formation,
+        allPlayers,
+        nextPlayerToSubOut: firstFieldPos,
+        nextPlayerIdToSubOut: firstFieldPlayerId,
+        rotationQueue: allPlayers.filter(p => p.id !== formation.goalie).map(p => p.id)
       });
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The component receives and uses these props — verify they are passed to
-      // the substitutionHandlers factory via stateUpdaters
-      const { createSubstitutionHandlers } = require('../game/handlers/substitutionHandlers');
-      expect(createSubstitutionHandlers).toHaveBeenCalled();
+      fireEvent.click(screen.getByText('SUB 1 PLAYER'));
 
-      // The factory receives stateUpdaters that include our setters
-      const callArgs = createSubstitutionHandlers.mock.calls[0];
-      // stateUpdaters is the second argument
-      const stateUpdaters = callArgs[1];
-      expect(stateUpdaters.setNextPlayerToSubOut).toBe(mockSetNext);
-      expect(stateUpdaters.setNextPlayerIdToSubOut).toBe(mockSetNextId);
+      act(() => {
+        jest.advanceTimersByTime(ANIMATION_DURATION + GLOW_DURATION);
+      });
+
+      expect(props.setFormation).toHaveBeenCalled();
+      const newFormation = props.setFormation.mock.calls[0][0];
+      // First substitute takes the field position
+      expect(newFormation[firstFieldPos]).toBe(firstSubId);
+    });
+
+    it('should create field position handlers with correct arguments', () => {
+      const { createFieldPositionHandlers } = require('../game/handlers/fieldPositionHandlers');
+      const spy = jest.spyOn(
+        require('../game/handlers/fieldPositionHandlers'),
+        'createFieldPositionHandlers'
+      );
+
+      const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
+        matchState: 'running'
+      });
+
+      renderWithI18n(<GameScreen {...props} />);
+
+      expect(spy).toHaveBeenCalled();
+      const callArgs = spy.mock.calls[0];
+      // Verify factory receives correct formation/players/config
+      expect(callArgs[0]).toBe(props.teamConfig); // teamConfig
+      expect(callArgs[1]).toBe(props.formation);  // formation
+      expect(callArgs[2]).toBe(props.allPlayers);  // allPlayers
+
+      spy.mockRestore();
     });
   });
 
   // -----------------------------------------------------------------
-  // Goal registration
+  // Goal registration — real score handler logic
   // -----------------------------------------------------------------
 
   describe('Goal registration', () => {
-    it('should render own team goal button and trigger handleAddGoalScored', () => {
+    it('should open goal scorer modal when clicking own team (trackGoalScorer=true)', () => {
       const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
-        matchState: 'running'
+        matchState: 'running',
+        trackGoalScorer: true
       });
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The own team button shows the displayOwnTeam name
       const ownTeamButton = screen.getByText('Test Team');
-      expect(ownTeamButton).toBeInTheDocument();
-
       fireEvent.click(ownTeamButton);
 
-      expect(handlers.scoreHandlers.handleAddGoalScored).toHaveBeenCalled();
+      // Real handleAddGoalScored ran with trackGoalScorer=true →
+      // opens goal scorer modal instead of incrementing score directly
+      expect(modalMocks.openGoalScorerModal).toHaveBeenCalled();
+      const modalCall = modalMocks.openGoalScorerModal.mock.calls[0][0];
+      expect(modalCall.team).toBe('scored');
+      expect(modalCall.mode).toBe('new');
+
+      // Pending goal data stored
+      expect(modalMocks.setPendingGoalData).toHaveBeenCalled();
     });
 
-    it('should render opponent goal button and trigger handleAddGoalConceded', () => {
+    it('should increment score directly when clicking own team (trackGoalScorer=false)', () => {
+      const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
+        matchState: 'running',
+        trackGoalScorer: false
+      });
+
+      renderWithI18n(<GameScreen {...props} />);
+
+      fireEvent.click(screen.getByText('Test Team'));
+
+      // Real handleAddGoalScored ran with trackGoalScorer=false →
+      // directly increments score without modal
+      expect(props.addGoalScored).toHaveBeenCalled();
+      expect(modalMocks.openGoalScorerModal).not.toHaveBeenCalled();
+    });
+
+    it('should increment opponent score directly when clicking opponent team', () => {
       const props = createGameScreenProps(TEAM_CONFIGS.INDIVIDUAL_7, {
         matchState: 'running'
       });
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The opponent team button shows the displayOpponentTeam name
-      const opponentButton = screen.getByText('Test Opponent');
-      expect(opponentButton).toBeInTheDocument();
+      fireEvent.click(screen.getByText('Test Opponent'));
 
-      fireEvent.click(opponentButton);
-
-      expect(handlers.scoreHandlers.handleAddGoalConceded).toHaveBeenCalled();
+      // Real handleAddGoalConceded ran → always increments directly (no modal)
+      expect(props.addGoalConceded).toHaveBeenCalled();
+      expect(modalMocks.openGoalScorerModal).not.toHaveBeenCalled();
     });
 
     it('should display the correct score', () => {
@@ -235,7 +274,7 @@ describe('GameScreen Match Actions', () => {
   });
 
   // -----------------------------------------------------------------
-  // Match lifecycle
+  // Match lifecycle (prop callbacks — unchanged)
   // -----------------------------------------------------------------
 
   describe('Match lifecycle', () => {
@@ -249,13 +288,9 @@ describe('GameScreen Match Actions', () => {
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The pending overlay shows "Start Match" for period 1
       const startText = screen.getByText('Start Match');
       expect(startText).toBeInTheDocument();
 
-      // The click handler (handleAnimatedMatchStart) is on the wrapper div
-      // that contains the SquarePlay icon. It has class "group relative inline-block select-none".
-      // Click on the clickable icon wrapper which is above the text.
       const clickableIcon = startText.closest('[class*="relative z-10"]').querySelector('[class*="inline-block"]');
       fireEvent.click(clickableIcon);
 
@@ -271,11 +306,8 @@ describe('GameScreen Match Actions', () => {
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // Match clock and substitution timer labels are rendered
       expect(screen.getByText('Match Clock')).toBeInTheDocument();
       expect(screen.getByText('Substitution Timer')).toBeInTheDocument();
-
-      // Timer values are rendered via formatTime
       expect(screen.getByText('10:00')).toBeInTheDocument(); // 600 seconds
       expect(screen.getByText('01:30')).toBeInTheDocument(); // 90 seconds
     });
@@ -311,7 +343,6 @@ describe('GameScreen Match Actions', () => {
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The component registers a back handler on mount
       expect(mockPush).toHaveBeenCalledWith(
         expect.any(Function),
         'GameScreen-BackToSetup'
@@ -352,7 +383,7 @@ describe('GameScreen Match Actions', () => {
   });
 
   // -----------------------------------------------------------------
-  // Formation variations
+  // Formation variations — render + real handler compatibility
   // -----------------------------------------------------------------
 
   describe('Formation variations', () => {
@@ -364,11 +395,8 @@ describe('GameScreen Match Actions', () => {
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // The component renders both field and substitute sections
       expect(screen.getByTestId('formation-renderer-field')).toBeInTheDocument();
       expect(screen.getByTestId('formation-renderer-substitutes')).toBeInTheDocument();
-
-      // Score display still works
       expect(screen.getByText('0 - 0')).toBeInTheDocument();
     });
 
@@ -380,8 +408,6 @@ describe('GameScreen Match Actions', () => {
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // With only 1 substitute, the stepper min and max both = 1, so
-      // the +/- buttons should be disabled
       const decreaseButton = screen.getByLabelText('Decrease number of players to substitute');
       const increaseButton = screen.getByLabelText('Increase number of players to substitute');
       expect(decreaseButton).toBeDisabled();
@@ -396,7 +422,6 @@ describe('GameScreen Match Actions', () => {
 
       renderWithI18n(<GameScreen {...props} />);
 
-      // With 4 substitutes, the increase button should be enabled
       const increaseButton = screen.getByLabelText('Increase number of players to substitute');
       expect(increaseButton).toBeEnabled();
     });
@@ -439,6 +464,40 @@ describe('GameScreen Match Actions', () => {
       const increaseButton = screen.getByLabelText('Increase number of players to substitute');
       expect(decreaseButton).toBeDisabled();
       expect(increaseButton).toBeDisabled();
+    });
+
+    it.each([
+      ['5v5 2-2 7p', TEAM_CONFIGS.INDIVIDUAL_7],
+      ['5v5 1-2-1 7p', TEAM_CONFIGS.INDIVIDUAL_7_1_2_1],
+      ['7v7 2-2-2 9p', TEAM_CONFIGS.INDIVIDUAL_7V7_222],
+      ['7v7 2-3-1 10p', TEAM_CONFIGS.INDIVIDUAL_7V7_231]
+    ])('should execute substitution without errors for %s formation', (name, teamConfig) => {
+      const definition = getModeDefinition(teamConfig);
+      const firstFieldPos = definition.fieldPositions[0];
+      const formation = createMockFormation(teamConfig);
+      const allPlayers = createMockPlayers(teamConfig.squadSize, teamConfig);
+      const firstFieldPlayerId = formation[firstFieldPos];
+
+      const props = createGameScreenProps(teamConfig, {
+        matchState: 'running',
+        formation,
+        allPlayers,
+        nextPlayerToSubOut: firstFieldPos,
+        nextPlayerIdToSubOut: firstFieldPlayerId,
+        rotationQueue: allPlayers.filter(p => p.id !== formation.goalie).map(p => p.id)
+      });
+
+      renderWithI18n(<GameScreen {...props} />);
+
+      fireEvent.click(screen.getByText('SUB 1 PLAYER'));
+
+      act(() => {
+        jest.advanceTimersByTime(ANIMATION_DURATION + GLOW_DURATION);
+      });
+
+      // Real handler ran successfully for this formation
+      expect(props.setFormation).toHaveBeenCalled();
+      expect(props.setAllPlayers).toHaveBeenCalled();
     });
   });
 });

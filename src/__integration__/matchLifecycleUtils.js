@@ -514,6 +514,109 @@ export const createConfigurationProps = (overrides = {}) => ({
 });
 
 // ===================================================================
+// GAME SCREEN HOOKS — REAL HANDLERS (no handler factory mocks)
+// ===================================================================
+
+/**
+ * Configure hook mocks for GameScreen WITHOUT mocking handler factories.
+ *
+ * When handler factories (createSubstitutionHandlers, createScoreHandlers, etc.)
+ * are NOT mocked, GameScreen calls the real factories which produce real handlers.
+ * Those handlers use mock state updaters (jest.fn() from props + hooks) so we can
+ * verify actual state transformations.
+ *
+ * Returns references to all mock functions grouped by category for assertion.
+ */
+export const setupGameScreenHooksWithRealHandlers = () => {
+  const modalMocks = {
+    modals: {
+      fieldPlayer: { isOpen: false, type: null, target: null, playerName: '', sourcePlayerId: null, availablePlayers: [], showPositionOptions: false },
+      substitute: { isOpen: false, playerId: null, playerName: '', isCurrentlyInactive: false, canSetAsNextToGoIn: false },
+      substituteSelection: { isOpen: false, fieldPlayerName: '', fieldPlayerId: null, availableSubstitutes: [] },
+      goalie: { isOpen: false, currentGoalieName: '', availablePlayers: [] },
+      scoreEdit: { isOpen: false },
+      undoConfirm: { isOpen: false },
+      goalScorer: { isOpen: false, eventId: null, team: 'own', mode: 'new', matchTime: '00:00', periodNumber: 1, existingGoalData: null }
+    },
+    openFieldPlayerModal: jest.fn(),
+    closeFieldPlayerModal: jest.fn(),
+    openSubstituteModal: jest.fn(),
+    closeSubstituteModal: jest.fn(),
+    openSubstituteSelectionModal: jest.fn(),
+    closeSubstituteSelectionModal: jest.fn(),
+    openGoalieModal: jest.fn(),
+    closeGoalieModal: jest.fn(),
+    openScoreEditModal: jest.fn(),
+    closeScoreEditModal: jest.fn(),
+    openUndoConfirmModal: jest.fn(),
+    closeUndoConfirmModal: jest.fn(),
+    openGoalScorerModal: jest.fn(),
+    closeGoalScorerModal: jest.fn(),
+    // Pending goal operations (needed by real createScoreHandlers)
+    setPendingGoalData: jest.fn(),
+    getPendingGoalData: jest.fn(() => null),
+    clearPendingGoal: jest.fn(),
+    // Generic operations
+    openModal: jest.fn(),
+    closeModal: jest.fn(),
+    closeModalWithNavigation: jest.fn(),
+    closeAllModals: jest.fn()
+  };
+  require('../hooks/useGameModals').useGameModals.mockReturnValue(modalMocks);
+
+  const uiStateMocks = {
+    animationState: { type: 'none', phase: 'idle', data: {} },
+    setAnimationState: jest.fn(),
+    recentlySubstitutedPlayers: new Set(),
+    setRecentlySubstitutedPlayers: jest.fn(),
+    addRecentlySubstitutedPlayer: jest.fn(),
+    removeRecentlySubstitutedPlayer: jest.fn(),
+    clearRecentlySubstitutedPlayers: jest.fn(),
+    hideNextOffIndicator: false,
+    setHideNextOffIndicator: jest.fn(),
+    lastSubstitution: null,
+    setLastSubstitution: jest.fn(),
+    updateLastSubstitution: jest.fn(),
+    clearLastSubstitution: jest.fn(),
+    shouldSubstituteNow: false,
+    setShouldSubstituteNow: jest.fn(),
+    resetAnimationState: jest.fn(),
+    substitutionCountOverride: null,
+    setSubstitutionCountOverride: jest.fn(),
+    clearSubstitutionCountOverride: jest.fn(),
+    substitutionOverride: null,
+    setSubstitutionOverride: jest.fn(),
+    clearSubstitutionOverride: jest.fn(),
+    shouldResetSubTimerOnNextSub: true,
+    setShouldResetSubTimerOnNextSub: jest.fn()
+  };
+  require('../hooks/useGameUIState').useGameUIState.mockReturnValue(uiStateMocks);
+
+  require('../hooks/useTeamNameAbbreviation').useTeamNameAbbreviation.mockReturnValue({
+    scoreRowRef: { current: null },
+    displayOwnTeam: 'Test Team',
+    displayOpponentTeam: 'Test Opponent'
+  });
+
+  require('../hooks/useFieldPositionHandlers').useFieldPositionHandlers.mockReturnValue({
+    handleFieldPlayerClick: jest.fn(),
+    handleFieldPlayerQuickTap: jest.fn()
+  });
+
+  require('../hooks/useQuickTapWithScrollDetection').useQuickTapWithScrollDetection.mockReturnValue({
+    onTouchStart: jest.fn(),
+    onTouchEnd: jest.fn(),
+    onMouseDown: jest.fn(),
+    onMouseUp: jest.fn(),
+    onMouseLeave: jest.fn()
+  });
+
+  require('../utils/playerUtils').hasActiveSubstitutes.mockReturnValue(true);
+
+  return { modalMocks, uiStateMocks };
+};
+
+// ===================================================================
 // MODAL STATE HELPERS
 // ===================================================================
 
