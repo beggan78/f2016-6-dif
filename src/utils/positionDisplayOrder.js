@@ -7,6 +7,33 @@ const FIELD_ROLE_DISPLAY_ORDER = [
   PLAYER_ROLES.DEFENDER
 ];
 
+export const groupFieldPositionsByRole = (fieldPositions = []) => {
+  if (!Array.isArray(fieldPositions) || fieldPositions.length === 0) {
+    return [];
+  }
+
+  const groups = new Map();
+
+  fieldPositions.forEach(position => {
+    const role = getPositionRole(position);
+    if (!role) return;
+
+    if (!groups.has(role)) {
+      groups.set(role, []);
+    }
+    groups.get(role).push(position);
+  });
+
+  const ordered = [];
+  FIELD_ROLE_DISPLAY_ORDER.forEach(role => {
+    if (groups.has(role)) {
+      ordered.push({ role, positions: groups.get(role) });
+    }
+  });
+
+  return ordered;
+};
+
 export const orderFieldPositionsForDisplay = (positions = []) => {
   if (!Array.isArray(positions)) {
     return [];

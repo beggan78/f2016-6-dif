@@ -289,18 +289,24 @@
     },
     "positions": {
       "goalie": "Goalie",
-      "leftDefender": "Left Defender",
-      "rightDefender": "Right Defender",
-      "leftAttacker": "Left Attacker",
-      "rightAttacker": "Right Attacker",
+      "leftDefender": "Left",
+      "rightDefender": "Right",
+      "leftAttacker": "Left",
+      "rightAttacker": "Right",
       "defender": "Defender",
-      "left": "Left Mid",
-      "right": "Right Mid",
+      "left": "Left",
+      "right": "Right",
       "attacker": "Attacker",
-      "leftMidfielder": "Left Midfielder",
-      "rightMidfielder": "Right Midfielder",
-      "centerMidfielder": "Center Midfielder",
+      "leftMidfielder": "Left",
+      "rightMidfielder": "Right",
+      "centerMidfielder": "Center",
       "substitute": "Substitute"
+    },
+    "roleGroups": {
+      "offence": "Offence",
+      "midfield": "Midfield",
+      "defence": "Defence",
+      "substitutes": "Substitutes"
     }
   }
 }
