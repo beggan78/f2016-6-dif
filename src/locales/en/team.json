@@ -862,7 +862,8 @@
       "save": "Save",
       "roster": "Roster",
       "selected": "Selected",
-      "empty": "Empty."
+      "empty": "Empty.",
+      "reset": "Reset"
     },
     "playerSelector": {
       "noPlayers": "No roster players.",

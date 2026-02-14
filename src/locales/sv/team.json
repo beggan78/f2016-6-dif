@@ -862,7 +862,8 @@
       "save": "Spara",
       "roster": "Truppen",
       "selected": "Valda",
-      "empty": "Tom."
+      "empty": "Tom.",
+      "reset": "Återställ"
     },
     "playerSelector": {
       "noPlayers": "Inga truppspelare.",

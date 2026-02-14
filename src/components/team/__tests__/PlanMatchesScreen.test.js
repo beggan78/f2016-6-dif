@@ -504,6 +504,120 @@ describe('PlanMatchesScreen', () => {
     });
   });
 
+  describe('clear overrides (reset)', () => {
+    it('should clear manual unavailability, provider overrides, and re-seed from invites', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {
+          'match-1': ['p2']
+        },
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Wait for invite seeding
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+      });
+
+      // Mark Alex as manually unavailable
+      const alexRow = screen
+        .getAllByText('Alex Player')
+        .map((node) => node.closest('[role="button"]'))
+        .filter(Boolean)
+        .find((candidate) =>
+          within(candidate).queryByLabelText('Mark unavailable')
+        );
+      fireEvent.click(within(alexRow).getByLabelText('Mark unavailable'));
+
+      // Alex should now only appear once (deselected and unavailable)
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+      });
+
+      // Click Reset
+      fireEvent.click(screen.getByText('Reset'));
+
+      // After reset: manual unavailability cleared, provider overrides cleared,
+      // selection re-seeded from invites minus provider-unavailable (p2)
+      await waitFor(() => {
+        // p1 (Alex) should be selected again (invited + available)
+        expect(screen.getAllByText('Alex Player').length).toBe(2);
+        // p2 (Bree) is provider-unavailable, so should NOT be selected
+        expect(screen.getAllByText('Bree Player').length).toBe(1);
+      });
+    });
+
+    it('should clear selection to empty when no invites exist', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {},
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {},
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Manually select a player
+      fireEvent.click(screen.getByText('Alex Player'));
+      expect(screen.getAllByText('Alex Player').length).toBe(2);
+
+      // Click Reset
+      fireEvent.click(screen.getByText('Reset'));
+
+      // Selection should be cleared since there are no invites
+      await waitFor(() => {
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+        expect(screen.getAllByText('Bree Player').length).toBe(1);
+      });
+    });
+
+    it('should clear provider availability overrides on reset', async () => {
+      mockUseProviderAvailability.mockReturnValue({
+        providerUnavailableByMatch: {
+          'match-1': ['p1']
+        },
+        providerResponseByMatch: {},
+        providerInvitedByMatch: {
+          'match-1': ['p1', 'p2']
+        },
+        providerAvailabilityLoading: false
+      });
+
+      render(<PlanMatchesScreen {...defaultProps} />);
+
+      // Wait for invite seeding (only p2 selected since p1 is provider-unavailable)
+      await waitFor(() => {
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+      });
+
+      // Override p1 to available
+      const alexRow = screen
+        .getAllByText('Alex Player')
+        .map((node) => node.closest('[role="button"]'))
+        .filter(Boolean)
+        .find((candidate) =>
+          within(candidate).queryByLabelText('Mark available')
+        );
+      fireEvent.click(within(alexRow).getByLabelText('Mark available'));
+
+      // Click Reset - should clear the override, making p1 unavailable again
+      fireEvent.click(screen.getByText('Reset'));
+
+      await waitFor(() => {
+        // p2 (Bree) should be selected (invited + available)
+        expect(screen.getAllByText('Bree Player').length).toBe(2);
+        // p1 (Alex) should NOT be selected (provider-unavailable, override cleared)
+        expect(screen.getAllByText('Alex Player').length).toBe(1);
+      });
+    });
+  });
+
   describe('invite seeding', () => {
     it('should auto-select invited players for unseeded matches', async () => {
       mockUseProviderAvailability.mockReturnValue({
