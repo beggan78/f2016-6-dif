@@ -455,7 +455,7 @@ export function FieldPlayerModal({
   canSubstitute = true,
   isPlayerAboutToSubOff = false
 }) {
-  const { t } = useTranslation('modals');
+  const { t } = useTranslation(['modals', 'game']);
 
   if (!isOpen) return null;
 
@@ -482,7 +482,7 @@ export function FieldPlayerModal({
                 variant="primary"
                 className="text-left"
               >
-                {formatPlayerName(player)}
+                {formatPlayerName(player)} - {t(`game:formation.positions.${player.stats.currentPositionKey}`)}
               </Button>
             ))}
           </div>

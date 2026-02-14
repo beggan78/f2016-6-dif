@@ -6,7 +6,7 @@
     "messageNotRunning": "Detta kommer att återställa din nuvarande session och ta dig tillbaka till konfigurationsskärmen.",
     "subtitleRunning": "Data kommer permanent att gå förlorad",
     "subtitleNotRunning": "Nuvarande session kommer att återställas",
-    "cancel": "Avbryt",
+    "cancel": "Ångra",
     "abandonMatch": "Avbryt Match",
     "startNewGame": "Starta Nytt Spel"
   },
