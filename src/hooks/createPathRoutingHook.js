@@ -57,6 +57,10 @@ export function createPathRoutingHook({ path, navigateTarget, activeViews, hookN
       }
 
       initialRouteHandledRef.current = true;
+      // `view` is listed so the effect re-runs once the app's initial view is
+      // set (it may still be undefined on the first render).  The
+      // `initialRouteHandledRef` guard above ensures navigation fires at most
+      // once, so subsequent view changes are no-ops.
     }, [navigateToView, view]);
 
     useEffect(() => {
