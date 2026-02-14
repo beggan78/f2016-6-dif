@@ -113,6 +113,7 @@ describe('MatchCard', () => {
       canPlan: true,
       isSelectedInOtherMatch: jest.fn(() => false),
       isSelectedAndOnlyAvailableHere: jest.fn(() => false),
+      onClearOverrides: jest.fn(),
       onPlanMatch: jest.fn(),
       onToggleSelect: jest.fn(),
       onToggleUnavailable: jest.fn(),
@@ -538,6 +539,44 @@ describe('MatchCard', () => {
       expect(within(player2Card).queryByTestId('icon-check')).not.toBeInTheDocument();
       expect(within(player2Card).queryByTestId('icon-x')).not.toBeInTheDocument();
       expect(within(player2Card).queryByTestId('icon-help-circle')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Reset Button', () => {
+    it('should render Reset button', () => {
+      render(<MatchCard {...defaultProps} />);
+
+      expect(screen.getByText('Reset')).toBeInTheDocument();
+    });
+
+    it('should call onClearOverrides when Reset is clicked', () => {
+      const onClearOverrides = jest.fn();
+      render(<MatchCard {...defaultProps} onClearOverrides={onClearOverrides} />);
+
+      fireEvent.click(screen.getByText('Reset'));
+
+      expect(onClearOverrides).toHaveBeenCalledTimes(1);
+    });
+
+    it('should disable Reset button when match is planned', () => {
+      render(<MatchCard {...defaultProps} planningStatus="done" />);
+
+      const resetButton = screen.getByText('Reset');
+      expect(resetButton).toBeDisabled();
+    });
+
+    it('should disable Reset button when match is planning', () => {
+      render(<MatchCard {...defaultProps} planningStatus="loading" />);
+
+      const resetButton = screen.getByText('Reset');
+      expect(resetButton).toBeDisabled();
+    });
+
+    it('should enable Reset button when match is not planned or planning', () => {
+      render(<MatchCard {...defaultProps} planningStatus={null} />);
+
+      const resetButton = screen.getByText('Reset');
+      expect(resetButton).not.toBeDisabled();
     });
   });
 

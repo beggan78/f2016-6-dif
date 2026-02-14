@@ -21,6 +21,7 @@ export function MatchCard({
   canPlan,
   isSelectedInOtherMatch,
   isSelectedAndOnlyAvailableHere,
+  onClearOverrides,
   onPlanMatch,
   onToggleSelect,
   onToggleUnavailable,
@@ -243,6 +244,15 @@ export function MatchCard({
             className="px-2"
           >
             {isPlanning ? t('planMatches.matchCard.saving') : isPlanned ? t('planMatches.matchCard.saved') : t('planMatches.matchCard.save')}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onClearOverrides}
+            disabled={isPlanning || isPlanned || !onClearOverrides}
+            className="px-2"
+          >
+            {t('planMatches.matchCard.reset')}
           </Button>
         </div>
 

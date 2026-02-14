@@ -432,6 +432,35 @@ export function PlanMatchesScreen({
     unavailablePlayersByMatch
   ]);
 
+  const handleClearOverrides = useCallback((matchId) => {
+    setUnavailablePlayersByMatch(prev => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
+    });
+
+    setProviderAvailableOverridesByMatch(prev => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
+    });
+
+    const invited = providerInvitedByMatch[matchId] || [];
+    const providerUnavailableSet = new Set(providerUnavailableByMatch[matchId] || []);
+    const availableInvited = invited.filter(id => !providerUnavailableSet.has(id));
+
+    setSelectedPlayersByMatch(prev => ({
+      ...prev,
+      [matchId]: availableInvited
+    }));
+  }, [
+    providerInvitedByMatch,
+    providerUnavailableByMatch,
+    setUnavailablePlayersByMatch,
+    setProviderAvailableOverridesByMatch,
+    setSelectedPlayersByMatch
+  ]);
+
   const handleReorderSelectedPlayers = useCallback((matchId, newOrderedIds) => {
     setSelectedPlayersByMatch((prev) => ({
       ...prev,
@@ -701,6 +730,7 @@ export function PlanMatchesScreen({
               sortMetric={sortMetric}
               planningStatus={planningStatus[match.id]}
               canPlan={Boolean(defaults)}
+              onClearOverrides={() => handleClearOverrides(match.id)}
               onPlanMatch={() => handlePlanMatch(match)}
               onToggleSelect={(playerId) => togglePlayerSelection(match.id, playerId)}
               onToggleUnavailable={(playerId) => togglePlayerUnavailable(match.id, playerId)}
