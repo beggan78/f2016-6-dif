@@ -249,7 +249,7 @@ export function MatchCard({
             size="sm"
             variant="secondary"
             onClick={onClearOverrides}
-            disabled={isPlanning || isPlanned}
+            disabled={isPlanning || isPlanned || !onClearOverrides}
             className="px-2"
           >
             {t('planMatches.matchCard.reset')}

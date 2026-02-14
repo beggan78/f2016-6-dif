@@ -113,6 +113,7 @@ describe('MatchCard', () => {
       canPlan: true,
       isSelectedInOtherMatch: jest.fn(() => false),
       isSelectedAndOnlyAvailableHere: jest.fn(() => false),
+      onClearOverrides: jest.fn(),
       onPlanMatch: jest.fn(),
       onToggleSelect: jest.fn(),
       onToggleUnavailable: jest.fn(),
