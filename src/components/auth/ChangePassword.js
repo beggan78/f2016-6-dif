@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { ModalShell } from '../shared/ModalShell';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function ChangePassword({ isOpen, onClose }) {
@@ -98,23 +102,12 @@ export function ChangePassword({ isOpen, onClose }) {
     return null;
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
 
   // Success state
   if (successMessage) {
     return (
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        onClick={handleBackdropClick}
-      >
-        <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-          <div className="px-6 py-6">
+      <ModalShell title={t('changePassword.success.title')} onClose={onClose}>
             <div className="space-y-6 text-center">
               <div className="text-center">
                 <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -135,37 +128,17 @@ export function ChangePassword({ isOpen, onClose }) {
                 {t('changePassword.success.button')}
               </Button>
             </div>
-          </div>
-        </div>
-      </div>
+      </ModalShell>
     );
   }
 
   // Form state
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={handleBackdropClick}
+    <ModalShell
+      title={t('changePassword.modalTitle')}
+      onClose={onClose}
+      className="max-h-[90vh] overflow-y-auto"
     >
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-600">
-        {/* Modal Header with Close Button */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center">
-          <div className="text-lg font-semibold text-sky-300">
-            {t('changePassword.modalTitle')}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label={t('changePassword.closeModal')}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Modal Content */}
-        <div className="px-6 py-6">
           <div className="space-y-6">
             {/* Header */}
             <div className="text-center">
@@ -177,17 +150,12 @@ export function ChangePassword({ isOpen, onClose }) {
 
             {/* Error Message */}
             {getErrorMessage() && (
-              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-              </div>
+              <Alert variant="error">{getErrorMessage()}</Alert>
             )}
 
             {/* Change Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="current-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('changePassword.form.currentPasswordLabel')}
-                </label>
+              <FormGroup label={t('changePassword.form.currentPasswordLabel')} htmlFor="current-password" error={errors.currentPassword}>
                 <Input
                   id="current-password"
                   type="password"
@@ -200,17 +168,11 @@ export function ChangePassword({ isOpen, onClose }) {
                   }}
                   placeholder={t('changePassword.form.currentPasswordPlaceholder')}
                   disabled={loading}
-                  className={errors.currentPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.currentPassword}
                 />
-                {errors.currentPassword && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.currentPassword}</p>
-                )}
-              </div>
+              </FormGroup>
 
-              <div>
-                <label htmlFor="new-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('changePassword.form.newPasswordLabel')}
-                </label>
+              <FormGroup label={t('changePassword.form.newPasswordLabel')} htmlFor="new-password" error={errors.newPassword}>
                 <Input
                   id="new-password"
                   type="password"
@@ -223,17 +185,11 @@ export function ChangePassword({ isOpen, onClose }) {
                   }}
                   placeholder={t('changePassword.form.newPasswordPlaceholder')}
                   disabled={loading}
-                  className={errors.newPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.newPassword}
                 />
-                {errors.newPassword && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.newPassword}</p>
-                )}
-              </div>
+              </FormGroup>
 
-              <div>
-                <label htmlFor="confirm-new-password" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('changePassword.form.confirmPasswordLabel')}
-                </label>
+              <FormGroup label={t('changePassword.form.confirmPasswordLabel')} htmlFor="confirm-new-password" error={errors.confirmPassword}>
                 <Input
                   id="confirm-new-password"
                   type="password"
@@ -246,12 +202,9 @@ export function ChangePassword({ isOpen, onClose }) {
                   }}
                   placeholder={t('changePassword.form.confirmPasswordPlaceholder')}
                   disabled={loading}
-                  className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.confirmPassword}
                 />
-                {errors.confirmPassword && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.confirmPassword}</p>
-                )}
-              </div>
+              </FormGroup>
 
               <Button
                 type="submit"
@@ -265,17 +218,15 @@ export function ChangePassword({ isOpen, onClose }) {
             </form>
 
             {/* Security Info */}
-            <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+            <Card>
               <h4 className="text-slate-300 font-medium mb-2">{t('changePassword.requirements.title')}</h4>
               <ul className="text-slate-400 text-sm space-y-1">
                 <li>• {t('changePassword.requirements.items.minLength')}</li>
                 <li>• {t('changePassword.requirements.items.different')}</li>
                 <li>• {t('changePassword.requirements.items.mix')}</li>
               </ul>
-            </div>
+            </Card>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

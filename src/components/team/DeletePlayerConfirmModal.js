@@ -1,6 +1,9 @@
 import React from 'react';
 import { Button } from '../shared/UI';
-import { Trash2, AlertTriangle, X } from 'lucide-react';
+import { Card } from '../shared/Card';
+import { Avatar } from '../shared/Avatar';
+import { Trash2, AlertTriangle } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 import { useTranslation } from 'react-i18next';
 
 export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onConfirm }) {
@@ -13,39 +16,17 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-rose-600 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('deletePlayerModal.title')}</h2>
-              <p className="text-sm text-slate-400">
-                {willBeDeleted ? t('deletePlayerModal.subtitleDelete') : t('deletePlayerModal.subtitleDeactivate')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <ModalShell
+      title={t('deletePlayerModal.title')}
+      subtitle={willBeDeleted ? t('deletePlayerModal.subtitleDelete') : t('deletePlayerModal.subtitleDeactivate')}
+      icon={AlertTriangle}
+      iconColor="rose"
+      onClose={onClose}
+    >
           {/* Player Info */}
-          <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+          <Card padding="md" className="mb-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-lg">
-                  {displayInitial}
-                </span>
-              </div>
+              <Avatar size="xl">{displayInitial}</Avatar>
               <div className="flex-1">
                 <h3 className="text-slate-100 font-medium">{displayName}</h3>
                 <div className="flex items-center space-x-4 text-sm text-slate-400">
@@ -61,7 +42,7 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Warning Message */}
           <div className="bg-rose-900/20 border border-rose-600 rounded-lg p-4 mb-4">
@@ -87,24 +68,24 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
 
           {/* Additional info for permanent delete path */}
           {willBeDeleted && (
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+            <Card padding="md" className="mb-6">
               <p className="text-slate-200 font-medium mb-2">{t('deletePlayerModal.whatHappensNext')}</p>
               <ul className="text-slate-300 text-sm space-y-1">
                 <li>{t('deletePlayerModal.deleteConsequences.jerseyAvailable')}</li>
               </ul>
-            </div>
+            </Card>
           )}
 
           {/* Reassurance for deactivation path */}
           {!willBeDeleted && (
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600 mb-6">
+            <Card padding="md" className="mb-6">
               <p className="text-slate-200 font-medium mb-2">{t('deletePlayerModal.whatHappensNext')}</p>
               <ul className="text-slate-300 text-sm space-y-1">
                 <li>{t('deletePlayerModal.deactivateConsequences.statsPreserved')}</li>
                 <li>{t('deletePlayerModal.deactivateConsequences.jerseyAvailable')}</li>
                 <li>{t('deletePlayerModal.deactivateConsequences.canReactivate')}</li>
               </ul>
-            </div>
+            </Card>
           )}
 
           {/* Actions */}
@@ -125,8 +106,6 @@ export function DeletePlayerConfirmModal({ player, hasGameHistory, onClose, onCo
               {t('deletePlayerModal.buttons.cancel')}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

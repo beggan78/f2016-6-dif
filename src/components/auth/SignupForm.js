@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateSignupForm } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
@@ -112,10 +113,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
 
       {/* Signup Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-            {t('signup.form.emailLabel')}
-          </label>
+        <FormGroup label={t('signup.form.emailLabel')} htmlFor="email" error={errors.email}>
           <Input
             id="email"
             type="email"
@@ -125,15 +123,9 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.email, 'field').container}
           />
-          {errors.email && (
-            <p className={getErrorDisplayClasses(!!errors.email, 'field').text}>{errors.email}</p>
-          )}
-        </div>
+        </FormGroup>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-            {t('signup.form.passwordLabel')}
-          </label>
+        <FormGroup label={t('signup.form.passwordLabel')} htmlFor="password" error={errors.password}>
           <Input
             id="password"
             type="password"
@@ -143,18 +135,12 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.password, 'field').container}
           />
-          {errors.password && (
-            <p className={getErrorDisplayClasses(!!errors.password, 'field').text}>{errors.password}</p>
-          )}
           <p className="text-slate-500 text-xs mt-1">
             {t('signup.form.passwordRequirements')}
           </p>
-        </div>
+        </FormGroup>
 
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
-            {t('signup.form.confirmPasswordLabel')}
-          </label>
+        <FormGroup label={t('signup.form.confirmPasswordLabel')} htmlFor="confirmPassword" error={errors.confirmPassword}>
           <Input
             id="confirmPassword"
             type="password"
@@ -164,10 +150,7 @@ export function SignupForm({ onSwitchToLogin, onClose }) {
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.confirmPassword, 'field').container}
           />
-          {errors.confirmPassword && (
-            <p className={getErrorDisplayClasses(!!errors.confirmPassword, 'field').text}>{errors.confirmPassword}</p>
-          )}
-        </div>
+        </FormGroup>
 
         {/* Submit Button */}
         <Button

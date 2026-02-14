@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import { ArrowLeft, Edit, Save, X, Calendar, MapPin, Trophy, Users, User, Clock, Award, Layers2, Layers, ChartColumn, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Select, ConfirmationModal } from '../shared/UI';
+import { Card } from '../shared/Card';
+import { Alert } from '../shared/Alert';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { getMatchTypeOptions, DEFAULT_MATCH_TYPE } from '../../constants/matchTypes';
 import { FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS } from '../../constants/teamConfiguration';
@@ -978,18 +980,18 @@ export function MatchDetailsView({
 
       {/* Save Error Message */}
       {saveError && (
-        <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
-          <p className="text-red-200 font-medium">{tStats('matchDetails.errorSaving')}</p>
-          <p className="text-red-300 text-sm mt-1">{saveError}</p>
-        </div>
+        <Alert variant="error">
+          <p className="font-medium">{tStats('matchDetails.errorSaving')}</p>
+          <p className="text-sm mt-1 opacity-80">{saveError}</p>
+        </Alert>
       )}
 
       {/* Delete Error Message */}
       {deleteError && (
-        <div className="bg-red-900/50 border border-red-600 rounded-lg p-4">
-          <p className="text-red-200 font-medium">{tStats('matchDetails.errorDeleting')}</p>
-          <p className="text-red-300 text-sm mt-1">{deleteError}</p>
-        </div>
+        <Alert variant="error">
+          <p className="font-medium">{tStats('matchDetails.errorDeleting')}</p>
+          <p className="text-sm mt-1 opacity-80">{deleteError}</p>
+        </Alert>
       )}
 
       <ConfirmationModal
@@ -1027,7 +1029,7 @@ export function MatchDetailsView({
       />
 
       {/* Match Summary */}
-      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
+      <Card padding="sm" className="overflow-hidden">
         {/* Main Match Info Row */}
         <div className="p-4 bg-slate-800">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1266,10 +1268,10 @@ export function MatchDetailsView({
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Player Statistics */}
-      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
+      <Card padding="sm" className="overflow-hidden">
         <div className="p-4 border-b border-slate-600">
           <div className="flex items-center space-x-2">
             <Users className="h-5 w-5 text-sky-400" />
@@ -1460,7 +1462,7 @@ export function MatchDetailsView({
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

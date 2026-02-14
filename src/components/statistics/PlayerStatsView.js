@@ -16,6 +16,7 @@ import { StatsLoadingState } from './shared/StatsLoadingState';
 import { StatsErrorState } from './shared/StatsErrorState';
 import { StatsEmptyState } from './shared/StatsEmptyState';
 import { SortableStatsTable } from './shared/SortableStatsTable';
+import { Alert } from '../shared/Alert';
 
 const SORT_COLUMNS = {
   NAME: 'displayName',
@@ -471,15 +472,11 @@ export function PlayerStatsView({ startDate, endDate }) {
       />
 
       {matchesError && (
-        <div className="bg-amber-900/40 border border-amber-600/50 text-amber-200 text-sm rounded-lg p-4">
-          {matchesError}
-        </div>
+        <Alert variant="warning">{matchesError}</Alert>
       )}
 
       {loanError && (
-        <div className="bg-amber-900/40 border border-amber-600/50 text-amber-200 text-sm rounded-lg p-4">
-          {loanError}
-        </div>
+        <Alert variant="warning">{loanError}</Alert>
       )}
 
       {noMatchesAvailable && (

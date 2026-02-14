@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 import { Button } from '../shared/UI';
 
 export function SessionExpiryModal({
@@ -69,70 +71,38 @@ export function SessionExpiryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div 
-          className="fixed inset-0 bg-slate-900/75 transition-opacity"
-          aria-hidden="true"
-        />
+    <ModalShell
+      title={t('sessionExpiry.title')}
+      icon={AlertTriangle}
+      iconColor="amber"
+      maxWidth="lg"
+    >
+              <div className="space-y-3">
+                <p className="text-sm text-slate-300">
+                  {t('sessionExpiry.message', { time: timeRemaining }).split(timeRemaining)[0]}
+                  <span className="font-semibold text-amber-400">{timeRemaining}</span>
+                  {t('sessionExpiry.message', { time: timeRemaining }).split(timeRemaining)[1]}
+                </p>
 
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-slate-800 rounded-lg border border-slate-600 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-slate-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              {/* Warning icon */}
-              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-amber-900/50 sm:mx-0 sm:h-10 sm:w-10">
-                <svg 
-                  className="h-6 w-6 text-amber-400" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" 
-                  />
-                </svg>
-              </div>
-              
-              {/* Content */}
-              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                <h3 className="text-lg leading-6 font-semibold text-slate-100">
-                  {t('sessionExpiry.title')}
-                </h3>
-
-                <div className="mt-3">
-                  <p className="text-sm text-slate-300 mb-3">
-                    {t('sessionExpiry.message', { time: timeRemaining }).split(timeRemaining)[0]}
-                    <span className="font-semibold text-amber-400">{timeRemaining}</span>
-                    {t('sessionExpiry.message', { time: timeRemaining }).split(timeRemaining)[1]}
-                  </p>
-
-                  <div className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-xs text-slate-400">
-                        {t('sessionExpiry.autoSaveInfo')}
-                      </p>
-                    </div>
+                <div className="bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-slate-400">
+                      {t('sessionExpiry.autoSaveInfo')}
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          
+
           {/* Action buttons */}
-          <div className="bg-slate-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4 border-t border-slate-600 mt-4">
             <Button
               onClick={handleExtend}
               disabled={isExtending || loading}
               variant="primary"
-              className="w-full sm:w-auto sm:ml-3"
+              className="w-full sm:w-auto"
             >
               {isExtending ? (
                 <span className="flex items-center justify-center">
@@ -151,7 +121,7 @@ export function SessionExpiryModal({
               onClick={onDismiss}
               disabled={isExtending || loading}
               variant="secondary"
-              className="mt-3 w-full sm:mt-0 sm:w-auto"
+              className="w-full sm:w-auto"
             >
               {t('sessionExpiry.continueButton')}
             </Button>
@@ -160,13 +130,11 @@ export function SessionExpiryModal({
               onClick={handleSignOut}
               disabled={isExtending || loading}
               variant="secondary"
-              className="mt-3 w-full sm:mt-0 sm:w-auto sm:mr-3 text-rose-300 hover:text-rose-200 hover:bg-rose-900/50"
+              className="w-full sm:w-auto text-rose-300 hover:text-rose-200 hover:bg-rose-900/50"
             >
               {t('sessionExpiry.signOutButton')}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

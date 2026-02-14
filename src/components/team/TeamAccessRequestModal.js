@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Select } from '../shared/UI';
+import { Button, Select, Textarea } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { FormGroup } from '../shared/FormGroup';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
-import { 
-  Users, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Users,
+  MessageSquare,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertTriangle,
   UserCheck
 } from 'lucide-react';
@@ -154,9 +158,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
 
       {successMessage ? (
         /* Show success banner when there's a success message */
-        <div className="p-4 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       ) : hasExistingRequest && !justSubmitted ? (
         /* Show pending warning only if user has existing request but didn't just submit */
         <div className="p-4 bg-amber-900/20 border border-amber-600/50 rounded-lg">
@@ -173,10 +175,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
       ) : !successMessage ? (
         /* Show form only if no success message */
         <>
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('accessRequestModal.request.form.roleLabel')}
-            </label>
+          <FormGroup label={t('accessRequestModal.request.form.roleLabel')}>
             <Select
               value={requestForm.role}
               onChange={(value) => setRequestForm(prev => ({ ...prev, role: value }))}
@@ -189,24 +188,20 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
             <p className="text-slate-500 text-xs mt-1">
               {t('accessRequestModal.request.form.roleHint')}
             </p>
-          </div>
+          </FormGroup>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('accessRequestModal.request.form.messageLabel')}
-            </label>
-            <textarea
+          <FormGroup label={t('accessRequestModal.request.form.messageLabel')}>
+            <Textarea
               value={requestForm.message}
               onChange={(e) => setRequestForm(prev => ({ ...prev, message: e.target.value }))}
               placeholder={t('accessRequestModal.request.form.messagePlaceholder')}
-              className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none"
               rows={4}
               maxLength={500}
             />
             <p className="text-slate-500 text-xs mt-1">
               {t('accessRequestModal.request.form.characterCount', { count: requestForm.message.length })}
             </p>
-          </div>
+          </FormGroup>
 
           <div className="flex justify-between">
             <Button
@@ -322,11 +317,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3 mb-4">
+          <Card variant="subtle" padding="sm" className="mb-4">
             <p className="text-xs text-slate-400">
               {t('accessRequestModal.manage.privacyNotice')}
             </p>
-          </div>
+          </Card>
           {pendingRequests.map((request) => (
             <div key={request.id} className="p-4">
               <div className="space-y-4">
@@ -355,10 +350,10 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                 </div>
 
                 {request.message && (
-                  <div className="p-3 bg-slate-700 rounded-lg">
+                  <Card padding="sm">
                     <p className="text-sm text-slate-200 font-medium mb-1">{t('accessRequestModal.manage.request.messageLabel')}</p>
                     <p className="text-sm text-slate-300">"{request.message}"</p>
-                  </div>
+                  </Card>
                 )}
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-600">
@@ -401,7 +396,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
           ) : (
             <div className="space-y-3">
               {teamMembers.map((member) => (
-                <div key={member.id} className="p-3 bg-slate-700 rounded-lg">
+                <Card key={member.id} padding="sm">
                   <div className="flex items-center justify-between">
                     <div>
                       <h5 className="font-medium text-slate-100">{member.user.name}</h5>
@@ -433,7 +428,7 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
                       </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -457,32 +452,18 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-sky-300">{t('accessRequestModal.header.title')}</h2>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-
+    <ModalShell
+      title={t('accessRequestModal.header.title')}
+      onClose={onClose}
+      maxWidth="2xl"
+    >
           {error && (
-            <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-600" />
-                <p className="text-rose-800 text-sm">{error}</p>
-              </div>
-            </div>
+            <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
           )}
-
 
           {/* Tab Navigation */}
           {tabs.length > 1 && (
-            <div className="flex space-x-1 bg-slate-700 p-1 rounded-lg mt-4">
+            <div className="flex space-x-1 bg-slate-700 p-1 rounded-lg mb-4">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -503,13 +484,11 @@ export function TeamAccessRequestModal({ team, onClose, onSuccess, isStandaloneM
               ))}
             </div>
           )}
-        </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
           {activeTab === 'request' && renderRequestTab()}
           {activeTab === 'manage' && renderManageTab()}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

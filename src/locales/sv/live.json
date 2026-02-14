@@ -1,14 +1,14 @@
 {
   "screen": {
     "title": "Livematch",
-    "spectatorView": "\u00c5sk\u00e5darvy",
+    "spectatorView": "Åskådarvy",
     "loading": "Laddar match...",
     "notFound": "Match hittades inte",
     "ended": "Denna match har avslutats"
   },
   "status": {
-    "waitingToStart": "V\u00e4ntar p\u00e5 att matchen ska starta",
-    "inProgress": "Match p\u00e5g\u00e5r",
+    "waitingToStart": "Väntar på att matchen ska starta",
+    "inProgress": "Match pågår",
     "paused": "Pausad",
     "ended": "Avslutad",
     "matchNotStarted": "Matchen Har Inte Startat",
@@ -18,14 +18,14 @@
   "info": {
     "period": "Period {{number}}",
     "periodWithMinute": "Period {{period}} - {{minute}}'",
-    "score": "St\u00e4llning",
+    "score": "Ställning",
     "time": "Tid",
     "lastUpdated": "Senast uppdaterad: {{time}}",
-    "loadingEvents": "Laddar matchh\u00e4ndelser...",
+    "loadingEvents": "Laddar matchhändelser...",
     "errorLoadingMatch": "Fel Vid Laddning Av Match",
-    "noEventsFound": "Inga matchh\u00e4ndelser hittades",
-    "matchSummary": "Match\u00f6versikt",
-    "gameEvents": "Matchh\u00e4ndelser",
+    "noEventsFound": "Inga matchhändelser hittades",
+    "matchSummary": "Matchöversikt",
+    "gameEvents": "Matchhändelser",
     "substitutions": "Byten"
   }
 }

@@ -1,6 +1,11 @@
 import React from 'react';
 import { Users, Plus, Building, ChevronRight } from 'lucide-react';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { SectionHeader } from '../shared/SectionHeader';
+import { EmptyState } from '../shared/EmptyState';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 
@@ -16,42 +21,35 @@ export function TeamSelector({ onCreateNew }) {
 
   if (loading) {
     return (
-      <div className="p-6 bg-slate-700 rounded-lg border border-slate-600">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="text-slate-300">{t('teamSelector.loading')}</span>
-        </div>
-      </div>
+      <Card padding="lg">
+        <LoadingSpinner size="sm" message={t('teamSelector.loading')} />
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 bg-rose-900/20 border border-rose-600 rounded-lg">
-        <div className="flex items-center space-x-2 text-rose-300">
-          <span className="text-sm">{error}</span>
-        </div>
-      </div>
+      <Alert variant="error">{error}</Alert>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-sky-300 flex items-center">
-          <Users className="mr-2 h-5 w-5" />
-          {t('teamSelector.title')}
-        </h3>
-        <Button
-          onClick={onCreateNew}
-          variant="secondary"
-          size="sm"
-          Icon={Plus}
-        >
-          {t('teamSelector.newTeam')}
-        </Button>
-      </div>
+      <SectionHeader
+        title={t('teamSelector.title')}
+        icon={Users}
+        actions={
+          <Button
+            onClick={onCreateNew}
+            variant="secondary"
+            size="sm"
+            Icon={Plus}
+          >
+            {t('teamSelector.newTeam')}
+          </Button>
+        }
+      />
 
       {/* Current Team Display */}
       {currentTeam && (
@@ -128,20 +126,20 @@ export function TeamSelector({ onCreateNew }) {
 
       {/* No Teams Message */}
       {userTeams.length === 0 && (
-        <div className="p-6 bg-slate-700/50 border border-slate-600 rounded-lg text-center">
-          <Users className="h-8 w-8 text-slate-400 mx-auto mb-3" />
-          <div className="text-slate-300 font-medium mb-2">{t('teamSelector.noTeamsTitle')}</div>
-          <div className="text-slate-400 text-sm mb-4">
-            {t('teamSelector.noTeamsMessage')}
-          </div>
-          <Button
-            onClick={onCreateNew}
-            variant="primary"
-            Icon={Plus}
-          >
-            {t('teamSelector.createOrJoin')}
-          </Button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={t('teamSelector.noTeamsTitle')}
+          message={t('teamSelector.noTeamsMessage')}
+          actions={
+            <Button
+              onClick={onCreateNew}
+              variant="primary"
+              Icon={Plus}
+            >
+              {t('teamSelector.createOrJoin')}
+            </Button>
+          }
+        />
       )}
     </div>
   );

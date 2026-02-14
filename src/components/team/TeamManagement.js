@@ -26,7 +26,12 @@ import {
   BarChart3
 } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
-import { Tooltip } from '../shared';
+import { IconButton } from '../shared/IconButton';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { FormGroup } from '../shared/FormGroup';
+import { Tooltip, TabBar, EmptyState, LoadingSpinner } from '../shared';
+import { Avatar } from '../shared/Avatar';
 import { TeamSelector } from './TeamSelector';
 import { TeamCreationWizard } from './TeamCreationWizard';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
@@ -250,10 +255,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
           </Button>
         </div>
         <div className="p-2 bg-slate-700 rounded-lg border border-slate-600">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-            <span className="text-slate-300">{t('teamManagement.loading.teamInfo')}</span>
-          </div>
+          <LoadingSpinner size="sm" message={t('teamManagement.loading.teamInfo')} />
         </div>
       </div>
     );
@@ -369,9 +371,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
 
       {/* Success Message */}
       {successMessage && (
-        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {/* Team Header */}
@@ -402,32 +402,7 @@ export function TeamManagement({ onNavigateBack, openToTab, openAddRosterPlayerM
 
         {/* Tab Navigation */}
         <div className="border-b border-slate-600">
-          <div className="overflow-x-auto">
-            <nav className="flex space-x-0 min-w-max">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 px-2 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative flex-shrink-0 whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'border-sky-400 text-sky-300 bg-slate-600/50'
-                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:bg-slate-600/30'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                    {tab.badge && (
-                      <span className="absolute -top-1 -right-1 bg-red-600 text-red-100 text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} variant="scroll" />
         </div>
 
         {/* Tab Content */}
@@ -548,9 +523,7 @@ function TeamOverview({ team, members }) {
             </div>
           ))}
           {members.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
-              {t('teamManagement.overview.noUsers')}
-            </div>
+            <EmptyState title={t('teamManagement.overview.noUsers')} />
           )}
         </div>
       </div>
@@ -579,7 +552,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
       </div>
 
       {/* Pending Requests Summary */}
-      <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+      <Card variant="dark">
         <div className="flex items-center space-x-3 mb-3">
           <Shield className="w-5 h-5 text-sky-400" />
           <div>
@@ -607,11 +580,11 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
             {t('teamManagement.access.reviewRequests')}
           </Button>
         )}
-      </div>
+      </Card>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+        <Card variant="dark">
           <div className="flex items-center space-x-3 mb-3">
             <UserPlus className="w-5 h-5 text-sky-400" />
             <h4 className="text-slate-200 font-medium">{t('teamManagement.access.inviteUsers')}</h4>
@@ -627,9 +600,9 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
           >
             {t('teamManagement.access.invitations')}
           </Button>
-        </div>
+        </Card>
 
-        <div className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+        <Card variant="dark">
           <div className="flex items-center space-x-3 mb-3">
             <UserCheck className="w-5 h-5 text-sky-400" />
             <h4 className="text-slate-200 font-medium">{t('teamManagement.access.memberRoles')}</h4>
@@ -645,7 +618,7 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
           >
             {t('teamManagement.access.manageRoles')}
           </Button>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -1003,10 +976,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-200">{t('teamManagement.roster.title')}</h3>
         </div>
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="ml-3 text-slate-300">{t('teamManagement.roster.loadingRoster')}</span>
-        </div>
+        <LoadingSpinner size="sm" message={t('teamManagement.roster.loadingRoster')} className="py-8" />
       </div>
     );
   }
@@ -1028,16 +998,12 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
 
       {/* Error Message */}
       {error && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-          <p className="text-rose-200 text-sm">{error}</p>
-        </div>
+        <Alert variant="error">{error}</Alert>
       )}
 
       {/* Success Message */}
       {successMessage && (
-        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {/* Filters */}
@@ -1113,9 +1079,9 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                       <tr key={player.id} className="bg-slate-800/30 border-l-2 border-slate-600">
                         <td className="px-4 py-3">
                           <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3 bg-slate-600">
+                            <Avatar size="md" color="slate" className="mr-3">
                               <Ghost className="w-4 h-4 text-slate-400" />
-                            </div>
+                            </Avatar>
                             <div className="flex flex-col">
                               <span className="font-medium text-slate-400 italic">
                                 {player.display_name}
@@ -1186,13 +1152,9 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                   }`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                          player.on_roster ? 'bg-sky-600' : 'bg-slate-500'
-                        }`}>
-                          <span className="text-white text-sm font-medium">
-                            {player.display_name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
+                        <Avatar size="md" color={player.on_roster ? 'sky' : 'slate'} className="mr-3">
+                          {player.display_name.charAt(0).toUpperCase()}
+                        </Avatar>
                         <span className={`font-medium ${
                           player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
                         }`}>
@@ -1286,13 +1248,13 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         >
                           <Repeat className="w-4 h-4" />
                         </button>
-                        <button
+                        <IconButton
                           onClick={() => handleDeletePlayer(player)}
-                          className="p-1 text-slate-400 hover:text-rose-400 transition-colors"
-                          title={t('teamManagement.roster.player.removeTitle')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          icon={Trash2}
+                          label={t('teamManagement.roster.player.removeTitle')}
+                          variant="danger"
+                          size="sm"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -1633,16 +1595,12 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
     <div className="space-y-6">
       {/* Success Message */}
       {!onShowFloatingSuccess && successMessage && (
-        <div className="bg-green-800/20 border border-green-700 text-green-200 text-sm rounded-lg p-4">
-          {successMessage}
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-800/20 border border-red-700 text-red-200 text-sm rounded-lg p-4">
-          {error}
-        </div>
+        <Alert variant="error">{error}</Alert>
       )}
 
       <div className="flex items-center justify-between">
@@ -1657,10 +1615,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('teamManagement.preferences.matchFormat')}
-            </label>
+          <FormGroup label={t('teamManagement.preferences.matchFormat')}>
             <Select
               value={preferences.matchFormat}
               onChange={handleFormatChange}
@@ -1671,12 +1626,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 { value: '11v11', label: `11v11 (${t('teamManagement.preferences.comingSoon')})` }
               ]}
             />
-          </div>
+          </FormGroup>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('teamManagement.preferences.formation')}
-            </label>
+          <FormGroup label={t('teamManagement.preferences.formation')}>
             <Select
               value={preferences.formation}
               onChange={(value) => setPreferences(prev => ({ ...prev, formation: value }))}
@@ -1691,7 +1643,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 };
               })}
             />
-          </div>
+          </FormGroup>
         </div>
       </div>
 
@@ -1703,10 +1655,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('teamManagement.preferences.periodLength')}
-            </label>
+          <FormGroup label={t('teamManagement.preferences.periodLength')}>
             <input
               type="number"
               min="5"
@@ -1718,12 +1667,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
               }))}
               className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
-          </div>
+          </FormGroup>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('teamManagement.preferences.numPeriods')}
-            </label>
+          <FormGroup label={t('teamManagement.preferences.numPeriods')}>
             <Select
               value={preferences.numPeriods}
               onChange={(value) => setPreferences(prev => ({
@@ -1737,7 +1683,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 { value: 4, label: `4 ${t('teamManagement.preferences.periods')}` }
               ]}
             />
-          </div>
+          </FormGroup>
         </div>
       </div>
 
@@ -1785,10 +1731,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
         {/* Substitution Logic dropdown - NOW APPEARS AFTER checkbox */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('teamManagement.preferences.substitutionLogic')}
-            </label>
+          <FormGroup label={t('teamManagement.preferences.substitutionLogic')}>
             <Select
               value={preferences.substitutionLogic}
               onChange={(value) => setPreferences(prev => ({ ...prev, substitutionLogic: value }))}
@@ -1797,7 +1740,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
                 { value: 'same_role', label: t('teamManagement.preferences.substitutionOptions.sameRole') }
               ]}
             />
-          </div>
+          </FormGroup>
         </div>
       </div>
 
@@ -1830,10 +1773,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
 
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            {t('teamManagement.preferences.fairPlayAward')}
-          </label>
+        <FormGroup label={t('teamManagement.preferences.fairPlayAward')}>
           <Select
             value={preferences.fairPlayAward}
             onChange={(value) => setPreferences(prev => ({ ...prev, fairPlayAward: value }))}
@@ -1844,12 +1784,9 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
               { value: 'all_games', label: t('teamManagement.preferences.fairPlayOptions.allGames') }
             ]}
           />
-        </div>
+        </FormGroup>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            {t('teamManagement.preferences.teamCaptain')}
-          </label>
+        <FormGroup label={t('teamManagement.preferences.teamCaptain')}>
           <Select
             value={teamCaptainMode}
             onChange={handleTeamCaptainModeChange}
@@ -1878,7 +1815,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
               )}
             </div>
           )}
-        </div>
+        </FormGroup>
       </div>
 
       {/* Statistics Settings */}
@@ -1889,10 +1826,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('teamManagement.preferences.loanMatchWeight')}
-            </label>
+          <FormGroup label={t('teamManagement.preferences.loanMatchWeight')}>
             <Select
               value={String(preferences.loanMatchWeight)}
               onChange={(value) => setPreferences(prev => ({ ...prev, loanMatchWeight: parseFloat(value) }))}
@@ -1905,7 +1839,7 @@ function TeamPreferences({ team, onRefresh, onShowFloatingSuccess }) {
             <p className="text-xs text-slate-400 mt-1">
               {t('teamManagement.preferences.loanWeightDescription')}
             </p>
-          </div>
+          </FormGroup>
         </div>
       </div>
     </div>

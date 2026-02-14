@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
+import { Alert } from '../shared/Alert';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateOtpCode } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
@@ -174,10 +176,7 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
       {!otpStatus.isExpired ? (
         // NORMAL STATE: Show code input form
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="verification-code" className="block text-sm font-medium text-slate-300 mb-2">
-              {t('emailVerification.form.codeLabel')}
-            </label>
+          <FormGroup label={t('emailVerification.form.codeLabel')} htmlFor="verification-code" error={errors.code}>
             <Input
               ref={codeInputRef}
               id="verification-code"
@@ -195,13 +194,10 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
               aria-label={t('emailVerification.form.codePlaceholder')}
               aria-describedby="code-help-text"
             />
-            {errors.code && (
-              <p className={getErrorDisplayClasses(!!errors.code, 'field').text}>{errors.code}</p>
-            )}
             <p id="code-help-text" className="text-slate-500 text-xs mt-1">
               {t('emailVerification.form.codeHint')}
             </p>
-          </div>
+          </FormGroup>
 
           <Button
             type="submit"
@@ -218,17 +214,12 @@ export function EmailVerificationForm({ email, onSuccess, onSwitchToLogin, onClo
         // EXPIRED STATE: Show warning and resend button
         <div className="space-y-4">
           {/* Expired Message */}
-          <div className="bg-amber-900/50 border border-amber-600 rounded-lg p-4 text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label={t('emailVerification.expiry.title')}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-amber-300 font-medium">{t('emailVerification.expiry.title')}</p>
-            </div>
+          <Alert variant="warning" className="text-center">
+            <p className="text-amber-300 font-medium mb-2">{t('emailVerification.expiry.title')}</p>
             <p className="text-amber-200 text-sm">
               {t('emailVerification.expiry.description')}
             </p>
-          </div>
+          </Alert>
 
           {/* Send New Code Button */}
           <Button

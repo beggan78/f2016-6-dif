@@ -1,4 +1,5 @@
 import React from 'react';
+import { Card } from '../../shared/Card';
 
 /**
  * StatCard Component
@@ -14,7 +15,7 @@ import React from 'react';
  */
 export function StatCard({ icon: Icon, title, value, subtitle }) {
   return (
-    <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+    <Card>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-2 rounded-lg">
@@ -27,6 +28,6 @@ export function StatCard({ icon: Icon, title, value, subtitle }) {
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

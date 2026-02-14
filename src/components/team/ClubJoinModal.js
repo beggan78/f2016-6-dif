@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import {
   Building,
   Users,
   AlertTriangle,
-  UserPlus,
-  X
+  UserPlus
 } from 'lucide-react';
 
 export function ClubJoinModal({ club, onClose, onSuccess }) {
@@ -43,8 +45,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
 
   if (joinRequested) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-slate-800 rounded-lg max-w-md w-full p-6">
+      <ModalShell title={t('clubJoin.successTitle')}>
           <div className="text-center">
             <div className="animate-pulse mb-4">
               <UserPlus className="h-12 w-12 text-emerald-400 mx-auto" />
@@ -56,38 +57,18 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               {t('clubJoin.successMessage', { clubName: club.long_name || club.name })}
             </p>
           </div>
-        </div>
-      </div>
+      </ModalShell>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg max-w-md w-full">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-700">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-sky-300">{t('clubJoin.title')}</h2>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
+    <ModalShell
+      title={t('clubJoin.title')}
+      onClose={onClose}
+    >
           {error && (
-            <div className="mt-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <p className="text-rose-200 text-sm">{error}</p>
-              </div>
-            </div>
+            <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
           )}
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
           <div className="text-center mb-6">
             <Building className="h-12 w-12 text-sky-400 mx-auto mb-4" />
             
@@ -102,7 +83,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
             )}
           </div>
 
-          <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 mb-6">
+          <Card variant="subtle" className="mb-6">
             <div className="flex items-start gap-3">
               <Users className="h-5 w-5 text-sky-400 mt-0.5 flex-shrink-0" />
               <div>
@@ -116,7 +97,7 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
                 </ul>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Actions */}
           <div className="flex gap-3">
@@ -138,8 +119,6 @@ export function ClubJoinModal({ club, onClose, onSuccess }) {
               {loading ? t('clubJoin.buttons.joining') : t('clubJoin.buttons.joinClub')}
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

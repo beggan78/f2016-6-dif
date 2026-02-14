@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
-import { History, Trash2, X, Calendar, Clock, Trophy, Users } from 'lucide-react';
+import { Card } from '../shared/Card';
+import { Alert } from '../shared/Alert';
+import { ModalShell } from '../shared/ModalShell';
+import { History, Trash2, Calendar, Clock, Trophy, Users } from 'lucide-react';
 import { FORMATS } from '../../constants/teamConfiguration';
 
 /**
@@ -93,34 +96,15 @@ export function MatchRecoveryModal({
   const outcomeDisplay = getOutcomeDisplay(match.outcome, match.goals_scored, match.goals_conceded);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <History className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('matchRecovery.title')}</h2>
-              <p className="text-sm text-slate-400">
-                {t('matchRecovery.subtitle')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            disabled={saving || deleting}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <ModalShell
+      title={t('matchRecovery.title')}
+      subtitle={t('matchRecovery.subtitle')}
+      icon={History}
+      iconColor="blue"
+      onClose={onClose}
+    >
           {/* Match Details */}
-          <div className="bg-slate-700 rounded-lg p-4 mb-6 space-y-3">
+          <Card className="mb-6 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-medium text-slate-200">{t('matchRecovery.matchDetails')}</h3>
               <span className={`text-sm font-semibold ${outcomeDisplay.color}`}>
@@ -157,14 +141,14 @@ export function MatchRecoveryModal({
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Explanation */}
-          <div className="mb-6 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
-            <p className="text-sm text-blue-200 leading-relaxed">
+          <Alert variant="info" className="mb-6">
+            <p className="leading-relaxed">
               {t('matchRecovery.explanation')}
             </p>
-          </div>
+          </Alert>
 
           {/* Action Buttons */}
           <div className="space-y-3">
@@ -195,8 +179,6 @@ export function MatchRecoveryModal({
               <strong>{t('matchRecovery.tip')}</strong>
             </p>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

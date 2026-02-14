@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Repeat, X } from 'lucide-react';
+import { Repeat } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, MultiSelect } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
 import { formatPlayerDisplayName } from '../../utils/playerUtils';
 
 export function PlayerLoanModal({
@@ -113,42 +116,19 @@ export function PlayerLoanModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
-              <Repeat className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">
-                {isEditMode ? t('loanModal.header.titleEdit') : t('loanModal.header.titleNew')}
-              </h2>
-              <p className="text-sm text-slate-400">
-                {isEditMode ? t('loanModal.header.subtitleEdit') : t('loanModal.header.subtitleNew')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            aria-label={t('loanModal.header.closeLabel')}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <ModalShell
+      title={isEditMode ? t('loanModal.header.titleEdit') : t('loanModal.header.titleNew')}
+      subtitle={isEditMode ? t('loanModal.header.subtitleEdit') : t('loanModal.header.subtitleNew')}
+      icon={Repeat}
+      iconColor="sky"
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {errors.general && (
-            <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-              <p className="text-rose-200 text-sm">{errors.general}</p>
-            </div>
+            <Alert variant="error">{errors.general}</Alert>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('loanModal.form.labels.players')}
-            </label>
+          <FormGroup label={t('loanModal.form.labels.players')} error={errors.playerIds}>
             <MultiSelect
               value={formState.playerIds}
               onChange={(value) => handleChange('playerIds', value)}
@@ -156,42 +136,27 @@ export function PlayerLoanModal({
               placeholder={t('loanModal.form.placeholders.players')}
               disabled={loading}
             />
-            {errors.playerIds && (
-              <p className="mt-1 text-sm text-rose-400">{errors.playerIds}</p>
-            )}
-          </div>
+          </FormGroup>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('loanModal.form.labels.receivingTeam')}
-            </label>
+          <FormGroup label={t('loanModal.form.labels.receivingTeam')} error={errors.receivingTeamName}>
             <Input
               value={formState.receivingTeamName}
               onChange={(e) => handleChange('receivingTeamName', e.target.value)}
               placeholder={t('loanModal.form.placeholders.receivingTeam')}
               disabled={loading}
-              className={errors.receivingTeamName ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.receivingTeamName}
             />
-            {errors.receivingTeamName && (
-              <p className="mt-1 text-sm text-rose-400">{errors.receivingTeamName}</p>
-            )}
-          </div>
+          </FormGroup>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('loanModal.form.labels.loanDate')}
-            </label>
+          <FormGroup label={t('loanModal.form.labels.loanDate')} error={errors.loanDate}>
             <Input
               type="date"
               value={formState.loanDate}
               onChange={(e) => handleChange('loanDate', e.target.value)}
               disabled={loading}
-              className={errors.loanDate ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.loanDate}
             />
-            {errors.loanDate && (
-              <p className="mt-1 text-sm text-rose-400">{errors.loanDate}</p>
-            )}
-          </div>
+          </FormGroup>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
@@ -210,8 +175,7 @@ export function PlayerLoanModal({
               {loading ? t('loanModal.buttons.saving') : isEditMode ? t('loanModal.buttons.saveChanges') : t('loanModal.buttons.recordLoan')}
             </Button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }

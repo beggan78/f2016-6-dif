@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateLoginForm } from '../../utils/authValidation';
 import { getPrimaryErrorMessage, getErrorDisplayClasses } from '../../utils/authErrorHandling';
@@ -83,10 +84,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
 
       {/* Login Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
-            {t('login.form.emailLabel')}
-          </label>
+        <FormGroup label={t('login.form.emailLabel')} htmlFor="email" error={errors.email}>
           <Input
             id="email"
             type="email"
@@ -96,15 +94,9 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.email, 'field').container}
           />
-          {errors.email && (
-            <p className={getErrorDisplayClasses(!!errors.email, 'field').text}>{errors.email}</p>
-          )}
-        </div>
+        </FormGroup>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-            {t('login.form.passwordLabel')}
-          </label>
+        <FormGroup label={t('login.form.passwordLabel')} htmlFor="password" error={errors.password}>
           <Input
             id="password"
             type="password"
@@ -114,10 +106,7 @@ export function LoginForm({ onSwitchToSignup, onSwitchToReset, onSwitchToVerify,
             disabled={loading}
             className={getErrorDisplayClasses(!!errors.password, 'field').container}
           />
-          {errors.password && (
-            <p className={getErrorDisplayClasses(!!errors.password, 'field').text}>{errors.password}</p>
-          )}
-        </div>
+        </FormGroup>
 
         {/* Submit Button */}
         <Button

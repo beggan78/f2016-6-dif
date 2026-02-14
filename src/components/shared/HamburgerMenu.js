@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Users, UserPen, Dice5, Settings, Share2, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { VIEWS } from '../../constants/viewConstants';
 import { NotificationModal } from './UI';
+import { Avatar } from './Avatar';
 import { copyLiveMatchUrlToClipboard } from '../../utils/liveMatchLinkUtils';
 
 export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTacticalBoard, currentView, teamConfig, allPlayers, selectedSquadIds, onNavigateTo, authModal, onOpenTeamAdminModal, onOpenPreferencesModal, onSignOut, currentMatchId, matchState }) {
@@ -186,11 +188,9 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
                   {/* User Info */}
                   <div className="px-4 py-3 border-b border-slate-600">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-sky-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-medium">
-                          {getUserDisplayName().charAt(0).toUpperCase()}
-                        </span>
-                      </div>
+                      <Avatar size="md">
+                        {getUserDisplayName().charAt(0).toUpperCase()}
+                      </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-slate-100 text-sm font-medium truncate">
                           {getUserDisplayName()}
@@ -425,3 +425,20 @@ export function HamburgerMenu({ onRestartMatch, onAddPlayer, onNavigateToTactica
     </div>
   );
 }
+
+HamburgerMenu.propTypes = {
+  onRestartMatch: PropTypes.func.isRequired,
+  onAddPlayer: PropTypes.func.isRequired,
+  onNavigateToTacticalBoard: PropTypes.func.isRequired,
+  currentView: PropTypes.string.isRequired,
+  teamConfig: PropTypes.object,
+  allPlayers: PropTypes.array,
+  selectedSquadIds: PropTypes.array,
+  onNavigateTo: PropTypes.func,
+  authModal: PropTypes.object,
+  onOpenTeamAdminModal: PropTypes.func,
+  onOpenPreferencesModal: PropTypes.func,
+  onSignOut: PropTypes.func.isRequired,
+  currentMatchId: PropTypes.string,
+  matchState: PropTypes.string,
+};

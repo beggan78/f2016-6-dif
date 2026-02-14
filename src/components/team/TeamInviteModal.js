@@ -1,20 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Input, Select } from '../shared/UI';
+import { Button, Input, Select, Textarea } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { EmptyState } from '../shared/EmptyState';
+import { FormGroup } from '../shared/FormGroup';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { sanitizeEmailInput, sanitizeMessageInput, isValidEmailInput, isValidMessageInput } from '../../utils/inputSanitization';
-import { 
-  Mail, 
-  Users, 
-  CheckCircle, 
+import {
+  Mail,
+  Users,
+  CheckCircle,
   AlertTriangle,
-  X,
   Clock,
   UserCheck,
   RefreshCw,
   Trash2
 } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 
 export function TeamInviteModal({ isOpen, onClose, team }) {
   const { t } = useTranslation('team');
@@ -33,16 +38,10 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     message: ''
   });
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessageOriginal] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [pendingInvitations, setPendingInvitations] = useState([]);
   const [expiredInvitations, setExpiredInvitations] = useState([]);
   const [loadingInvitations, setLoadingInvitations] = useState(false);
-  
-  // Simplified setSuccessMessage wrapper for basic logging
-  const setSuccessMessage = (value) => {
-    console.log('✅ [TeamInviteModal] Setting success message:', value);
-    setSuccessMessageOriginal(value);
-  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -259,12 +258,6 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
     }
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   const getErrorMessage = () => {
     if (errors.general) return errors.general;
     if (error) return error;
@@ -287,53 +280,25 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={handleBackdropClick}
+    <>
+    <ModalShell
+      title={t('inviteModal.header.title')}
+      subtitle={team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : t('inviteModal.header.teamFallback')}
+      icon={Mail}
+      iconColor="sky"
+      onClose={onClose}
+      className="max-h-[90vh] overflow-y-auto"
     >
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-600">
-        {/* Modal Header */}
-        <div className="sticky top-0 bg-slate-800 border-b border-slate-600 px-6 py-4 flex justify-between items-center z-10">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
-              <Mail className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-sky-300">{t('inviteModal.header.title')}</h2>
-              <p className="text-sm text-slate-400">
-                {team?.name ? `${team.club?.long_name ? `${team.club.long_name} ` : ''}${team.name}` : t('inviteModal.header.teamFallback')}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            aria-label={t('inviteModal.header.closeLabel')}
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        {/* Modal Content */}
-        <div className="px-6 py-6">
-          <div className="space-y-6">
+      <div className="space-y-6">
             {/* Error Message */}
             {getErrorMessage() && (
-              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-                </div>
-              </div>
+              <Alert variant="error" icon={AlertTriangle}>{getErrorMessage()}</Alert>
             )}
 
             {/* Invitation Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Input */}
-              <div>
-                <label htmlFor="invite-email" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('inviteModal.form.labels.email')}
-                </label>
+              <FormGroup label={t('inviteModal.form.labels.email')} htmlFor="invite-email" error={errors.email}>
                 <Input
                   id="invite-email"
                   type="email"
@@ -349,18 +314,12 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   }}
                   placeholder={t('inviteModal.form.placeholders.email')}
                   disabled={loading}
-                  className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.email}
                 />
-                {errors.email && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.email}</p>
-                )}
-              </div>
+              </FormGroup>
 
               {/* Role Selection */}
-              <div>
-                <label htmlFor="invite-role" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('inviteModal.form.labels.role')}
-                </label>
+              <FormGroup label={t('inviteModal.form.labels.role')} htmlFor="invite-role" error={errors.role}>
                 <Select
                   id="invite-role"
                   value={formData.role}
@@ -381,22 +340,20 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                     ] : [])
                   ]}
                   disabled={loading}
-                  className={errors.role ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+                  error={!!errors.role}
                 />
-                {errors.role && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.role}</p>
-                )}
                 <p className="text-slate-500 text-xs mt-1">
                   {t('inviteModal.form.hints.role')}
                 </p>
-              </div>
+              </FormGroup>
 
               {/* Personal Message */}
-              <div>
-                <label htmlFor="invite-message" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('inviteModal.form.labels.message')} <span className="text-slate-500">{t('inviteModal.form.hints.messageOptional')}</span>
-                </label>
-                <textarea
+              <FormGroup
+                label={<>{t('inviteModal.form.labels.message')} <span className="text-slate-500">{t('inviteModal.form.hints.messageOptional')}</span></>}
+                htmlFor="invite-message"
+                error={errors.message}
+              >
+                <Textarea
                   id="invite-message"
                   value={formData.message}
                   onChange={(e) => {
@@ -409,20 +366,15 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                     }
                   }}
                   placeholder={t('inviteModal.form.placeholders.message')}
-                  className={`w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none ${
-                    errors.message ? 'border-rose-500 focus:ring-rose-400' : ''
-                  }`}
+                  error={!!errors.message}
                   rows={3}
                   maxLength={500}
                   disabled={loading}
                 />
-                {errors.message && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.message}</p>
-                )}
                 <p className="text-slate-500 text-xs mt-1">
                   {t('inviteModal.form.hints.characterCount', { count: formData.message.length })}
                 </p>
-              </div>
+              </FormGroup>
 
               {/* Submit Button */}
               <Button
@@ -455,21 +407,16 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                 </div>
 
                 {loadingInvitations ? (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-sky-400"></div>
-                    <span className="ml-2 text-slate-400 text-sm">{t('inviteModal.invitations.loading')}</span>
-                  </div>
+                  <LoadingSpinner size="md" message={t('inviteModal.invitations.loading')} className="py-4" />
                 ) : pendingInvitations.length === 0 ? (
-                  <div className="text-center py-4 text-slate-400">
-                    <Mail className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">{t('inviteModal.invitations.noPending')}</p>
-                  </div>
+                  <EmptyState icon={Mail} title={t('inviteModal.invitations.noPending')} className="py-4 bg-transparent border-0" />
                 ) : (
                   <div className="space-y-3">
                     {pendingInvitations.map((invitation) => (
-                      <div
+                      <Card
                         key={invitation.id}
-                        className="bg-slate-700/50 border border-slate-600 rounded-lg p-3"
+                        variant="subtle"
+                        padding="sm"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -498,7 +445,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                             <span className="text-amber-400 text-xs font-medium">{t('inviteModal.invitations.status.pending')}</span>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 )}
@@ -519,9 +466,11 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
 
                   <div className="space-y-3">
                     {expiredInvitations.map((invitation) => (
-                      <div
+                      <Card
                         key={invitation.id}
-                        className="bg-slate-700/50 border border-rose-600/30 rounded-lg p-3"
+                        variant="subtle"
+                        padding="sm"
+                        className="border-rose-600/30"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -564,7 +513,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                             </button>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 </div>
@@ -572,7 +521,7 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
             </div>
 
             {/* Info Box */}
-            <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+            <Card>
               <div className="flex items-start space-x-3">
                 <Users className="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5" />
                 <div>
@@ -585,22 +534,21 @@ export function TeamInviteModal({ isOpen, onClose, team }) {
                   </ul>
                 </div>
               </div>
-            </div>
+            </Card>
+      </div>
+    </ModalShell>
+
+    {/* Floating Success Toast */}
+    {successMessage && (
+      <div className="fixed top-4 right-4 z-[60] max-w-sm animate-in slide-in-from-right duration-300">
+        <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg border border-emerald-500">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="text-sm font-medium">{successMessage}</span>
           </div>
         </div>
       </div>
-
-      {/* Floating Success Toast */}
-      {successMessage && (
-        <div className="fixed top-4 right-4 z-[60] max-w-sm animate-in slide-in-from-right duration-300">
-          <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg border border-emerald-500">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{successMessage}</span>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    )}
+    </>
   );
 }

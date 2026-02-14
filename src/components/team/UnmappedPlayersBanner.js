@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Users, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Card } from '../shared/Card';
 
 /**
  * UnmappedPlayersBanner Component
@@ -18,7 +19,7 @@ export function UnmappedPlayersBanner({ firstProviderName, onNavigateToRoster })
   const { t } = useTranslation(['connectors', 'navigation']);
 
   return (
-    <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4 text-center">
+    <Card variant="highlighted" className="text-center">
       {/* Header Section */}
       <div className="flex items-start space-x-3 mb-4">
         <Users className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -42,7 +43,7 @@ export function UnmappedPlayersBanner({ firstProviderName, onNavigateToRoster })
           {t('navigation:goTo.rosterManagement')}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Shuffle, Cloud, Upload, Layers, UserPlus, Save, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Select, Button, NotificationModal, ThreeOptionModal } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { PERIOD_OPTIONS, DURATION_OPTIONS, getAlertOptions } from '../../constants/gameConfig';
 import { FORMATIONS, FORMATS, FORMAT_CONFIGS, getValidFormations, FORMATION_DEFINITIONS, createTeamConfig, getMinimumPlayersForFormat, getMaximumPlayersForFormat } from '../../constants/teamConfiguration';
 import { getInitialFormationTemplate } from '../../constants/gameModes';
@@ -1879,28 +1881,20 @@ export function ConfigurationScreen({
 
           {/* Sync Status Messages */}
           {syncStatus.message && (
-            <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">✓ {syncStatus.message}</p>
-            </div>
+            <Alert variant="success">✓ {syncStatus.message}</Alert>
           )}
 
           {syncStatus.error && (
-            <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
-              <p className="text-rose-200 text-sm">❌ {syncStatus.error}</p>
-            </div>
+            <Alert variant="error">{syncStatus.error}</Alert>
           )}
 
           {/* Save Configuration Status Messages */}
           {saveConfigStatus.message && (
-            <div className="p-3 bg-emerald-900/20 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">{saveConfigStatus.message}</p>
-            </div>
+            <Alert variant="success">{saveConfigStatus.message}</Alert>
           )}
 
           {saveConfigStatus.error && (
-            <div className="p-3 bg-rose-900/20 border border-rose-600 rounded-lg">
-              <p className="text-rose-200 text-sm">❌ {saveConfigStatus.error}</p>
-            </div>
+            <Alert variant="error">{saveConfigStatus.error}</Alert>
           )}
         </div>
       ) : (
@@ -1928,7 +1922,7 @@ export function ConfigurationScreen({
       </h2>
 
       {/* Squad Selection */}
-      <div className="p-3 bg-slate-700 rounded-md">
+      <Card padding="sm">
         <h3 className="text-base font-medium text-sky-200 mb-2">
           {hasNoTeamPlayers
             ? t('configuration:squad.addPlayerTitle')
@@ -2018,7 +2012,7 @@ export function ConfigurationScreen({
             )}
           </>
         )}
-      </div>
+      </Card>
 
       {/* Connector Onboarding - shown when 0-3 players and no connected provider */}
       {shouldShowOnboarding && (
@@ -2028,7 +2022,7 @@ export function ConfigurationScreen({
       )}
 
       {/* Match Details */}
-      <div className="p-3 bg-slate-700 rounded-md space-y-4">
+      <Card padding="sm" className="space-y-4">
         <div>
           <label htmlFor="opponentTeam" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:matchDetails.opponentLabel')}</label>
           <OpponentNameAutocomplete
@@ -2066,10 +2060,10 @@ export function ConfigurationScreen({
             }))}
           />
         </div>
-      </div>
+      </Card>
 
       {/* Game Settings */}
-      <div className="p-3 bg-slate-700 rounded-md grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <Card padding="sm" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label htmlFor="numPeriods" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.periodsLabel')}</label>
           <Select value={numPeriods} onChange={value => setNumPeriods(Number(value))} options={PERIOD_OPTIONS} id="numPeriods" />
@@ -2082,9 +2076,9 @@ export function ConfigurationScreen({
           <label htmlFor="alertMinutes" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:gameSettings.alertLabel')}</label>
           <Select value={alertMinutes} onChange={value => setAlertMinutes(Number(value))} options={getAlertOptions(t)} id="alertMinutes" />
         </div>
-      </div>
+      </Card>
 
-      <div className="p-3 bg-slate-700 rounded-md">
+      <Card padding="sm">
         <h3 className="text-base font-medium text-sky-200 mb-2 flex items-center">
           <Layers className="mr-2 h-4 w-4" />
           {t('configuration:formation.header')}
@@ -2129,12 +2123,12 @@ export function ConfigurationScreen({
             </p>
           )}
         </div>
-      </div>
+      </Card>
 
 
       {/* Goalie Assignment */}
       {withinFormatBounds && (
-        <div className="p-3 bg-slate-700 rounded-md">
+        <Card padding="sm">
           <h3 className="text-base font-medium text-sky-200 mb-2">{t('configuration:goalies.header')}</h3>
           <div className="space-y-2">
             {Array.from({ length: numPeriods }, (_, i) => i + 1).map(period => (
@@ -2150,12 +2144,12 @@ export function ConfigurationScreen({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Captain Assignment */}
       {selectedSquadIds.length >= minPlayersRequired && teamPreferences?.teamCaptain !== 'none' && (
-        <div className="p-3 bg-slate-700 rounded-md">
+        <Card padding="sm">
           <h3 className="text-base font-medium text-sky-200 mb-2">{t('configuration:captain.header')}</h3>
           <div>
             <label htmlFor="captain" className="block text-sm font-medium text-sky-200 mb-1">{t('configuration:captain.label')}</label>
@@ -2167,7 +2161,7 @@ export function ConfigurationScreen({
             />
             <p className="text-xs text-slate-400 mt-1">{t('configuration:captain.hint')}</p>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Save Configuration Button - Only show for authenticated users with team context */}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
 /**
  * Custom tooltip component designed for mobile/tablet use
@@ -49,7 +50,7 @@ export function Tooltip({
       document.removeEventListener('touchstart', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen]); // containerRef omitted - refs are stable and don't need deps
 
   const toggleTooltip = (e) => {
     e.preventDefault();
@@ -107,3 +108,12 @@ export function Tooltip({
     </div>
   );
 }
+
+Tooltip.propTypes = {
+  children: PropTypes.node.isRequired,
+  content: PropTypes.node.isRequired,
+  position: PropTypes.oneOf(['top', 'bottom', 'left', 'right']),
+  trigger: PropTypes.oneOf(['click', 'hover']),
+  className: PropTypes.string,
+  contentClassName: PropTypes.string,
+};

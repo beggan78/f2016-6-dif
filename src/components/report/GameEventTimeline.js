@@ -19,6 +19,7 @@ import { createPersistenceManager } from '../../utils/persistenceManager';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
+import { EmptyState } from '../shared/EmptyState';
 
 const getOrdinal = (event) => typeof event?.ordinal === 'number' ? event.ordinal : null;
 const getTimestamp = (event) => typeof event?.timestamp === 'number' ? event.timestamp : null;
@@ -828,10 +829,7 @@ export function GameEventTimeline({
 
   if (!events || events.length === 0) {
     return (
-      <div className="text-center py-8">
-        <Clock className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-        <p className="text-slate-400">{t('timeline.noEvents')}</p>
-      </div>
+      <EmptyState icon={Clock} title={t('timeline.noEvents')} />
     );
   }
 

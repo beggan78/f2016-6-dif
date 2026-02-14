@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 export function StatusBadge({
   label,
@@ -18,3 +19,12 @@ export function StatusBadge({
     </span>
   );
 }
+
+StatusBadge.propTypes = {
+  label: PropTypes.string.isRequired,
+  colorClass: PropTypes.string,
+  icon: PropTypes.elementType,
+  iconClassName: PropTypes.string,
+  className: PropTypes.string,
+  children: PropTypes.node,
+};

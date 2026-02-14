@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react';
+import { UserCheck, Trash2, AlertTriangle, Shield, Lock } from 'lucide-react';
 import { Button, Select } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Avatar } from '../shared/Avatar';
+import { Card } from '../shared/Card';
+import { EmptyState } from '../shared/EmptyState';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -192,38 +197,23 @@ export function TeamRoleManagementModal({
   const hasPendingChanges = Object.keys(pendingChanges).length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <UserCheck className="w-6 h-6 text-sky-400" />
-            <h2 className="text-xl font-semibold text-slate-100">{t('roleManagement.title')}</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-300 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
+    <ModalShell
+      title={t('roleManagement.title')}
+      icon={UserCheck}
+      iconColor="sky"
+      onClose={onClose}
+      maxWidth="2xl"
+      className="max-h-[90vh] overflow-hidden"
+    >
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="overflow-y-auto max-h-[60vh]">
           {/* Messages */}
           {error && (
-            <div className="mb-4 p-3 bg-rose-900/50 border border-rose-600 rounded-lg">
-              <p className="text-rose-200 text-sm flex items-center">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                {error}
-              </p>
-            </div>
+            <Alert variant="error" icon={AlertTriangle} className="mb-4">{error}</Alert>
           )}
 
           {successMessage && (
-            <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-              <p className="text-emerald-200 text-sm">{successMessage}</p>
-            </div>
+            <Alert variant="success" className="mb-4">{successMessage}</Alert>
           )}
 
           {/* Team Info */}
@@ -263,27 +253,21 @@ export function TeamRoleManagementModal({
               const canRemove = !isCurrentUserMember && !isAdminMember;
 
               return (
-                <div
+                <Card
                   key={member.id}
-                  className={`p-4 bg-slate-700 rounded-lg border ${
-                    hasChange ? 'border-amber-500' : 'border-slate-600'
-                  }`}
+                  className={hasChange ? 'border-amber-500' : ''}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center relative ${
-                          isAdminMember ? 'bg-emerald-600' : 'bg-sky-600'
-                        }`}>
-                          <span className="text-white font-medium">
-                            {(member.user?.name || member.user?.email)?.charAt(0).toUpperCase() || '?'}
-                          </span>
+                        <Avatar size="lg" color={isAdminMember ? 'emerald' : 'sky'} className="relative">
+                          {(member.user?.name || member.user?.email)?.charAt(0).toUpperCase() || '?'}
                           {isAdminMember && (
                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
                               <Shield className="w-2.5 h-2.5 text-amber-900" />
                             </div>
                           )}
-                        </div>
+                        </Avatar>
                         <div>
                           <div className="flex items-center space-x-2">
                             <p className="text-slate-100 font-medium">
@@ -364,20 +348,18 @@ export function TeamRoleManagementModal({
                       </button>
                     </div>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
 
           {members.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
-              {t('roleManagement.noMembers')}
-            </div>
+            <EmptyState title={t('roleManagement.noMembers')} />
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-slate-600">
+        <div className="flex items-center justify-between pt-6 border-t border-slate-600">
           <div className="text-sm text-slate-400">
             {hasPendingChanges && (
               <span className="text-amber-400">
@@ -406,7 +388,6 @@ export function TeamRoleManagementModal({
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
