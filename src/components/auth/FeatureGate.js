@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
 import { AuthButtonPair } from './AuthButtons';
@@ -90,7 +91,7 @@ export function FeatureGate({
   // Compact inline gate
   if (compact) {
     return (
-      <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-600">
+      <Card variant="dark" padding="sm" className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-sky-600 rounded-lg flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +108,7 @@ export function FeatureGate({
           variant="compact"
           signUpText={t('featureGate.signUp')}
         />
-      </div>
+      </Card>
     );
   }
 
@@ -145,7 +146,7 @@ export function FeatureGate({
 
       {/* Standard gate without preview */}
       {!showPreview && (
-        <div className="text-center p-6 bg-slate-800 rounded-lg border border-slate-600">
+        <Card variant="dark" padding="lg" className="text-center">
           <div className="w-12 h-12 bg-sky-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -165,7 +166,7 @@ export function FeatureGate({
           >
             {t('featureGate.learnMore')}
           </button>
-        </div>
+        </Card>
       )}
     </div>
   );

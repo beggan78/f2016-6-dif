@@ -4,8 +4,11 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { X, Users, Trophy, Sword, Shield, RotateCcw, ArrowDownUp, Hand } from 'lucide-react';
+import { Users, Trophy, Sword, Shield, RotateCcw, ArrowDownUp, Hand } from 'lucide-react';
+import { ModalShell } from './ModalShell';
+import { Card } from './Card';
 import { getPlayerName } from '../../utils/playerUtils';
 import { getPlayerCurrentRole } from '../../utils/playerSortingUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -144,32 +147,17 @@ const GoalScorerModal = ({
 
   // Main modal
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden shadow-xl border border-slate-600">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-600">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-sky-300 flex items-center space-x-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                <span>{modalConfig.title}</span>
-              </h2>
-              <p className="text-sm text-slate-400 mt-1">{modalConfig.subtitle}</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
+    <ModalShell
+      title={modalConfig.title}
+      icon={Trophy}
+      iconColor="amber"
+      onClose={onClose}
+      className="max-h-[90vh] overflow-hidden"
+    >
+          <p className="text-sm text-slate-400 -mt-2 mb-4">{modalConfig.subtitle}</p>
           {/* Current scorer display for correct/view modes */}
           {(mode === 'correct' || mode === 'view') && (currentScorerId !== undefined || existingGoalData) && (
-            <div className="mb-6 p-4 bg-slate-700 rounded-lg border border-slate-600">
+            <Card className="mb-6">
               <div className="flex items-center space-x-2 mb-2">
                 <Users className="w-4 h-4 text-sky-400" />
                 <span className="text-sm font-medium text-sky-300">{t('modals:goalScorer.currentScorer')}</span>
@@ -180,7 +168,7 @@ const GoalScorerModal = ({
                   : t('modals:goalScorer.noScorerRecorded')
                 }
               </p>
-            </div>
+            </Card>
           )}
 
           {/* Player selection */}
@@ -263,10 +251,9 @@ const GoalScorerModal = ({
               </div>
             </div>
           )}
-        </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-600">
+        <div className="pt-4 border-t border-slate-600">
           <div className="flex justify-end space-x-3">
             <button
               onClick={onClose}
@@ -285,9 +272,22 @@ const GoalScorerModal = ({
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
+};
+
+GoalScorerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSelectScorer: PropTypes.func,
+  onCorrectGoal: PropTypes.func,
+  eligiblePlayers: PropTypes.array,
+  mode: PropTypes.oneOf(['new', 'correct', 'view']),
+  eventId: PropTypes.string,
+  currentScorerId: PropTypes.string,
+  existingGoalData: PropTypes.object,
+  matchTime: PropTypes.string,
+  goalType: PropTypes.oneOf(['scored', 'conceded']),
 };
 
 export default GoalScorerModal;

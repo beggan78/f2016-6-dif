@@ -84,16 +84,17 @@ describe('PlayerLoanModal', () => {
     });
 
     it('displays close button in header', () => {
-      render(<PlayerLoanModal {...defaultProps} />);
+      const { container } = render(<PlayerLoanModal {...defaultProps} />);
 
-      const closeButton = screen.getByLabelText('Close');
+      // ModalShell renders X icon as close button
+      const closeButton = container.querySelector('button');
       expect(closeButton).toBeInTheDocument();
     });
 
     it('displays Repeat icon in header', () => {
       const { container } = render(<PlayerLoanModal {...defaultProps} />);
 
-      const iconContainer = container.querySelector('.bg-sky-600.rounded-full');
+      const iconContainer = container.querySelector('.bg-sky-500\\/20.rounded-full');
       expect(iconContainer).toBeInTheDocument();
       expect(iconContainer.querySelector('svg')).toBeInTheDocument();
     });
@@ -506,9 +507,10 @@ describe('PlayerLoanModal', () => {
     });
 
     it('closes modal when close icon is clicked', () => {
-      render(<PlayerLoanModal {...defaultProps} />);
+      const { container } = render(<PlayerLoanModal {...defaultProps} />);
 
-      const closeButton = screen.getByLabelText('Close');
+      // ModalShell renders X icon as close button (first button in the dialog)
+      const closeButton = container.querySelector('.absolute.top-3.right-3');
       fireEvent.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalled();

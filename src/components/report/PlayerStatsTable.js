@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatTime, formatPlayerName } from '../../utils/formatUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
+import { EmptyState } from '../shared/EmptyState';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
 
 /**
@@ -270,11 +271,7 @@ export function PlayerStatsTable({
 
   if (!sortedPlayers.length) {
     return (
-      <div className="bg-slate-700 rounded-lg border border-slate-600 overflow-hidden">
-        <div className="text-center py-8 text-slate-400">
-          <p>{t('table.noStats')}</p>
-        </div>
-      </div>
+      <EmptyState title={t('table.noStats')} />
     );
   }
 

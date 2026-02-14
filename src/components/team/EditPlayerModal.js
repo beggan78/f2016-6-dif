@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Select } from '../shared/UI';
-import { Edit3, X } from 'lucide-react';
+import { Alert } from '../shared/Alert';
+import { FormGroup } from '../shared/FormGroup';
+import { Edit3 } from 'lucide-react';
+import { ModalShell } from '../shared/ModalShell';
 
 export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAvailableJerseyNumbers }) {
   const { t } = useTranslation('team');
@@ -122,40 +125,20 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
   if (!player) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg border border-slate-600 w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center">
-              <Edit3 className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('editRosterPlayerModal.header.title')}</h2>
-              <p className="text-sm text-slate-400">{t('editRosterPlayerModal.header.subtitle', { playerName: player.display_name })}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <ModalShell
+      title={t('editRosterPlayerModal.header.title')}
+      subtitle={t('editRosterPlayerModal.header.subtitle', { playerName: player.display_name })}
+      icon={Edit3}
+      iconColor="sky"
+      onClose={onClose}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* General Error */}
           {errors.general && (
-            <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-              <p className="text-rose-200 text-sm">{errors.general}</p>
-            </div>
+            <Alert variant="error">{errors.general}</Alert>
           )}
           {/* First Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.firstName')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.firstName')} error={errors.first_name}>
             <Input
               name="first_name"
               value={playerData.first_name}
@@ -163,73 +146,52 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               onBlur={handleFirstNameBlur}
               placeholder={t('editRosterPlayerModal.form.placeholders.firstName')}
               disabled={loading}
-              className={errors.first_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.first_name}
             />
-            {errors.first_name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.first_name}</p>
-            )}
-          </div>
+          </FormGroup>
 
           {/* Last Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.lastName')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.lastName')} error={errors.last_name}>
             <Input
               name="last_name"
               value={playerData.last_name}
               onChange={(e) => handleInputChange('last_name', e.target.value)}
               placeholder={t('editRosterPlayerModal.form.placeholders.lastName')}
               disabled={loading}
-              className={errors.last_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.last_name}
             />
-            {errors.last_name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.last_name}</p>
-            )}
-          </div>
+          </FormGroup>
 
           {/* Display Name */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.displayName')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.displayName')} error={errors.display_name}>
             <Input
               name="display_name"
               value={playerData.display_name}
               onChange={(e) => handleInputChange('display_name', e.target.value)}
               placeholder={t('editRosterPlayerModal.form.placeholders.displayName')}
               disabled={loading}
-              className={errors.display_name ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.display_name}
             />
-            {errors.display_name && (
-              <p className="mt-1 text-sm text-rose-400">{errors.display_name}</p>
-            )}
             <p className="mt-1 text-xs text-slate-400">
               {t('editRosterPlayerModal.form.helperText.displayName')}
             </p>
-          </div>
+          </FormGroup>
 
           {/* Jersey Number */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              {t('editRosterPlayerModal.form.labels.jerseyNumber')}
-            </label>
+          <FormGroup label={t('editRosterPlayerModal.form.labels.jerseyNumber')} error={errors.jersey_number}>
             <Select
               value={playerData.jersey_number}
               onChange={(value) => handleInputChange('jersey_number', value)}
               options={jerseyOptions}
               disabled={loading}
-              className={errors.jersey_number ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.jersey_number}
             />
-            {errors.jersey_number && (
-              <p className="mt-1 text-sm text-rose-400">{errors.jersey_number}</p>
-            )}
             {availableNumbers.length === 0 && !currentJersey && (
               <p className="mt-1 text-sm text-amber-400">
                 {t('editRosterPlayerModal.jerseyNumber.allTaken')}
               </p>
             )}
-          </div>
+          </FormGroup>
 
           {/* Roster Status */}
           <div className="flex items-center space-x-3">
@@ -303,8 +265,7 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               {t('editRosterPlayerModal.buttons.cancel')}
             </Button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </ModalShell>
   );
 }

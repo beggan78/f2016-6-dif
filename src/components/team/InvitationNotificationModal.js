@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
+import { ModalShell } from '../shared/ModalShell';
 import { useTeam } from '../../contexts/TeamContext';
 import { useTranslation } from 'react-i18next';
 import {
@@ -135,33 +138,17 @@ export function InvitationNotificationModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <Users className="w-6 h-6 text-blue-400" />
-              <h2 className="text-xl font-semibold text-slate-100">
-                {t('invitationNotification.title')}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
-              aria-label={t('invitationNotification.closeLabel')}
-            >
-              ✕
-            </button>
-          </div>
-
+    <ModalShell
+      title={t('invitationNotification.title')}
+      icon={Users}
+      iconColor="blue"
+      onClose={onClose}
+      maxWidth="2xl"
+      className="max-h-[90vh] overflow-y-auto"
+    >
           {/* Success Message */}
           {successMessage && (
-            <div className="mb-4 p-3 bg-emerald-900/50 border border-emerald-600 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                <span className="text-emerald-200 text-sm">{successMessage}</span>
-              </div>
-            </div>
+            <Alert variant="success" icon={CheckCircle} className="mb-4">{successMessage}</Alert>
           )}
 
           <p className="text-slate-300 text-sm mb-6">
@@ -173,9 +160,9 @@ export function InvitationNotificationModal({
           {/* Invitations List */}
           <div className="space-y-4">
             {invitations.map((invitation) => (
-              <div
+              <Card
                 key={invitation.id}
-                className="border border-slate-600 rounded-lg p-4 bg-slate-700/50"
+                variant="subtle"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -244,7 +231,7 @@ export function InvitationNotificationModal({
                     )}
                   </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
@@ -255,8 +242,6 @@ export function InvitationNotificationModal({
               </Button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

@@ -7,6 +7,11 @@ import { filterMatchesByCriteria } from '../../utils/matchFilterUtils';
 import { getOutcomeBadgeClasses } from '../../utils/badgeUtils';
 import { MatchFiltersPanel } from './MatchFiltersPanel';
 import { useStatsFilters } from '../../hooks/useStatsFilters';
+import { StatsLoadingState } from './shared/StatsLoadingState';
+import { StatsErrorState } from './shared/StatsErrorState';
+import { StatsEmptyState } from './shared/StatsEmptyState';
+import { Card } from '../shared/Card';
+import { SectionHeader } from '../shared/SectionHeader';
 
 export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   const { t } = useTranslation('statistics');
@@ -139,36 +144,17 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">{t('teamStats.loading')}</div>
-        </div>
-      </div>
-    );
+    return <StatsLoadingState message={t('teamStats.loading')} />;
   }
 
   // Show error state
   if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-red-400 mb-2">{t('teamStats.error')}</div>
-          <div className="text-slate-400 text-sm">{error}</div>
-        </div>
-      </div>
-    );
+    return <StatsErrorState title={t('teamStats.error')} message={error} />;
   }
 
   // Show empty state if no matches at all
   if (!loading && matches.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">{t('teamStats.noStats')}</div>
-        </div>
-      </div>
-    );
+    return <StatsEmptyState title={t('teamStats.noStats')} />;
   }
 
   // Show message if filters resulted in no matches
@@ -192,10 +178,10 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
           onFormatFilterChange={setFormatFilter}
           onClearAllFilters={clearAllFilters}
         />
-        <div className="bg-slate-700 p-8 rounded-lg border border-slate-600 text-center">
-          <div className="text-slate-400">{t('teamStats.noMatchesFiltered')}</div>
-          <p className="text-slate-500 text-sm mt-2">{t('teamStats.adjustFilters')}</p>
-        </div>
+        <StatsEmptyState
+          title={t('teamStats.noMatchesFiltered')}
+          message={t('teamStats.adjustFilters')}
+        />
       </div>
     );
   }
@@ -230,7 +216,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
   ];
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend }) => (
-    <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+    <Card>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-2 rounded-lg">
@@ -254,7 +240,7 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 
   const getResultBadge = (result) => getOutcomeBadgeClasses(result, {
@@ -315,11 +301,8 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
       {/* Goals and Match Outcomes Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Goals Section */}
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <div className="flex items-center space-x-2 mb-4">
-            <Target className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">{t('teamStats.sections.goals')}</h3>
-          </div>
+        <Card>
+          <SectionHeader title={t('teamStats.sections.goals')} icon={Target} className="mb-4" />
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-slate-300">{t('teamStats.labels.goalsScored')}</span>
@@ -339,14 +322,11 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
               </span>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Match Outcomes Section */}
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-          <div className="flex items-center space-x-2 mb-4">
-            <PieChart className="h-5 w-5 text-sky-400" />
-            <h3 className="text-lg font-semibold text-sky-400">{t('teamStats.sections.matchOutcomes')}</h3>
-          </div>
+        <Card>
+          <SectionHeader title={t('teamStats.sections.matchOutcomes')} icon={PieChart} className="mb-4" />
           <div className="space-y-3">
             {matchOutcomes.map(({ label, count }) => (
               <div
@@ -363,15 +343,12 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Recent Matches */}
-      <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
-        <div className="flex items-center space-x-2 mb-4">
-          <Clock className="h-5 w-5 text-sky-400" />
-          <h3 className="text-lg font-semibold text-sky-400">{t('teamStats.sections.recentMatches')}</h3>
-        </div>
+      <Card>
+        <SectionHeader title={t('teamStats.sections.recentMatches')} icon={Clock} className="mb-4" />
         <div className="space-y-3">
           {recentMatches.map((match) => (
             <div
@@ -402,11 +379,11 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+        <Card>
           <h4 className="text-slate-300 font-medium mb-2">{t('teamStats.sections.homeRecord')}</h4>
           <div className="text-slate-100">
             <span className="text-xl font-semibold">{homeRecord.wins}</span>
@@ -416,9 +393,9 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
             {homeRecord.draws} {t('teamStats.record.draws')}, {homeRecord.losses} {homeRecord.losses === 1 ? t('teamStats.record.loss') : t('teamStats.record.losses')}
             {homeRecord.total > 0 && ` (${homeRecord.total} ${t('teamStats.labels.total')})`}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+        <Card>
           <h4 className="text-slate-300 font-medium mb-2">{t('teamStats.sections.awayRecord')}</h4>
           <div className="text-slate-100">
             <span className="text-xl font-semibold">{awayRecord.wins}</span>
@@ -428,16 +405,16 @@ export function TeamStatsView({ startDate, endDate, onMatchSelect }) {
             {awayRecord.draws} {t('teamStats.record.draws')}, {awayRecord.losses} {awayRecord.losses === 1 ? t('teamStats.record.loss') : t('teamStats.record.losses')}
             {awayRecord.total > 0 && ` (${awayRecord.total} ${t('teamStats.labels.total')})`}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-slate-700 p-4 rounded-lg border border-slate-600">
+        <Card>
           <h4 className="text-slate-300 font-medium mb-2">{t('teamStats.sections.cleanSheets')}</h4>
           <div className="text-slate-100">
             <span className="text-xl font-semibold">{cleanSheets}</span>
             <span className="text-slate-400 text-sm ml-1">{t('teamStats.labels.matches')}</span>
           </div>
           <div className="text-slate-400 text-sm">{cleanSheetPercentage}% {t('teamStats.labels.ofTotal')}</div>
-        </div>
+        </Card>
       </div>
     </div>
   );

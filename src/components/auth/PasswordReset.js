@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input, Button } from '../shared/UI';
+import { FormGroup } from '../shared/FormGroup';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { validateOtpCode } from '../../utils/authValidation';
 import { detectResetTokens, clearResetTokensFromUrl, isPasswordResetSession } from '../../utils/resetTokenUtils';
@@ -194,7 +197,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         </div>
         
         {mode !== RESET_MODES.UPDATE && (
-          <div className="bg-sky-900/50 border border-sky-600 rounded-lg p-4">
+          <Alert variant="info">
             <div className="space-y-2 text-sky-200 text-sm">
               <p>{t('auth:passwordReset.code.success.sentTo')} <strong>{email}</strong></p>
               <p>{t('auth:passwordReset.code.success.instructions')}</p>
@@ -202,7 +205,7 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                 {t('auth:passwordReset.code.success.spamNote')}
               </p>
             </div>
-          </div>
+          </Alert>
         )}
 
         {mode === RESET_MODES.UPDATE ? (
@@ -228,16 +231,11 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           <div className="space-y-4">
             {/* Code input form */}
             {getErrorMessage() && (
-              <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-                <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-              </div>
+              <Alert variant="error">{getErrorMessage()}</Alert>
             )}
 
             <form onSubmit={handleCodeSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="reset-code" className="block text-sm font-medium text-slate-300 mb-2">
-                  {t('auth:passwordReset.code.form.codeLabel')}
-                </label>
+              <FormGroup label={t('auth:passwordReset.code.form.codeLabel')} htmlFor="reset-code" error={errors.code}>
                 <Input
                   id="reset-code"
                   type="text"
@@ -253,17 +251,15 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
                   }}
                   placeholder={t('auth:passwordReset.code.form.codePlaceholder')}
                   disabled={loading}
-                  className={`text-center text-lg tracking-widest ${errors.code ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}`}
+                  className="text-center text-lg tracking-widest"
+                  error={!!errors.code}
                   maxLength={6}
                   autoComplete="one-time-code"
                 />
-                {errors.code && (
-                  <p className="text-rose-400 text-sm mt-1">{errors.code}</p>
-                )}
                 <p className="text-slate-500 text-xs mt-1">
                   {t('auth:passwordReset.code.form.codeHint')}
                 </p>
-              </div>
+              </FormGroup>
 
               <Button
                 type="submit"
@@ -318,16 +314,11 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         </div>
 
         {getErrorMessage() && (
-          <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-            <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-          </div>
+          <Alert variant="error">{getErrorMessage()}</Alert>
         )}
 
         <form onSubmit={handleEmailSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="reset-email" className="block text-sm font-medium text-slate-300 mb-2">
-              {t('auth:passwordReset.email.form.emailLabel')}
-            </label>
+          <FormGroup label={t('auth:passwordReset.email.form.emailLabel')} htmlFor="reset-email" error={errors.email}>
             <Input
               id="reset-email"
               type="email"
@@ -340,12 +331,9 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               }}
               placeholder={t('auth:passwordReset.email.form.emailPlaceholder')}
               disabled={loading}
-              className={errors.email ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.email}
             />
-            {errors.email && (
-              <p className="text-rose-400 text-sm mt-1">{errors.email}</p>
-            )}
-          </div>
+          </FormGroup>
 
           <Button
             type="submit"
@@ -358,14 +346,14 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           </Button>
         </form>
 
-        <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+        <Card>
           <h4 className="text-slate-300 font-medium mb-2">{t('auth:passwordReset.email.info.title')}</h4>
           <ul className="text-slate-400 text-sm space-y-1">
             {t('auth:passwordReset.email.info.steps', { returnObjects: true }).map((step, index) => (
               <li key={index}>• {step}</li>
             ))}
           </ul>
-        </div>
+        </Card>
 
         <div className="text-center">
           <button
@@ -400,16 +388,11 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
         </div>
 
         {getErrorMessage() && (
-          <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
-            <p className="text-rose-200 text-sm">{getErrorMessage()}</p>
-          </div>
+          <Alert variant="error">{getErrorMessage()}</Alert>
         )}
 
         <form onSubmit={handlePasswordSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="new-password" className="block text-sm font-medium text-slate-300 mb-2">
-              {t('auth:passwordReset.update.form.newPasswordLabel')}
-            </label>
+          <FormGroup label={t('auth:passwordReset.update.form.newPasswordLabel')} htmlFor="new-password" error={errors.newPassword}>
             <Input
               id="new-password"
               type="password"
@@ -422,17 +405,11 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               }}
               placeholder={t('auth:passwordReset.update.form.newPasswordPlaceholder')}
               disabled={loading}
-              className={errors.newPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.newPassword}
             />
-            {errors.newPassword && (
-              <p className="text-rose-400 text-sm mt-1">{errors.newPassword}</p>
-            )}
-          </div>
+          </FormGroup>
 
-          <div>
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-300 mb-2">
-              {t('auth:passwordReset.update.form.confirmPasswordLabel')}
-            </label>
+          <FormGroup label={t('auth:passwordReset.update.form.confirmPasswordLabel')} htmlFor="confirm-password" error={errors.confirmPassword}>
             <Input
               id="confirm-password"
               type="password"
@@ -445,12 +422,9 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
               }}
               placeholder={t('auth:passwordReset.update.form.confirmPasswordPlaceholder')}
               disabled={loading}
-              className={errors.confirmPassword ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : ''}
+              error={!!errors.confirmPassword}
             />
-            {errors.confirmPassword && (
-              <p className="text-rose-400 text-sm mt-1">{errors.confirmPassword}</p>
-            )}
-          </div>
+          </FormGroup>
 
           <Button
             type="submit"
@@ -463,14 +437,14 @@ export function PasswordReset({ onSwitchToLogin, onClose, initialEmail = '' }) {
           </Button>
         </form>
 
-        <div className="bg-slate-700 border border-slate-600 rounded-lg p-4">
+        <Card>
           <h4 className="text-slate-300 font-medium mb-2">{t('auth:passwordReset.update.requirements.title')}</h4>
           <ul className="text-slate-400 text-sm space-y-1">
             {t('auth:passwordReset.update.requirements.items', { returnObjects: true }).map((item, index) => (
               <li key={index}>• {item}</li>
             ))}
           </ul>
-        </div>
+        </Card>
       </div>
     );
   }

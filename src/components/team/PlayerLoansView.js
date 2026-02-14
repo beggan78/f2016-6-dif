@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, ChevronDown, ChevronUp, Edit3, Filter, PlusCircle, Repeat, Trash2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, ConfirmationModal, MultiSelect, Select } from '../shared/UI';
+import { IconButton } from '../shared/IconButton';
+import { Alert } from '../shared/Alert';
+import { Avatar } from '../shared/Avatar';
+import { SectionHeader } from '../shared/SectionHeader';
 import { PlayerLoanModal } from './PlayerLoanModal';
 import { useBrowserBackIntercept } from '../../hooks/useBrowserBackIntercept';
 import { useTeam } from '../../contexts/TeamContext';
@@ -465,10 +469,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center space-x-2">
-          <Repeat className="h-5 w-5 text-sky-400" />
-          <h3 className="text-lg font-semibold text-sky-300">{t('loansView.header.title')}</h3>
-        </div>
+        <SectionHeader title={t('loansView.header.title')} icon={Repeat} />
         {canManageTeam && (
         <Button onClick={handleOpenLoanModal} Icon={PlusCircle} size="sm">
           {t('loansView.header.newLoanButton')}
@@ -569,18 +570,18 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       </div>
 
       {error && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3 flex items-center justify-between gap-4">
-          <p className="text-rose-200 text-sm">{error}</p>
-          <Button onClick={handleRetry} variant="secondary" size="sm">
-            {t('loansView.messages.retry')}
-          </Button>
-        </div>
+        <Alert variant="error">
+          <div className="flex items-center justify-between gap-4">
+            <span>{error}</span>
+            <Button onClick={handleRetry} variant="secondary" size="sm">
+              {t('loansView.messages.retry')}
+            </Button>
+          </div>
+        </Alert>
       )}
 
       {successMessage && (
-        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {loading ? (
@@ -623,14 +624,13 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
-                      <button
-                        type="button"
+                      <IconButton
                         onClick={() => handleDeleteMatchConfirm(match)}
-                        className="p-1 text-slate-400 hover:text-rose-400"
-                        aria-label={t('loansView.match.deleteLabel')}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        icon={Trash2}
+                        label={t('loansView.match.deleteLabel')}
+                        variant="danger"
+                        size="sm"
+                      />
                     </div>
                   )}
                 </div>
@@ -647,15 +647,15 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
                           player.isDeleted ? 'bg-slate-700/60' : 'bg-slate-700'
                         }`}
                       >
-                        <div className="w-6 h-6 bg-sky-600 rounded-full flex items-center justify-center shrink-0">
+                        <Avatar size="sm">
                           {player.jerseyNumber ? (
-                            <span className="text-white text-xs font-semibold">
+                            <span className="font-semibold">
                               {player.jerseyNumber}
                             </span>
                           ) : (
-                            <User className="w-3 h-3 text-white" />
+                            <User className="w-3 h-3" />
                           )}
-                        </div>
+                        </Avatar>
                         <span
                           className={`text-sm ${
                             player.isDeleted ? 'text-slate-400' : 'text-slate-200'

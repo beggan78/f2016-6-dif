@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, BarChart3, Users, History, Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { Card } from '../shared/Card';
+import { TabBar } from '../shared/TabBar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTeam } from '../../contexts/TeamContext';
 import { useAuthModalIntegration } from '../../hooks/useAuthModalIntegration';
@@ -266,10 +269,10 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
           )}
         </div>
       </div>
-      <div className="bg-slate-800 border border-slate-600 rounded-lg p-6 text-center space-y-4">
+      <Card variant="dark" padding="lg" className="text-center space-y-4">
         <p className="text-slate-300 text-sm">{body}</p>
         {actions}
-      </div>
+      </Card>
     </div>
   );
 
@@ -291,10 +294,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
           </div>
         </div>
         <div className="flex justify-center py-10">
-          <div className="flex items-center space-x-3 text-slate-400">
-            <div className="h-5 w-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-            <span>{tStats('screen.fetchingData')}</span>
-          </div>
+          <LoadingSpinner size="sm" message={tStats('screen.fetchingData')} />
         </div>
       </div>
     );
@@ -396,27 +396,7 @@ export function StatisticsScreen({ onNavigateBack, authModal: authModalProp, onN
       {/* Tab Navigation - only show when not viewing match details */}
       {!selectedMatchId && (
         <div className="border-b border-slate-600">
-          <nav className="flex flex-wrap gap-3 sm:gap-4 md:gap-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                    isActive
-                      ? 'border-sky-400 text-sky-400'
-                      : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+          <TabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} variant="wrap" />
         </div>
       )}
 

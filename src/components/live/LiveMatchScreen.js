@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Radio, Clock, AlertCircle } from 'lucide-react';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { Alert } from '../shared/Alert';
+import { Card } from '../shared/Card';
 import { MatchSummaryHeader } from '../report/MatchSummaryHeader';
 import { GameEventTimeline } from '../report/GameEventTimeline';
 import { ReportSection } from '../report/ReportSection';
@@ -513,10 +516,7 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
           {renderBackNavigation()}
         </div>
         <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400 mx-auto mb-4"></div>
-            <p className="text-slate-400">{t('info.loadingEvents')}</p>
-          </div>
+          <LoadingSpinner message={t('info.loadingEvents')} />
         </div>
       </div>
     );
@@ -528,13 +528,10 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
       <div className="min-h-screen bg-slate-900 text-slate-100">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           {renderBackNavigation()}
-          <div className="bg-red-900/20 border border-red-700 rounded-lg p-6">
-            <div className="flex items-center mb-4">
-              <AlertCircle className="h-6 w-6 text-red-400 mr-2" />
-              <h2 className="text-xl font-bold text-red-300">{t('info.errorLoadingMatch')}</h2>
-            </div>
+          <Alert variant="error" icon={AlertCircle}>
+            <h2 className="text-xl font-bold text-red-300 mb-2">{t('info.errorLoadingMatch')}</h2>
             <p className="text-red-200">{error}</p>
-          </div>
+          </Alert>
         </div>
       </div>
     );
@@ -546,9 +543,9 @@ export function LiveMatchScreen({ matchId, showBackButton = false, onNavigateBac
       <div className="min-h-screen bg-slate-900 text-slate-100">
         <div className="container mx-auto px-4 py-8 max-w-2xl">
           {renderBackNavigation()}
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+          <Card variant="dark">
             <p className="text-slate-400 text-center">{t('info.noEventsFound')}</p>
-          </div>
+          </Card>
         </div>
       </div>
     );

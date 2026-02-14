@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
+import { Alert } from '../shared/Alert';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { Card } from '../shared/Card';
 import { Link, Info, Plus } from 'lucide-react';
 import { ConnectorCard } from './ConnectorCard';
 import { SportAdminConnectModal } from './SportAdminConnectModal';
@@ -213,51 +216,39 @@ export function ConnectorsSection({ team }) {
       </div>
 
       {/* Info Banner */}
-      <div className="bg-sky-900/20 border border-sky-600 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <Info className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sky-200 text-sm">
-              {t('connectorsSection.infoBanner')}
-            </p>
-          </div>
-        </div>
-      </div>
+      <Alert variant="info" icon={Info}>
+        {t('connectorsSection.infoBanner')}
+      </Alert>
 
       {/* Success Message */}
       {successMessage && (
-        <div className="bg-emerald-900/50 border border-emerald-600 rounded-lg p-3">
-          <p className="text-emerald-200 text-sm">{successMessage}</p>
-        </div>
+        <Alert variant="success">{successMessage}</Alert>
       )}
 
       {/* Notice Message */}
       {noticeMessage && (
-        <div className="bg-amber-900/40 border border-amber-500 rounded-lg p-3">
-          <p className="text-amber-100 text-sm">{noticeMessage}</p>
-        </div>
+        <Alert variant="warning">{noticeMessage}</Alert>
       )}
 
       {/* Error Message */}
       {error && (
-        <div className="bg-rose-900/50 border border-rose-600 rounded-lg p-3">
+        <Alert variant="error">
           <div className="flex items-center justify-between">
-            <p className="text-rose-200 text-sm">{error}</p>
+            <span>{error}</span>
             <button
               onClick={clearError}
-              className="text-rose-300 hover:text-rose-100 text-xs underline"
+              className="text-rose-300 hover:text-rose-100 text-xs underline ml-2"
             >
               {t('connectorsSection.dismiss')}
             </button>
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Loading State */}
       {loading && connectors.length === 0 && (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-sky-400 border-t-transparent rounded-full"></div>
-          <span className="ml-3 text-slate-300">{t('connectorsSection.loadingConnectors')}</span>
+        <div className="py-8">
+          <LoadingSpinner size="md" message={t('connectorsSection.loadingConnectors')} />
         </div>
       )}
 
@@ -288,14 +279,15 @@ export function ConnectorsSection({ team }) {
             const isComingSoon = provider.comingSoon;
 
             return (
-              <div
+              <Card
                 key={provider.id}
-                className={`bg-slate-700 rounded-lg border p-3 ${
+                padding="sm"
+                className={`${
                   isComingSoon
-                    ? 'border-slate-600 opacity-60'
+                    ? 'opacity-60'
                     : isConnected
-                    ? 'border-emerald-600'
-                    : 'border-slate-600'
+                    ? '!border-emerald-600'
+                    : ''
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -324,7 +316,7 @@ export function ConnectorsSection({ team }) {
                     )}
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

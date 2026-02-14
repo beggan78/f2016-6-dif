@@ -2,7 +2,7 @@
   "abandonMatch": {
     "titleRunning": "Avbryt Aktiv Match?",
     "titleNotRunning": "Starta Nytt Spel?",
-    "messageRunning": "Du har en aktiv match som pågår. All matchdata, spelarstatistik och spelhistorik kommer permanent att gå förlorad om du startar ett nytt spel.",
+    "messageRunning": "Du har en aktiv match som pågår. All matchdata, spelarstatistik och spelhistorik kommer permanent att gå förlorad om du startar en ny match.",
     "messageNotRunning": "Detta kommer att återställa din nuvarande session och ta dig tillbaka till konfigurationsskärmen.",
     "subtitleRunning": "Data kommer permanent att gå förlorad",
     "subtitleNotRunning": "Nuvarande session kommer att återställas",

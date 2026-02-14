@@ -1,57 +1,85 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { ModalShell } from './ModalShell';
 import { formatPlayerName } from '../../utils/formatUtils';
 import { EVENT_TYPES } from '../../utils/gameEventLogger';
 import { TEAM_CONFIG } from '../../constants/teamConstants';
 
-export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', onFocus, onBlur, onKeyDown, ...props }, ref) => {
+export const Input = React.forwardRef(({ value, onChange, placeholder, id, disabled, type = 'text', className = '', error = false, onFocus, onBlur, onKeyDown, ...props }, ref) => {
   return (
-    <>
-      <input
-        ref={ref}
-        type={type}
-        id={id}
-        value={value}
-        onChange={onChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onKeyDown={onKeyDown}
-        disabled={disabled}
-        placeholder={placeholder}
-        className={`w-full px-3 py-1.5 bg-slate-600 border border-slate-500 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-500 transition-colors leading-tight h-[38px] ${className}`}
-        {...props}
-      />
-      {type === 'date' && (
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            input[type="date"]::-webkit-datetime-edit-text,
-            input[type="date"]::-webkit-datetime-edit-month-field,
-            input[type="date"]::-webkit-datetime-edit-day-field,
-            input[type="date"]::-webkit-datetime-edit-year-field {
-              color: #94a3b8;
-            }
-            input[type="date"]::-webkit-calendar-picker-indicator {
-              filter: invert(0.6);
-            }
-          `
-        }} />
-      )}
-    </>
+    <input
+      ref={ref}
+      type={type}
+      id={id}
+      value={value}
+      onChange={onChange}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={`w-full px-3 py-1.5 bg-slate-600 border rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 transition-colors leading-tight h-[38px] ${error ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : 'border-slate-500 focus:ring-sky-400 focus:border-sky-500'} ${className}`}
+      {...props}
+    />
   );
 });
 
 Input.displayName = 'Input';
 
-export function Select({ value, onChange, options, placeholder, id, disabled }) {
+Input.propTypes = {
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  type: PropTypes.string,
+  className: PropTypes.string,
+  error: PropTypes.bool,
+  onFocus: PropTypes.func,
+  onBlur: PropTypes.func,
+  onKeyDown: PropTypes.func,
+};
+
+export const Textarea = React.forwardRef(({ value, onChange, placeholder, id, disabled, className = '', error = false, rows = 3, ...props }, ref) => {
   return (
-    <div className="relative">
+    <textarea
+      ref={ref}
+      id={id}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      rows={rows}
+      className={`w-full p-3 bg-slate-700 border rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:border-transparent resize-none ${error ? 'border-rose-500 focus:ring-rose-400' : 'border-slate-500 focus:ring-sky-500'} ${className}`}
+      {...props}
+    />
+  );
+});
+
+Textarea.displayName = 'Textarea';
+
+Textarea.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+  error: PropTypes.bool,
+  rows: PropTypes.number,
+};
+
+export function Select({ value, onChange, options, placeholder, id, disabled, error = false, className = '' }) {
+  return (
+    <div className={`relative ${className}`}>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none bg-slate-600 border border-slate-500 text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors h-[38px]"
+        className={`w-full appearance-none bg-slate-600 border text-slate-100 py-1.5 px-2.5 pr-7 rounded-md leading-tight focus:outline-none focus:ring-2 transition-colors h-[38px] ${error ? 'border-rose-500 focus:ring-rose-400 focus:border-rose-500' : 'border-slate-500 focus:ring-sky-500 focus:border-sky-500'}`}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map(opt => (
@@ -66,6 +94,17 @@ export function Select({ value, onChange, options, placeholder, id, disabled }) 
     </div>
   );
 }
+
+Select.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.array.isRequired,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  error: PropTypes.bool,
+  className: PropTypes.string,
+};
 
 export function MultiSelect({
   value = [],
@@ -220,6 +259,16 @@ export function MultiSelect({
   );
 }
 
+MultiSelect.propTypes = {
+  value: PropTypes.array,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.array,
+  placeholder: PropTypes.string,
+  id: PropTypes.string,
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+};
+
 export function Button({
   onClick,
   children,
@@ -260,6 +309,17 @@ export function Button({
   );
 }
 
+Button.propTypes = {
+  onClick: PropTypes.func,
+  children: PropTypes.node.isRequired,
+  Icon: PropTypes.elementType,
+  variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'accent']),
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+  type: PropTypes.string,
+};
+
 export function ConfirmationModal({
   isOpen,
   onConfirm,
@@ -277,31 +337,32 @@ export function ConfirmationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div
-        className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirmation-modal-title"
-      >
-        <div className="p-4 border-b border-slate-600">
-          <h3 id="confirmation-modal-title" className="text-lg font-semibold text-sky-300">{title}</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-slate-200 mb-6">{message}</p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
-            <Button onClick={onCancel} variant="secondary" className="sm:order-1" disabled={cancelDisabled}>
-              {cancelText || t('buttons.cancel')}
-            </Button>
-            <Button onClick={onConfirm} variant={variant} className="sm:order-2" disabled={confirmDisabled}>
-              {confirmText || t('buttons.confirm')}
-            </Button>
-          </div>
-        </div>
+    <ModalShell title={title} onClose={onCancel}>
+      <p className="text-slate-200 mb-6">{message}</p>
+      <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+        <Button onClick={onCancel} variant="secondary" className="sm:order-1" disabled={cancelDisabled}>
+          {cancelText || t('buttons.cancel')}
+        </Button>
+        <Button onClick={onConfirm} variant={variant} className="sm:order-2" disabled={confirmDisabled}>
+          {confirmText || t('buttons.confirm')}
+        </Button>
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+ConfirmationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  confirmText: PropTypes.string,
+  cancelText: PropTypes.string,
+  variant: PropTypes.string,
+  confirmDisabled: PropTypes.bool,
+  cancelDisabled: PropTypes.bool,
+};
 
 export function NotificationModal({ isOpen, onClose, title, message, buttonText }) {
   const { t } = useTranslation('shared');
@@ -309,28 +370,24 @@ export function NotificationModal({ isOpen, onClose, title, message, buttonText 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div
-        className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="notification-modal-title"
-      >
-        <div className="p-4 border-b border-slate-600">
-          <h3 id="notification-modal-title" className="text-lg font-semibold text-sky-300">{title}</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-slate-200 mb-6">{message}</p>
-          <div className="flex justify-center">
-            <Button onClick={onClose} variant="primary">
-              {buttonText || t('ok')}
-            </Button>
-          </div>
-        </div>
+    <ModalShell title={title} onClose={onClose}>
+      <p className="text-slate-200 mb-6">{message}</p>
+      <div className="flex justify-center">
+        <Button onClick={onClose} variant="primary">
+          {buttonText || t('ok')}
+        </Button>
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+NotificationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  buttonText: PropTypes.string,
+};
 
 export function ThreeOptionModal({
   isOpen,
@@ -351,29 +408,37 @@ export function ThreeOptionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">{title}</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-slate-200 mb-6">{message}</p>
-          <div className="flex flex-col gap-3">
-            <Button onClick={onPrimary} variant={primaryVariant}>
-              {primaryText || t('buttons.confirm')}
-            </Button>
-            <Button onClick={onSecondary} variant={secondaryVariant}>
-              {secondaryText || t('buttons.cancel')}
-            </Button>
-            <Button onClick={onTertiary} variant={tertiaryVariant}>
-              {tertiaryText}
-            </Button>
-          </div>
-        </div>
+    <ModalShell title={title}>
+      <p className="text-slate-200 mb-6">{message}</p>
+      <div className="flex flex-col gap-3">
+        <Button onClick={onPrimary} variant={primaryVariant}>
+          {primaryText || t('buttons.confirm')}
+        </Button>
+        <Button onClick={onSecondary} variant={secondaryVariant}>
+          {secondaryText || t('buttons.cancel')}
+        </Button>
+        <Button onClick={onTertiary} variant={tertiaryVariant}>
+          {tertiaryText}
+        </Button>
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+ThreeOptionModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onPrimary: PropTypes.func.isRequired,
+  onSecondary: PropTypes.func.isRequired,
+  onTertiary: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+  primaryText: PropTypes.string,
+  secondaryText: PropTypes.string,
+  tertiaryText: PropTypes.string,
+  primaryVariant: PropTypes.string,
+  secondaryVariant: PropTypes.string,
+  tertiaryVariant: PropTypes.string,
+};
 
 export function FieldPlayerModal({
   isOpen,
@@ -400,87 +465,93 @@ export function FieldPlayerModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">
-            {showPositionOptions ? t('fieldPlayer.changePositionTitle') : t('fieldPlayer.title')}
-          </h3>
-        </div>
-        <div className="p-4">
-          {showPositionOptions ? (
-            <>
-              <p className="text-slate-200 mb-6">
-                {t('fieldPlayer.selectPositionSwitch', { playerName })}
-              </p>
-              <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
-                <Button onClick={handleBack} variant="secondary">
-                  {t('fieldPlayer.back')}
-                </Button>
-                {availablePlayers.map((player) => (
+    <ModalShell title={showPositionOptions ? t('fieldPlayer.changePositionTitle') : t('fieldPlayer.title')} onClose={onCancel}>
+      {showPositionOptions ? (
+        <>
+          <p className="text-slate-200 mb-6">
+            {t('fieldPlayer.selectPositionSwitch', { playerName })}
+          </p>
+          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+            <Button onClick={handleBack} variant="secondary">
+              {t('fieldPlayer.back')}
+            </Button>
+            {availablePlayers.map((player) => (
+              <Button
+                key={player.id}
+                onClick={() => onChangePosition && onChangePosition(player.id)}
+                variant="primary"
+                className="text-left"
+              >
+                {formatPlayerName(player)}
+              </Button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-slate-200 mb-6">{t('fieldPlayer.message', { playerName })}</p>
+          <div className="flex flex-col gap-3">
+            <Button onClick={onCancel} variant="secondary">
+              {t('fieldPlayer.cancel')}
+            </Button>
+            {showSubstitutionOptions && (
+              <>
+                {isPlayerAboutToSubOff ? (
                   <Button
-                    key={player.id}
-                    onClick={() => onChangePosition && onChangePosition(player.id)}
+                    onClick={onRemoveFromNext}
                     variant="primary"
-                    className="text-left"
+                    disabled={!canSubstitute}
+                    title={canSubstitute ? t('fieldPlayer.removeFromNext') : t('fieldPlayer.tooltipCannotModify')}
                   >
-                    {formatPlayerName(player)}
+                    {t('fieldPlayer.removeFromNext')}
                   </Button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-slate-200 mb-6">{t('fieldPlayer.message', { playerName })}</p>
-              <div className="flex flex-col gap-3">
-                <Button onClick={onCancel} variant="secondary">
-                  {t('fieldPlayer.cancel')}
+                ) : (
+                  <Button
+                    onClick={onSetNext}
+                    variant="primary"
+                    disabled={!canSubstitute}
+                    title={canSubstitute ? t('fieldPlayer.setToGoOffNext') : t('fieldPlayer.tooltipCannotSetNext')}
+                  >
+                    {t('fieldPlayer.setToGoOffNext')}
+                  </Button>
+                )}
+                <Button
+                  onClick={onSubNow}
+                  variant="danger"
+                  disabled={!canSubstitute}
+                  title={canSubstitute ? t('fieldPlayer.substituteNow') : t('fieldPlayer.tooltipCannotSubstitute')}
+                >
+                  {t('fieldPlayer.substituteNow')}
                 </Button>
-                {showSubstitutionOptions && (
-                  <>
-                    {isPlayerAboutToSubOff ? (
-                      <Button
-                        onClick={onRemoveFromNext}
-                        variant="primary"
-                        disabled={!canSubstitute}
-                        title={canSubstitute ? t('fieldPlayer.removeFromNext') : t('fieldPlayer.tooltipCannotModify')}
-                      >
-                        {t('fieldPlayer.removeFromNext')}
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={onSetNext}
-                        variant="primary"
-                        disabled={!canSubstitute}
-                        title={canSubstitute ? t('fieldPlayer.setToGoOffNext') : t('fieldPlayer.tooltipCannotSetNext')}
-                      >
-                        {t('fieldPlayer.setToGoOffNext')}
-                      </Button>
-                    )}
-                    <Button
-                      onClick={onSubNow}
-                      variant="danger"
-                      disabled={!canSubstitute}
-                      title={canSubstitute ? t('fieldPlayer.substituteNow') : t('fieldPlayer.tooltipCannotSubstitute')}
-                    >
-                      {t('fieldPlayer.substituteNow')}
-                    </Button>
-                  </>
-                )}
-                {showPositionChange && (
-                  <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
-                    {t('fieldPlayer.changePosition')}
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+              </>
+            )}
+            {showPositionChange && (
+              <Button onClick={() => onChangePosition && onChangePosition('show-options')} variant="accent">
+                {t('fieldPlayer.changePosition')}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </ModalShell>
   );
 }
 
+FieldPlayerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onSetNext: PropTypes.func.isRequired,
+  onRemoveFromNext: PropTypes.func.isRequired,
+  onSubNow: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onChangePosition: PropTypes.func.isRequired,
+  playerName: PropTypes.string.isRequired,
+  availablePlayers: PropTypes.array,
+  showPositionChange: PropTypes.bool,
+  showPositionOptions: PropTypes.bool,
+  showSubstitutionOptions: PropTypes.bool,
+  canSubstitute: PropTypes.bool,
+  isPlayerAboutToSubOff: PropTypes.bool,
+};
 
 export function SubstitutePlayerModal({
   isOpen,
@@ -506,69 +577,75 @@ export function SubstitutePlayerModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">
-            {showPositionSelection ? t('substitute.changeNextPositionTitle') : t('substitute.title')}
-          </h3>
-        </div>
-        <div className="p-4">
-          {showPositionSelection ? (
-            <>
-              <p className="text-slate-200 mb-6">
-                {t('substitute.selectNextPosition', { playerName })}
-              </p>
-              <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
-                <Button onClick={handleBack} variant="secondary">
-                  {t('substitute.back')}
-                </Button>
-                {availableNextPositions.map((position) => (
-                  <Button
-                    key={position.value}
-                    onClick={() => onChangeNextPosition && onChangeNextPosition(position.value)}
-                    variant="primary"
-                    className="text-left"
-                  >
-                    {position.label}
-                  </Button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-slate-200 mb-6">{t('substitute.message', { playerName })}</p>
-              <div className="flex flex-col gap-3">
-                <Button onClick={onCancel} variant="secondary">
-                  {t('substitute.cancel')}
-                </Button>
-                {canChangeNextPosition && !isCurrentlyInactive && (
-                  <Button onClick={() => onChangeNextPosition && onChangeNextPosition('show-options')} variant="accent">
-                    {t('substitute.changeNextPosition')}
-                  </Button>
-                )}
-                {canSetAsNextToGoIn && !isCurrentlyInactive && (
-                  <Button onClick={onSetAsNextToGoIn} variant="accent">
-                    {t('substitute.setToGoInNext')}
-                  </Button>
-                )}
-                {isCurrentlyInactive ? (
-                  <Button onClick={onActivate} variant="primary">
-                    {t('substitute.putBackInRotation', { playerName })}
-                  </Button>
-                ) : (
-                  <Button onClick={onInactivate} variant="danger">
-                    {t('substitute.takeOutOfRotation', { playerName })}
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+    <ModalShell title={showPositionSelection ? t('substitute.changeNextPositionTitle') : t('substitute.title')} onClose={onCancel}>
+      {showPositionSelection ? (
+        <>
+          <p className="text-slate-200 mb-6">
+            {t('substitute.selectNextPosition', { playerName })}
+          </p>
+          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+            <Button onClick={handleBack} variant="secondary">
+              {t('substitute.back')}
+            </Button>
+            {availableNextPositions.map((position) => (
+              <Button
+                key={position.value}
+                onClick={() => onChangeNextPosition && onChangeNextPosition(position.value)}
+                variant="primary"
+                className="text-left"
+              >
+                {position.label}
+              </Button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-slate-200 mb-6">{t('substitute.message', { playerName })}</p>
+          <div className="flex flex-col gap-3">
+            <Button onClick={onCancel} variant="secondary">
+              {t('substitute.cancel')}
+            </Button>
+            {canChangeNextPosition && !isCurrentlyInactive && (
+              <Button onClick={() => onChangeNextPosition && onChangeNextPosition('show-options')} variant="accent">
+                {t('substitute.changeNextPosition')}
+              </Button>
+            )}
+            {canSetAsNextToGoIn && !isCurrentlyInactive && (
+              <Button onClick={onSetAsNextToGoIn} variant="accent">
+                {t('substitute.setToGoInNext')}
+              </Button>
+            )}
+            {isCurrentlyInactive ? (
+              <Button onClick={onActivate} variant="primary">
+                {t('substitute.putBackInRotation', { playerName })}
+              </Button>
+            ) : (
+              <Button onClick={onInactivate} variant="danger">
+                {t('substitute.takeOutOfRotation', { playerName })}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+    </ModalShell>
   );
 }
+
+SubstitutePlayerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onInactivate: PropTypes.func.isRequired,
+  onActivate: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSetAsNextToGoIn: PropTypes.func.isRequired,
+  onChangeNextPosition: PropTypes.func.isRequired,
+  playerName: PropTypes.string.isRequired,
+  isCurrentlyInactive: PropTypes.bool.isRequired,
+  canSetAsNextToGoIn: PropTypes.bool,
+  canChangeNextPosition: PropTypes.bool,
+  availableNextPositions: PropTypes.array,
+  showPositionSelection: PropTypes.bool,
+};
 
 export function GoalieModal({
   isOpen,
@@ -582,36 +659,37 @@ export function GoalieModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">{t('modals:goalie.title')}</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-slate-200 mb-6">
-            {t('modals:goalie.message', { goalieName: currentGoalieName })}
-          </p>
-          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
-            <Button onClick={onCancel} variant="secondary">
-              {t('modals:goalie.cancel')}
-            </Button>
-            {availablePlayers.map((player) => (
-              <Button
-                key={player.id}
-                onClick={() => onSelectGoalie(player.id)}
-                variant={player.isInactive ? "secondary" : "primary"}
-                disabled={player.isInactive}
-                className={`text-left ${player.isInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {formatPlayerName(player)} {player.isInactive ? t('modals:goalie.inactive') : ''}
-              </Button>
-            ))}
-          </div>
-        </div>
+    <ModalShell title={t('modals:goalie.title')} onClose={onCancel}>
+      <p className="text-slate-200 mb-6">
+        {t('modals:goalie.message', { goalieName: currentGoalieName })}
+      </p>
+      <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+        <Button onClick={onCancel} variant="secondary">
+          {t('modals:goalie.cancel')}
+        </Button>
+        {availablePlayers.map((player) => (
+          <Button
+            key={player.id}
+            onClick={() => onSelectGoalie(player.id)}
+            variant={player.isInactive ? "secondary" : "primary"}
+            disabled={player.isInactive}
+            className={`text-left ${player.isInactive ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {formatPlayerName(player)} {player.isInactive ? t('modals:goalie.inactive') : ''}
+          </Button>
+        ))}
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+GoalieModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSelectGoalie: PropTypes.func.isRequired,
+  currentGoalieName: PropTypes.string.isRequired,
+  availablePlayers: PropTypes.array,
+};
 
 export function ScoreEditModal({
   isOpen,
@@ -647,83 +725,88 @@ export function ScoreEditModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">{t('scoreEdit.title')}</h3>
+    <ModalShell title={t('scoreEdit.title')} onClose={handleCancel}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between space-x-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-slate-300 mb-2">{ownTeamName}</label>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setEditOwnScore(Math.max(0, editOwnScore - 1))}
+                variant="secondary"
+                size="sm"
+                disabled={editOwnScore <= 0}
+              >
+                -
+              </Button>
+              <Input
+                type="number"
+                value={editOwnScore}
+                onChange={(e) => setEditOwnScore(Math.max(0, parseInt(e.target.value) || 0))}
+                className="text-center w-16"
+              />
+              <Button
+                onClick={() => setEditOwnScore(editOwnScore + 1)}
+                variant="secondary"
+                size="sm"
+              >
+                +
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-2xl font-mono font-bold text-slate-400">-</div>
+
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-slate-300 mb-2">{resolvedOpponentTeam}</label>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setEditOpponentScore(Math.max(0, editOpponentScore - 1))}
+                variant="secondary"
+                size="sm"
+                disabled={editOpponentScore <= 0}
+              >
+                -
+              </Button>
+              <Input
+                type="number"
+                value={editOpponentScore}
+                onChange={(e) => setEditOpponentScore(Math.max(0, parseInt(e.target.value) || 0))}
+                className="text-center w-16"
+              />
+              <Button
+                onClick={() => setEditOpponentScore(editOpponentScore + 1)}
+                variant="secondary"
+                size="sm"
+              >
+                +
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between space-x-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{ownTeamName}</label>
-              <div className="flex items-center space-x-2">
-                <Button 
-                  onClick={() => setEditOwnScore(Math.max(0, editOwnScore - 1))}
-                  variant="secondary"
-                  size="sm"
-                  disabled={editOwnScore <= 0}
-                >
-                  -
-                </Button>
-                <Input
-                  type="number"
-                  value={editOwnScore}
-                  onChange={(e) => setEditOwnScore(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="text-center w-16"
-                />
-                <Button 
-                  onClick={() => setEditOwnScore(editOwnScore + 1)}
-                  variant="secondary"
-                  size="sm"
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-            
-            <div className="text-2xl font-mono font-bold text-slate-400">-</div>
-            
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{resolvedOpponentTeam}</label>
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => setEditOpponentScore(Math.max(0, editOpponentScore - 1))}
-                  variant="secondary"
-                  size="sm"
-                  disabled={editOpponentScore <= 0}
-                >
-                  -
-                </Button>
-                <Input
-                  type="number"
-                  value={editOpponentScore}
-                  onChange={(e) => setEditOpponentScore(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="text-center w-16"
-                />
-                <Button 
-                  onClick={() => setEditOpponentScore(editOpponentScore + 1)}
-                  variant="secondary"
-                  size="sm"
-                >
-                  +
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex gap-3 justify-end pt-4">
-            <Button onClick={handleCancel} variant="secondary">
-              {t('scoreEdit.cancel')}
-            </Button>
-            <Button onClick={handleSave} variant="primary">
-              {t('scoreEdit.saveScore')}
-            </Button>
-          </div>
+
+        <div className="flex gap-3 justify-end pt-4">
+          <Button onClick={handleCancel} variant="secondary">
+            {t('scoreEdit.cancel')}
+          </Button>
+          <Button onClick={handleSave} variant="primary">
+            {t('scoreEdit.saveScore')}
+          </Button>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+ScoreEditModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  ownScore: PropTypes.number.isRequired,
+  opponentScore: PropTypes.number.isRequired,
+  ownTeamName: PropTypes.string,
+  opponentTeam: PropTypes.string,
+};
 
 export function ScoreManagerModal({
   isOpen,
@@ -796,22 +879,8 @@ export function ScoreManagerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-lg w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-sky-300">{t('scoreManager.title')}</h3>
-            </div>
-            <button
-              onClick={handleClose}
-              className="text-slate-400 hover:text-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-800 rounded"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-        <div className="p-4 space-y-4">
+    <ModalShell title={t('scoreManager.title')} onClose={handleClose} maxWidth="lg">
+      <div className="space-y-4">
           {/* Current Score Display */}
           <div className="flex items-center justify-between space-x-4 bg-slate-700 p-3 rounded-lg">
             <div className="text-center">
@@ -924,11 +993,30 @@ export function ScoreManagerModal({
               {t('scoreManager.close')}
             </Button>
           </div>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+ScoreManagerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  ownScore: PropTypes.number.isRequired,
+  opponentScore: PropTypes.number.isRequired,
+  ownTeamName: PropTypes.string,
+  opponentTeam: PropTypes.string,
+  matchEvents: PropTypes.array,
+  goalScorers: PropTypes.object,
+  allPlayers: PropTypes.array,
+  onAddGoalScored: PropTypes.func.isRequired,
+  onAddGoalConceded: PropTypes.func.isRequired,
+  onEditGoalScorer: PropTypes.func.isRequired,
+  onDeleteGoal: PropTypes.func.isRequired,
+  calculateMatchTime: PropTypes.func,
+  formatTime: PropTypes.func,
+  getPlayerName: PropTypes.func,
+  allowScorerSelection: PropTypes.bool,
+};
 
 export function SubstituteSelectionModal({
   isOpen,
@@ -942,35 +1030,36 @@ export function SubstituteSelectionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-600">
-        <div className="p-4 border-b border-slate-600">
-          <h3 className="text-lg font-semibold text-sky-300">{t('substituteSelection.title')}</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-slate-200 mb-6">
-            {t('substituteSelection.message', { fieldPlayerName })}
-          </p>
-          <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
-            <Button onClick={onCancel} variant="secondary">
-              {t('substituteSelection.cancel')}
-            </Button>
-            {availableSubstitutes.map((substitute) => (
-              <Button
-                key={substitute.id}
-                onClick={() => onSelectSubstitute(substitute.id)}
-                variant="primary"
-                className="text-left"
-              >
-                {formatPlayerName(substitute)}
-              </Button>
-            ))}
-          </div>
-        </div>
+    <ModalShell title={t('substituteSelection.title')} onClose={onCancel}>
+      <p className="text-slate-200 mb-6">
+        {t('substituteSelection.message', { fieldPlayerName })}
+      </p>
+      <div className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+        <Button onClick={onCancel} variant="secondary">
+          {t('substituteSelection.cancel')}
+        </Button>
+        {availableSubstitutes.map((substitute) => (
+          <Button
+            key={substitute.id}
+            onClick={() => onSelectSubstitute(substitute.id)}
+            variant="primary"
+            className="text-left"
+          >
+            {formatPlayerName(substitute)}
+          </Button>
+        ))}
       </div>
-    </div>
+    </ModalShell>
   );
 }
+
+SubstituteSelectionModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSelectSubstitute: PropTypes.func.isRequired,
+  fieldPlayerName: PropTypes.string.isRequired,
+  availableSubstitutes: PropTypes.array,
+};
 
 export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, className = '', disabled = false, id }) {
   const percentage = ((value - min) / (max - min)) * 100;
@@ -1039,3 +1128,14 @@ export function Slider({ value, onChange, min = 0, max = 1, step = 0.1, classNam
     </div>
   );
 }
+
+Slider.propTypes = {
+  value: PropTypes.number.isRequired,
+  onChange: PropTypes.func.isRequired,
+  min: PropTypes.number,
+  max: PropTypes.number,
+  step: PropTypes.number,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+  id: PropTypes.string,
+};

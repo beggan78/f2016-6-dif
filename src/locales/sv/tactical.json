@@ -1,11 +1,11 @@
 {
   "screen": {
     "title": "Taktisk Tavla",
-    "instructions": "Dra och sl\u00e4pp spelare och mark\u00f6rer f\u00f6r att planera din taktik"
+    "instructions": "Dra och släpp spelare och markörer för att planera din taktik"
   },
   "controls": {
     "back": "Tillbaka",
-    "undo": "\u00c5ngra",
+    "undo": "Ångra",
     "clear": "Rensa",
     "clearAll": "Rensa Allt",
     "drag": "Dra",
@@ -14,13 +14,13 @@
     "half": "Halv"
   },
   "palette": {
-    "title": "Mark\u00f6rer",
+    "title": "Markörer",
     "players": "Spelare",
     "ball": "Boll",
     "cones": "Koner",
     "clear": "Rensa Tavla",
-    "dragInstruction": "Dra mark\u00f6rer till planen \u2022 Dubbelklicka f\u00f6r att ta bort",
-    "drawModeHint": "Byt tillbaka till Dra-l\u00e4ge f\u00f6r att l\u00e4gga till eller flytta mark\u00f6rer."
+    "dragInstruction": "Dra markörer till planen \u2022 Dubbelklicka för att ta bort",
+    "drawModeHint": "Byt tillbaka till Dra-läge för att lägga till eller flytta markörer."
   },
   "chip": {
     "player": "Spelare",

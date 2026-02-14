@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { Input } from './UI';
+import { ModalShell } from './ModalShell';
 import { sanitizeNameInput } from '../../utils/inputSanitization';
 
 export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
@@ -23,9 +26,10 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md mx-4 border border-slate-600">
-        <h2 className="text-xl font-bold text-sky-400 mb-2">{t('addTemporaryPlayer.title')}</h2>
+    <ModalShell
+      title={t('addTemporaryPlayer.title')}
+      onClose={handleCancel}
+    >
         <p className="text-sm text-slate-400 mb-4">
           {t('addTemporaryPlayer.description')}
         </p>
@@ -35,12 +39,10 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
             <label htmlFor="playerName" className="block text-sm font-medium text-slate-300 mb-2">
               {t('addTemporaryPlayer.playerNameLabel')}
             </label>
-            <input
-              type="text"
+            <Input
               id="playerName"
               value={playerName}
               onChange={(e) => setPlayerName(sanitizeNameInput(e.target.value))}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
               placeholder={t('addTemporaryPlayer.playerNamePlaceholder')}
               maxLength={50}
               autoFocus
@@ -64,7 +66,12 @@ export function AddPlayerModal({ isOpen, onClose, onAddPlayer }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
+
+AddPlayerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onAddPlayer: PropTypes.func.isRequired,
+};

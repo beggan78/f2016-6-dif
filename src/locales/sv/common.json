@@ -37,14 +37,14 @@
     "loanRecordFailed": "Kunde inte registrera spelarutlåning",
     "noTeamSelected": "Inget lag valt. Skapa eller välj ett lag först.",
     "matchSavedSuccess": "Matchen sparades i din historik!",
-    "failedToLoadAttendanceStats": "Kunde inte ladda n\u00e4rvarostatistik",
+    "failedToLoadAttendanceStats": "Kunde inte ladda närvarostatistik",
     "failedToLoadConnectors": "Kunde inte ladda kopplingar",
-    "failedToConnectProvider": "Kunde inte ansluta leverant\u00f6r",
-    "failedToDisconnectProvider": "Kunde inte koppla bort leverant\u00f6r",
+    "failedToConnectProvider": "Kunde inte ansluta leverantör",
+    "failedToDisconnectProvider": "Kunde inte koppla bort leverantör",
     "failedToTriggerSync": "Kunde inte starta synkronisering",
-    "failedToRetryConnector": "Kunde inte f\u00f6rs\u00f6ka ansluta igen",
+    "failedToRetryConnector": "Kunde inte försöka ansluta igen",
     "validationFailed": "Validering misslyckades",
-    "unexpectedError": "Ett ov\u00e4ntat fel uppstod. F\u00f6rs\u00f6k igen."
+    "unexpectedError": "Ett oväntat fel uppstod. Försök igen."
   },
   "footer": {
     "copyright": "\u00a9 {{year}} Coach App av Codewizard"

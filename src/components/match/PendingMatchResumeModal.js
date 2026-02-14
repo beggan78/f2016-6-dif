@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/UI';
-import { Play, Trash2, X, Calendar, Users, Clock, Target, Plus, User } from 'lucide-react';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { Alert } from '../shared/Alert';
+import { ModalShell } from '../shared/ModalShell';
+import { Play, Trash2, Calendar, Users, Clock, Target, Plus, User } from 'lucide-react';
 
 /**
  * Modal component for handling pending match resume actions
@@ -63,40 +66,23 @@ export function PendingMatchResumeModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-slate-600">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-100">{t('pendingMatchResume.title')}</h2>
-              <p className="text-sm text-slate-400">
-                {pendingMatches.length === 0
-                  ? t('pendingMatchResume.noMatchesFound')
-                  : t('pendingMatchResume.matchesFound', { count: pendingMatches.length })
-                }
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
-            disabled={isLoading || deletingMatchId || resumingMatchId}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+    <ModalShell
+      title={t('pendingMatchResume.title')}
+      subtitle={pendingMatches.length === 0
+        ? t('pendingMatchResume.noMatchesFound')
+        : t('pendingMatchResume.matchesFound', { count: pendingMatches.length })
+      }
+      icon={Clock}
+      iconColor="blue"
+      onClose={handleClose}
+      maxWidth="lg"
+      className="max-h-[90vh] flex flex-col"
+    >
         {/* Content */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col -mb-6 -mx-6">
           {/* Error Display */}
           {error && (
-            <div className="p-4 mx-6 mt-6 bg-rose-900/20 border border-rose-600 rounded-lg">
-              <p className="text-sm text-rose-200">{error}</p>
-            </div>
+            <Alert variant="error" className="mx-6 mt-6">{error}</Alert>
           )}
 
           {/* Empty State */}
@@ -253,14 +239,10 @@ export function PendingMatchResumeModal({
         {/* Loading State Overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-slate-800 bg-opacity-75 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-              <p className="text-sm text-slate-300">{t('pendingMatchResume.processing')}</p>
-            </div>
+            <LoadingSpinner size="md" message={t('pendingMatchResume.processing')} />
           </div>
         )}
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 
