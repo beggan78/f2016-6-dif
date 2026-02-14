@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ModalShell } from '../ModalShell';
 import { AlertTriangle } from 'lucide-react';
 
@@ -216,6 +216,11 @@ describe('ModalShell', () => {
   });
 
   describe('Focus management', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    const flushRAF = () => act(() => jest.advanceTimersByTime(16));
+
     it('should call onClose on Escape keydown', () => {
       const onClose = jest.fn();
       render(
@@ -283,6 +288,7 @@ describe('ModalShell', () => {
       const { unmount } = render(
         <ModalShell title="Title"><p>content</p></ModalShell>
       );
+      flushRAF();
 
       // Dialog should have focus now
       expect(document.activeElement).toBe(screen.getByRole('dialog'));
@@ -297,6 +303,7 @@ describe('ModalShell', () => {
       render(
         <ModalShell title="Title"><p>content</p></ModalShell>
       );
+      flushRAF();
       expect(document.activeElement).toBe(screen.getByRole('dialog'));
     });
 

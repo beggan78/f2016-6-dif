@@ -45,11 +45,15 @@ export function ModalShell({
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement;
 
-    if (dialogRef.current && !dialogRef.current.contains(document.activeElement)) {
-      dialogRef.current.focus();
-    }
+    // Delay focus so children with autoFocus mount first
+    const rafId = requestAnimationFrame(() => {
+      if (dialogRef.current && !dialogRef.current.contains(document.activeElement)) {
+        dialogRef.current.focus();
+      }
+    });
 
     return () => {
+      cancelAnimationFrame(rafId);
       if (
         previouslyFocusedRef.current &&
         document.body.contains(previouslyFocusedRef.current)

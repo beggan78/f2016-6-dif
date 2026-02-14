@@ -94,10 +94,10 @@ describe('Select', () => {
 });
 
 describe('Textarea', () => {
-  it('renders border-slate-600 by default (no error)', () => {
+  it('renders border-slate-500 by default (no error)', () => {
     const { container } = render(<Textarea value="" onChange={() => {}} />);
     const textarea = container.querySelector('textarea');
-    expect(textarea).toHaveClass('border-slate-600');
+    expect(textarea).toHaveClass('border-slate-500');
     expect(textarea).not.toHaveClass('border-rose-500');
   });
 
@@ -106,13 +106,13 @@ describe('Textarea', () => {
     const textarea = container.querySelector('textarea');
     expect(textarea).toHaveClass('border-rose-500');
     expect(textarea).toHaveClass('focus:ring-rose-400');
-    expect(textarea).not.toHaveClass('border-slate-600');
+    expect(textarea).not.toHaveClass('border-slate-500');
   });
 
-  it('renders border-slate-600 when error is false', () => {
+  it('renders border-slate-500 when error is false', () => {
     const { container } = render(<Textarea value="" onChange={() => {}} error={false} />);
     const textarea = container.querySelector('textarea');
-    expect(textarea).toHaveClass('border-slate-600');
+    expect(textarea).toHaveClass('border-slate-500');
     expect(textarea).toHaveClass('focus:ring-sky-500');
   });
 
