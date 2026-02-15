@@ -120,5 +120,8 @@
     "newestFirst": "Newest first",
     "oldestFirst": "Oldest first",
     "periodLabel": "Period {{period}}"
+  },
+  "defaults": {
+    "opponent": "Opponent"
   }
 }

@@ -19,7 +19,7 @@ import { discardPendingMatch } from '../../services/matchStateManager';
  * Allows coaches to copy live match links, resume setup, or navigate to LiveMatchScreen
  */
 export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationState, removeFromNavigationStack }) {
-  const { t } = useTranslation('team');
+  const { t } = useTranslation(['team', 'configuration']);
   const { currentTeam } = useTeam();
   const {
     matches: activeMatches,
@@ -367,12 +367,12 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                       </div>
                       {match.type && (
                         <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
-                          {match.type.charAt(0).toUpperCase() + match.type.slice(1)}
+                          {t(`configuration:matchTypes.${match.type}.label`, { defaultValue: match.type })}
                         </span>
                       )}
                       {match.venueType && (
                         <span className="px-2 py-0.5 bg-slate-600 text-slate-300 rounded text-xs">
-                          {match.venueType.charAt(0).toUpperCase() + match.venueType.slice(1)}
+                          {t(`configuration:venueTypes.${match.venueType}.label`, { defaultValue: match.venueType })}
                         </span>
                       )}
                     </div>
@@ -520,7 +520,7 @@ export function TeamMatchesList({ onNavigateBack, onNavigateTo, pushNavigationSt
                         checked={isSelected}
                         onChange={() => togglePlannedMatchSelection(match.id)}
                         className="h-4 w-4 rounded border-slate-500 text-sky-500 focus:ring-sky-500"
-                        aria-label={`Select ${match.opponent}`}
+                        aria-label={t('team:teamMatches.planModal.selectMatch', { opponent: match.opponent })}
                       />
                       <div className="min-w-0">
                         <div className="truncate font-medium">{match.opponent}</div>

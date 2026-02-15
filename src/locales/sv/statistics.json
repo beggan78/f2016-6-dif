@@ -236,7 +236,8 @@
     "durationUnknown": "Längd okänd",
     "wins": "{{teamName}} vinner",
     "tied": "Oavgjort",
-    "periodsFormat": "{{periods}} \u00d7 {{duration}}min"
+    "periodsFormat": "{{periods}} \u00d7 {{duration}}min",
+    "defaultOpponent": "Motståndare"
   },
   "filters": {
     "title": "Filter",

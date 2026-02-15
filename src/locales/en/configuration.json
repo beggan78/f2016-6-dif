@@ -209,7 +209,8 @@
       "leftMidfielder": "Left Midfielder",
       "rightMidfielder": "Right Midfielder",
       "centerMidfielder": "Center Midfielder",
-      "goalie": "Goalie"
+      "goalie": "Goalie",
+      "substitute": "Substitute"
     },
     "roles": {
       "defenders": "Defenders",

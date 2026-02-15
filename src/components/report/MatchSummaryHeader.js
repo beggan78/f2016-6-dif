@@ -21,7 +21,7 @@ import { TEAM_CONFIG } from '../../constants/teamConstants';
  */
 export function MatchSummaryHeader({
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
-  opponentTeam = "Opponent",
+  opponentTeam,
   ownScore = 0,
   opponentScore = 0,
   matchStartTime = null,
@@ -34,7 +34,8 @@ export function MatchSummaryHeader({
   matchHasFinished = matchHasStarted
 }) {
   const { t } = useTranslation('statistics');
-  
+  const resolvedOpponentTeam = opponentTeam || t('matchSummary.defaultOpponent');
+
   // Format match start time
   const formatMatchStartTime = () => {
     // If match has started, show actual start time
@@ -119,7 +120,7 @@ export function MatchSummaryHeader({
           {/* Own Team */}
           <div className="flex-1 text-left">
             <div className="text-lg font-semibold text-slate-200 truncate">
-              {opponentTeam}
+              {resolvedOpponentTeam}
             </div>
             <div className={`text-4xl font-bold font-mono ${getTeamScoreStyle(false)}`}>
               {opponentScore}

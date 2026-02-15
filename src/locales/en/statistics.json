@@ -236,7 +236,8 @@
     "durationUnknown": "Duration unknown",
     "wins": "{{teamName}} wins",
     "tied": "Match tied",
-    "periodsFormat": "{{periods}} \u00d7 {{duration}}min"
+    "periodsFormat": "{{periods}} \u00d7 {{duration}}min",
+    "defaultOpponent": "Opponent"
   },
   "filters": {
     "title": "Filter",

@@ -46,6 +46,18 @@
     "validationFailed": "Validation failed",
     "unexpectedError": "An unexpected error occurred. Please try again."
   },
+  "defaults": {
+    "opponent": "Opponent",
+    "unnamedPlayer": "Unnamed Player",
+    "notSet": "Not set"
+  },
+  "roles": {
+    "admin": "Admin",
+    "coach": "Coach",
+    "parent": "Parent",
+    "player": "Player",
+    "member": "Member"
+  },
   "footer": {
     "copyright": "\u00a9 {{year}} Coach App by Codewizard"
   }

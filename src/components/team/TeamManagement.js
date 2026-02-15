@@ -947,7 +947,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
 
   const handleSaveLoan = async ({ playerIds, receivingTeamName, loanDate }) => {
     if (!team?.id) {
-      throw new Error('Team ID is required');
+      throw new Error(t('loansView.messages.failedToRecordLoan'));
     }
 
     const result = await recordPlayerLoans(playerIds, {
@@ -957,7 +957,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     });
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to record loan');
+      throw new Error(result.error || t('loansView.messages.failedToRecordLoan'));
     }
 
     if (playerIds.length === 1) {

@@ -391,7 +391,9 @@
       "loanDeleted": "Tog bort {{count}} spelare från lånmatch.",
       "loadFailed": "Misslyckades ladda spelarlån",
       "rosterLoadFailed": "Misslyckades ladda trupp för lån",
-      "deleteFailed": "Misslyckades ta bort lånmatch"
+      "deleteFailed": "Misslyckades ta bort lånmatch",
+      "failedToUpdateMatch": "Misslyckades uppdatera match",
+      "failedToRecordLoan": "Misslyckades registrera lån"
     },
     "deleteConfirmation": {
       "title": "Ta bort lånmatch",
@@ -747,7 +749,14 @@
       "title": "Mina Klubbar",
       "empty": "Du är inte medlem i några klubbar ännu",
       "emptyHint": "Sök efter klubbar för att begära medlemskap",
-      "joined": "Gick med {{date}}"
+      "joined": "Gick med {{date}}",
+      "roles": {
+        "admin": "Administratör",
+        "coach": "Tränare",
+        "parent": "Förälder",
+        "player": "Spelare",
+        "member": "Medlem"
+      }
     },
     "search": {
       "title": "Hitta Klubbar",
@@ -766,7 +775,8 @@
       "wantsToJoin": "vill gå med i {{clubName}}",
       "requested": "Begärd {{date}}",
       "reject": "Avvisa",
-      "approve": "Godkänn"
+      "approve": "Godkänn",
+      "declinedNotes": "Förfrågan nekad"
     }
   },
   "teamSelector": {
@@ -832,7 +842,8 @@
     "planModal": {
       "title": "Planera Matcher",
       "cancel": "Avbryt",
-      "planSelected": "Planera Valda"
+      "planSelected": "Planera Valda",
+      "selectMatch": "Välj {{opponent}}"
     }
   },
   "planMatches": {

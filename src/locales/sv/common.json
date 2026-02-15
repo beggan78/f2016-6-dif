@@ -46,6 +46,18 @@
     "validationFailed": "Validering misslyckades",
     "unexpectedError": "Ett oväntat fel uppstod. Försök igen."
   },
+  "defaults": {
+    "opponent": "Motståndare",
+    "unnamedPlayer": "Namnlös Spelare",
+    "notSet": "Ej angett"
+  },
+  "roles": {
+    "admin": "Administratör",
+    "coach": "Tränare",
+    "parent": "Förälder",
+    "player": "Spelare",
+    "member": "Medlem"
+  },
   "footer": {
     "copyright": "\u00a9 {{year}} Coach App av Codewizard"
   }

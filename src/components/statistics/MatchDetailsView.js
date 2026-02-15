@@ -172,7 +172,7 @@ const formatTimeAsMinutesSeconds = (minutes) => {
   }
 };
 
-const resolvePlayerDisplayName = (player, fallback = 'Unnamed Player') => {
+const resolvePlayerDisplayName = (player, fallback) => {
   if (!player) {
     return fallback;
   }

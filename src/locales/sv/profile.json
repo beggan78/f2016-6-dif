@@ -105,6 +105,7 @@
     "defaultUser": "Användare",
     "unknownClub": "Okänd klubb",
     "unknownTeam": "Okänt lag",
-    "thisTeam": "detta lag"
+    "thisTeam": "detta lag",
+    "notSet": "Ej angett"
   }
 }

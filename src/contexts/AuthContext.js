@@ -25,7 +25,7 @@ const AuthContext = createContext({
   isAuthenticated: false,
   isEmailConfirmed: false,
   hasValidProfile: false,
-  profileName: 'Not set',
+  profileName: '',
   needsProfileCompletion: false,
   
   // Session management
@@ -49,7 +49,7 @@ const AuthContext = createContext({
 
 
 export function AuthProvider({ children }) {
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation(['auth', 'profile']);
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -626,7 +626,7 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!user;
   const isEmailConfirmed = user?.email_confirmed_at != null;
   const hasValidProfile = !!userProfile && !!userProfile.id && userProfile.id === user?.id;
-  const profileName = userProfile?.name || 'Not set';
+  const profileName = userProfile?.name || t('profile:formatting.notSet');
 
   // Profile fetch control functions
   const enableProfileFetchSkip = useCallback(() => {
