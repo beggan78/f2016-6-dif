@@ -248,7 +248,8 @@ export function PlanMatchesScreen({
         displayName: player.display_name || player.first_name || t('planMatches.unknownPlayer'),
         firstName: player.first_name || null,
         lastName: player.last_name || null,
-        jerseyNumber: player.jersey_number
+        jerseyNumber: player.jersey_number,
+        relatedUser: player.related_user || null
       }));
   }, [teamPlayers, t]);
 

@@ -146,6 +146,10 @@ player.started_as = 'leftDefender' // Will cause DB constraint errors
 - **Early returns**: Use guard clauses at function start for invalid inputs
 - **Error boundaries**: Wrap components that may crash to prevent full app failures
 
+### PropTypes
+- **All components must define PropTypes** for their props, including nested object shapes
+- **Keep PropTypes updated** when adding or changing props — if a component starts using a new field (e.g., `player.relatedUser`), update its PropTypes to match
+
 ## Team Configuration System
 Modern composite team configuration system using three components:
 

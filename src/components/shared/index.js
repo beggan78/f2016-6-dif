@@ -15,3 +15,4 @@ export { IconButton } from './IconButton';
 export { TabBar } from './TabBar';
 export { ModalShell } from './ModalShell';
 export { Avatar } from './Avatar';
+export { CoachChip } from './CoachChip';
