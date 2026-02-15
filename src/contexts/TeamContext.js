@@ -458,7 +458,7 @@ export const TeamProvider = ({ children }) => {
     try {
       let query = supabase
         .from('player')
-        .select('id, first_name, last_name, display_name, jersey_number, on_roster')
+        .select('id, first_name, last_name, display_name, jersey_number, on_roster, related_to, related_user:related_to (id, name)')
         .eq('team_id', teamId)
         .order('display_name');
 

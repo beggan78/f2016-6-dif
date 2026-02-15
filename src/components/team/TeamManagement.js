@@ -52,6 +52,7 @@ import { getPlayerConnectionDetails, acceptGhostPlayer, dismissGhostPlayer } fro
 import { recordPlayerLoans } from '../../services/playerLoanService';
 import { formatPlayerDisplayName, shouldShowRosterConnectorOnboarding } from '../../utils/playerUtils';
 import { createPersistenceManager } from '../../utils/persistenceManager';
+import { getInitials } from '../../utils/formatUtils';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { DEFAULT_PREFERENCES } from '../../types/preferences';
 import { TAB_VIEWS } from '../../constants/teamManagementTabs';
@@ -623,13 +624,6 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
     </div>
   );
 }
-
-const getInitials = (name) => {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-};
 
 // Roster Management Component
 function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, openAddPlayerModal }) {

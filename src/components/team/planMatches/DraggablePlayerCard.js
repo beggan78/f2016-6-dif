@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check, X, HelpCircle } from 'lucide-react';
-import { Tooltip } from '../../shared';
+import { Tooltip, CoachChip } from '../../shared';
 import { useTranslation } from 'react-i18next';
 import { AUTO_SELECT_STRATEGY } from '../../../constants/planMatchesConstants';
 
@@ -74,6 +74,7 @@ const DraggablePlayerCardComponent = ({
         )}
       </div>
       <div className="flex items-center gap-2 text-[10px] font-mono text-sky-100/80">
+        {player.relatedUser?.name && <CoachChip name={player.relatedUser.name} size="sm" />}
         {sortMetric === AUTO_SELECT_STRATEGY.ATTENDANCE
           ? <span>{player.attendanceRate.toFixed(0)}%</span>
           : <Tooltip content={t('planMatches.playerSelector.practicesTooltip')} position="top" trigger="hover" className="inline-flex">
@@ -102,5 +103,6 @@ export const DraggablePlayerCard = React.memo(
     prevProps.player?.jerseyNumber === nextProps.player?.jerseyNumber &&
     prevProps.player?.practicesPerMatch === nextProps.player?.practicesPerMatch &&
     prevProps.player?.attendanceRate === nextProps.player?.attendanceRate &&
+    prevProps.player?.relatedUser?.name === nextProps.player?.relatedUser?.name &&
     prevProps.sortMetric === nextProps.sortMetric
 );

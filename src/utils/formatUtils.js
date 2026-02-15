@@ -143,6 +143,18 @@ export const formatPoints = (points) => {
  * @param {string} opponentTeam - Opponent team name
  * @returns {string} Formatted statistics text
  */
+/**
+ * Returns initials from a full name string
+ * @param {string} name - Full name
+ * @returns {string} Uppercase initials (e.g., "JD" for "John Doe")
+ */
+export const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
 export const generateStatsText = (squadForStats, ownScore, opponentScore, opponentTeam, ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME) => {
   let text = `Final Score: ${ownTeamName} ${ownScore} - ${opponentScore} ${opponentTeam || 'Opponent'}\n\n`;
   text += "Spelare\t\tStart\tM\tB\tMit\tA\tUte\tBack\tMid\tFw\tMv\n";
