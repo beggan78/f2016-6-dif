@@ -527,7 +527,8 @@
       "error": {
         "loadFailed": "Failed to load team roster",
         "addFailed": "Failed to add player to roster",
-        "dismissFailed": "Failed to dismiss player"
+        "dismissFailed": "Failed to dismiss player",
+        "loanFailed": "Failed to record loan"
       }
     },
     "preferences": {

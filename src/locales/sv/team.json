@@ -527,7 +527,8 @@
       "error": {
         "loadFailed": "Misslyckades ladda lagtrupp",
         "addFailed": "Misslyckades lägga till spelare i truppen",
-        "dismissFailed": "Misslyckades avvisa spelare"
+        "dismissFailed": "Misslyckades avvisa spelare",
+        "loanFailed": "Misslyckades registrera lån"
       }
     },
     "preferences": {
