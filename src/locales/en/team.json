@@ -199,7 +199,8 @@
     },
     "teamSelection": {
       "title": "Select Team",
-      "description": "Choose an existing team or create a new one for <strong>{{clubName}}</strong>",
+      "description": "Search for your team or create a new one in <strong>{{clubName}}</strong>",
+      "placeholder": "Type your team name...",
       "existingTeamsHeader": "Existing Teams",
       "createButton": "Create New Team"
     },
@@ -701,6 +702,11 @@
     "placeholder": "Search for your club...",
     "createNewClub": "Create new club",
     "noClubsFound": "No clubs found for \"{{query}}\""
+  },
+  "teamAutocomplete": {
+    "placeholder": "Search for a team...",
+    "createNewTeam": "Create new team",
+    "noTeamsFound": "No teams found for \"{{query}}\""
   },
   "playerMatching": {
     "title": "Match Player to Provider",

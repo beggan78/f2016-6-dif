@@ -199,7 +199,8 @@
     },
     "teamSelection": {
       "title": "Välj Lag",
-      "description": "Välj ett befintligt lag eller skapa ett nytt för <strong>{{clubName}}</strong>",
+      "description": "Sök efter ditt lag eller skapa ett nytt i <strong>{{clubName}}</strong>",
+      "placeholder": "Skriv ditt lagnamn...",
       "existingTeamsHeader": "Befintliga Lag",
       "createButton": "Skapa Nytt Lag"
     },
@@ -701,6 +702,11 @@
     "placeholder": "Sök efter din klubb...",
     "createNewClub": "Skapa ny klubb",
     "noClubsFound": "Inga klubbar hittades för \"{{query}}\""
+  },
+  "teamAutocomplete": {
+    "placeholder": "Sök efter ett lag...",
+    "createNewTeam": "Skapa nytt lag",
+    "noTeamsFound": "Inga lag hittades för \"{{query}}\""
   },
   "playerMatching": {
     "title": "Matcha Spelare till Leverantör",

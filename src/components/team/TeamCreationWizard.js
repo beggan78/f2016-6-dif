@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { ArrowRight, Users, Building, UserPlus, Check, Plus } from 'lucide-react';
+import { ArrowRight, Users, Building, UserPlus, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../shared/UI';
 import { Alert } from '../shared/Alert';
 import { Card } from '../shared/Card';
 import { FormGroup } from '../shared/FormGroup';
 import { ClubAutocomplete } from './ClubAutocomplete';
+import { TeamAutocomplete } from './TeamAutocomplete';
 import { ClubJoinModal } from './ClubJoinModal';
 import { TeamAccessRequestModal } from './TeamAccessRequestModal';
 import { useTeam } from '../../contexts/TeamContext';
@@ -135,6 +136,12 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
       setCurrentStep(STEPS.TEAM_CREATION);
     }
   }, [clubForm, createClub, clearFormErrors, t]);
+
+  // Handle create new team from autocomplete
+  const handleCreateNewTeam = useCallback((teamName) => {
+    setTeamForm({ name: teamName });
+    setCurrentStep(STEPS.TEAM_CREATION);
+  }, []);
 
   // Handle existing team selection - show team access request modal
   const handleExistingTeamSelect = useCallback((team) => {
@@ -354,34 +361,19 @@ export function TeamCreationWizard({ onComplete, onCancel }) {
           </p>
         </div>
 
-        {clubTeams.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-slate-300">{t('wizard.teamSelection.existingTeamsHeader')}</h4>
-            <div className="space-y-1">
-              {clubTeams.map((team) => (
-                <button
-                  key={team.id}
-                  onClick={() => handleExistingTeamSelect(team)}
-                  className="w-full p-3 bg-slate-700 border border-slate-600 hover:bg-slate-600 rounded-lg text-left transition-colors"
-                >
-                  <div className="text-slate-100 font-medium">{team.name}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <TeamAutocomplete
+          teams={clubTeams}
+          onSelect={handleExistingTeamSelect}
+          onCreateNew={handleCreateNewTeam}
+          placeholder={t('wizard.teamSelection.placeholder')}
+          loading={loading}
+        />
 
-        <div className="border-t border-slate-600 pt-4">
-          <Button
-            onClick={() => setCurrentStep(STEPS.TEAM_CREATION)}
-            variant="primary"
-            Icon={Plus}
-            className="w-full"
-          >
-            {t('wizard.teamSelection.createButton')}
+        <div className="flex justify-end">
+          <Button onClick={onCancel} variant="secondary">
+            {t('wizard.clubSelection.cancel')}
           </Button>
         </div>
-
       </div>
     );
   };
