@@ -1862,7 +1862,9 @@ export const TeamProvider = ({ children }) => {
           on_roster,
           match_id,
           created_at,
-          updated_at
+          updated_at,
+          related_to,
+          related_user:related_to (id, name)
         `)
         .eq('team_id', teamId)
         .is('match_id', null)
@@ -1908,6 +1910,7 @@ export const TeamProvider = ({ children }) => {
           display_name: playerData.display_name.trim(),
           jersey_number: playerData.jersey_number || null,
           on_roster: playerData.on_roster ?? true,
+          related_to: playerData.related_to || null,
           created_by: user.id,
           last_updated_by: user.id
         })

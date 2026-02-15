@@ -91,15 +91,18 @@
         "firstName": "First Name *",
         "lastName": "Last Name",
         "displayName": "Display Name *",
-        "jerseyNumber": "Jersey Number"
+        "jerseyNumber": "Jersey Number",
+        "relatedTo": "Related To"
       },
       "placeholders": {
         "firstName": "Enter first name",
         "lastName": "Enter last name (optional)",
-        "displayName": "Enter display name"
+        "displayName": "Enter display name",
+        "relatedTo": "No relation"
       },
       "helperText": {
-        "displayName": "This is the name displayed in the app (auto-fills from first name)"
+        "displayName": "This is the name displayed in the app (auto-fills from first name)",
+        "relatedTo": "Link this player to a coach or admin (e.g. parent)"
       }
     },
     "validation": {
@@ -137,15 +140,18 @@
         "lastName": "Last Name",
         "displayName": "Display Name *",
         "jerseyNumber": "Jersey Number",
+        "relatedTo": "Related To",
         "onRoster": "Active on roster"
       },
       "placeholders": {
         "firstName": "Enter first name",
         "lastName": "Enter last name (optional)",
-        "displayName": "Enter display name"
+        "displayName": "Enter display name",
+        "relatedTo": "No relation"
       },
       "helperText": {
-        "displayName": "This is the name displayed in the app"
+        "displayName": "This is the name displayed in the app",
+        "relatedTo": "Link this player to a coach or admin (e.g. parent)"
       }
     },
     "validation": {
@@ -491,6 +497,7 @@
       "table": {
         "player": "Player",
         "connectionStatus": "Connection Status",
+        "relatedTo": "Related to",
         "number": "#",
         "actions": "Actions"
       },
@@ -505,7 +512,8 @@
         "former": "Former",
         "editTitle": "Edit player",
         "loanTitle": "Record Loan",
-        "removeTitle": "Remove player"
+        "removeTitle": "Remove player",
+        "relatedTo": "Related to {{name}}"
       },
       "connection": {
         "connectedProviders": "Connected Providers:",

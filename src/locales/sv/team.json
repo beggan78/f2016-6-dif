@@ -91,15 +91,18 @@
         "firstName": "Förnamn *",
         "lastName": "Efternamn",
         "displayName": "Visningsnamn *",
-        "jerseyNumber": "Tröjnummer"
+        "jerseyNumber": "Tröjnummer",
+        "relatedTo": "Relation till"
       },
       "placeholders": {
         "firstName": "Ange förnamn",
         "lastName": "Ange efternamn (valfritt)",
-        "displayName": "Ange visningsnamn"
+        "displayName": "Ange visningsnamn",
+        "relatedTo": "Ingen koppling"
       },
       "helperText": {
-        "displayName": "Detta är namnet som visas i appen (fylls i automatiskt från förnamn)"
+        "displayName": "Detta är namnet som visas i appen (fylls i automatiskt från förnamn)",
+        "relatedTo": "Koppla denna spelare till en tränare eller admin (t.ex. förälder)"
       }
     },
     "validation": {
@@ -137,15 +140,18 @@
         "lastName": "Efternamn",
         "displayName": "Visningsnamn *",
         "jerseyNumber": "Tröjnummer",
+        "relatedTo": "Relation till",
         "onRoster": "Aktiv i truppen"
       },
       "placeholders": {
         "firstName": "Ange förnamn",
         "lastName": "Ange efternamn (valfritt)",
-        "displayName": "Ange visningsnamn"
+        "displayName": "Ange visningsnamn",
+        "relatedTo": "Ingen koppling"
       },
       "helperText": {
-        "displayName": "Detta är namnet som visas i appen"
+        "displayName": "Detta är namnet som visas i appen",
+        "relatedTo": "Koppla denna spelare till en tränare eller admin (t.ex. förälder)"
       }
     },
     "validation": {
@@ -491,6 +497,7 @@
       "table": {
         "player": "Spelare",
         "connectionStatus": "Anslutningsstatus",
+        "relatedTo": "Relation till",
         "number": "#",
         "actions": "Åtgärder"
       },
@@ -505,7 +512,8 @@
         "former": "Före Detta",
         "editTitle": "Redigera spelare",
         "loanTitle": "Registrera Lån",
-        "removeTitle": "Ta bort spelare"
+        "removeTitle": "Ta bort spelare",
+        "relatedTo": "Relation till {{name}}"
       },
       "connection": {
         "connectedProviders": "Anslutna Plattformar:",

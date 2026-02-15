@@ -6,16 +6,18 @@ import { FormGroup } from '../shared/FormGroup';
 import { Edit3 } from 'lucide-react';
 import { ModalShell } from '../shared/ModalShell';
 
-export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAvailableJerseyNumbers }) {
+export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAvailableJerseyNumbers, getTeamMembers }) {
   const { t } = useTranslation('team');
   const [playerData, setPlayerData] = useState({
     first_name: player?.first_name || '',
     last_name: player?.last_name || '',
     display_name: player?.display_name || '',
     jersey_number: player?.jersey_number?.toString() || '',
+    related_to: player?.related_to || '',
     on_roster: player?.on_roster ?? true
   });
   const [availableNumbers, setAvailableNumbers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -29,6 +31,20 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
     };
     loadAvailableNumbers();
   }, [team?.id, player?.id, getAvailableJerseyNumbers]);
+
+  // Load team members for related_to dropdown
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      if (team?.id && getTeamMembers) {
+        const members = await getTeamMembers(team.id);
+        const coachesAndAdmins = members.filter(
+          m => m.role === 'admin' || m.role === 'coach'
+        );
+        setTeamMembers(coachesAndAdmins);
+      }
+    };
+    loadTeamMembers();
+  }, [team?.id, getTeamMembers]);
 
   // Validation
   const validateForm = () => {
@@ -80,6 +96,7 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
         last_name: playerData.last_name ? playerData.last_name.trim() : null,
         display_name: playerData.display_name.trim(),
         jersey_number: playerData.jersey_number ? parseInt(playerData.jersey_number) : null,
+        related_to: playerData.related_to || null,
         on_roster: playerData.on_roster
       };
 
@@ -120,6 +137,15 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
         value: num.toString(),
         label: `#${num}`
       }))
+  ];
+
+  // Related to options
+  const relatedToOptions = [
+    { value: '', label: t('editRosterPlayerModal.form.placeholders.relatedTo') },
+    ...teamMembers.map(member => ({
+      value: member.user?.id,
+      label: `${member.user?.name || '?'} (${member.role})`
+    }))
   ];
 
   if (!player) return null;
@@ -193,6 +219,21 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
             )}
           </FormGroup>
 
+          {/* Related To */}
+          {teamMembers.length > 0 && (
+            <FormGroup label={t('editRosterPlayerModal.form.labels.relatedTo')}>
+              <Select
+                value={playerData.related_to}
+                onChange={(value) => handleInputChange('related_to', value)}
+                options={relatedToOptions}
+                disabled={loading}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                {t('editRosterPlayerModal.form.helperText.relatedTo')}
+              </p>
+            </FormGroup>
+          )}
+
           {/* Roster Status */}
           <div className="flex items-center space-x-3">
             <input
@@ -203,11 +244,11 @@ export function EditPlayerModal({ player, team, onClose, onPlayerUpdated, getAva
               disabled={loading}
               className="sr-only"
             />
-            <div 
+            <div
               onClick={() => !loading && handleInputChange('on_roster', !playerData.on_roster)}
               className={`w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                playerData.on_roster 
-                  ? 'bg-emerald-600 border-emerald-600' 
+                playerData.on_roster
+                  ? 'bg-emerald-600 border-emerald-600'
                   : 'border-slate-400 hover:border-slate-300'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >

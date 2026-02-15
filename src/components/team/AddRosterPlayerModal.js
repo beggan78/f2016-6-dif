@@ -6,16 +6,18 @@ import { FormGroup } from '../shared/FormGroup';
 import { UserPlus } from 'lucide-react';
 import { ModalShell } from '../shared/ModalShell';
 
-export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailableJerseyNumbers }) {
+export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailableJerseyNumbers, getTeamMembers }) {
   const { t } = useTranslation('team');
   const [playerData, setPlayerData] = useState({
     first_name: '',
     last_name: '',
     display_name: '',
     jersey_number: '',
+    related_to: '',
     on_roster: true
   });
   const [availableNumbers, setAvailableNumbers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
@@ -30,6 +32,20 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
     };
     loadAvailableNumbers();
   }, [team?.id, getAvailableJerseyNumbers]);
+
+  // Load team members for related_to dropdown
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      if (team?.id && getTeamMembers) {
+        const members = await getTeamMembers(team.id);
+        const coachesAndAdmins = members.filter(
+          m => m.role === 'admin' || m.role === 'coach'
+        );
+        setTeamMembers(coachesAndAdmins);
+      }
+    };
+    loadTeamMembers();
+  }, [team?.id, getTeamMembers]);
 
   // Validation
   const validateForm = () => {
@@ -80,6 +96,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
         last_name: playerData.last_name ? playerData.last_name.trim() : null,
         display_name: playerData.display_name.trim(),
         jersey_number: playerData.jersey_number ? parseInt(playerData.jersey_number) : null,
+        related_to: playerData.related_to || null,
         on_roster: playerData.on_roster
       });
 
@@ -89,6 +106,7 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
         last_name: '',
         display_name: '',
         jersey_number: '',
+        related_to: '',
         on_roster: true
       });
       setErrors({});
@@ -139,6 +157,15 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
     ...availableNumbers.map(num => ({
       value: num.toString(),
       label: `#${num}`
+    }))
+  ];
+
+  // Related to options
+  const relatedToOptions = [
+    { value: '', label: t('addRosterPlayerModal.form.placeholders.relatedTo') },
+    ...teamMembers.map(member => ({
+      value: member.user?.id,
+      label: `${member.user?.name || '?'} (${member.role})`
     }))
   ];
 
@@ -216,6 +243,20 @@ export function AddRosterPlayerModal({ team, onClose, onPlayerAdded, getAvailabl
             )}
           </FormGroup>
 
+          {/* Related To */}
+          {teamMembers.length > 0 && (
+            <FormGroup label={t('addRosterPlayerModal.form.labels.relatedTo')}>
+              <Select
+                value={playerData.related_to}
+                onChange={(value) => handleInputChange('related_to', value)}
+                options={relatedToOptions}
+                disabled={loading}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                {t('addRosterPlayerModal.form.helperText.relatedTo')}
+              </p>
+            </FormGroup>
+          )}
 
           {/* Actions */}
           <div className="flex space-x-3 pt-4">

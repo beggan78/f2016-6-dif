@@ -590,6 +590,7 @@ Player entity belonging to a team.
 - `jersey_number` (integer, nullable) - Jersey number (1-99)
 - `on_roster` (boolean, NOT NULL) - Roster status (default: true)
 - `match_id` (uuid, nullable) - References `match(id)` when the player is temporary for a specific match
+- `related_to` (uuid, nullable) - References `user_profile(id)` - Links player to a coach/admin (e.g. parent relationship)
 - `created_at` (timestamptz, NOT NULL) - Creation timestamp
 - `updated_at` (timestamptz, NOT NULL) - Last update timestamp
 - `created_by` (uuid, nullable) - References `auth.users(id)`
@@ -607,6 +608,7 @@ Player entity belonging to a team.
 - Check: `char_length(display_name)` between 2 and 50
 - Index on `display_name` for quick lookup (`idx_player_display_name`)
 - Index on `match_id` for match-scoped players (`idx_player_match_id`)
+- Index on `related_to` for coach/admin relationship lookup (`idx_player_related_to`)
 
 **Relationships:**
 - Many-to-one with `team`
@@ -615,6 +617,7 @@ Player entity belonging to a team.
 - Referenced by `match.captain`
 - Referenced by `match.fair_play_award`
 - Optional many-to-one with `match` (temporary players scoped to a single match)
+- Optional many-to-one with `user_profile` (coach/admin relationship via `related_to`)
 
 ---
 

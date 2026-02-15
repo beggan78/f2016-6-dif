@@ -624,6 +624,13 @@ function AccessManagement({ team, pendingRequests, onRefresh, onShowModal, onSho
   );
 }
 
+const getInitials = (name) => {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
 // Roster Management Component
 function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, openAddPlayerModal }) {
   const { t } = useTranslation('team');
@@ -634,7 +641,8 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
     removeRosterPlayer,
     refreshTeamPlayers,
     checkPlayerGameHistory,
-    getAvailableJerseyNumbers
+    getAvailableJerseyNumbers,
+    getTeamMembers
   } = useTeam();
   
   const [roster, setRoster] = useState([]);
@@ -1063,6 +1071,9 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                   <th className="px-2 py-3 text-center text-xs font-medium text-slate-300" title={t('teamManagement.roster.table.connectionStatus')}>
                     <Link className="w-4 h-4 inline-block" />
                   </th>
+                  <th className="px-2 py-3 text-center text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    {t('teamManagement.roster.table.relatedTo')}
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
                     {t('teamManagement.roster.table.number')}
                   </th>
@@ -1095,6 +1106,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         <td className="px-2 py-3 text-center">
                           {/* No connection icon for ghost players */}
                         </td>
+                        <td className="px-2 py-3 text-center"></td>
                         <td className="px-4 py-3">
                           <span className="text-slate-500 text-sm">-</span>
                         </td>
@@ -1155,12 +1167,14 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         <Avatar size="md" color={player.on_roster ? 'sky' : 'slate'} className="mr-3">
                           {player.display_name.charAt(0).toUpperCase()}
                         </Avatar>
-                        <span className={`font-medium ${
-                          player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
-                        }`}>
-                          {fullName}
-                          {!player.on_roster && <span className="text-slate-400 ml-2">({t('teamManagement.roster.player.former')})</span>}
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`font-medium ${
+                            player.on_roster ? 'text-slate-100' : 'text-slate-100 italic'
+                          }`}>
+                            {fullName}
+                            {!player.on_roster && <span className="text-slate-400 ml-2">({t('teamManagement.roster.player.former')})</span>}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-2 py-3 text-center">
@@ -1222,6 +1236,16 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
                         );
                       })()}
                     </td>
+                    <td className="px-2 py-3 text-center">
+                      {player.related_user && (
+                        <span
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-sky-600/20 text-sky-300 text-xs font-medium"
+                          title={player.related_user.name}
+                        >
+                          {getInitials(player.related_user.name)}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       {player.jersey_number ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-600 text-amber-100">
@@ -1280,6 +1304,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
           onClose={() => setShowAddModal(false)}
           onPlayerAdded={handlePlayerAdded}
           getAvailableJerseyNumbers={getAvailableJerseyNumbers}
+          getTeamMembers={getTeamMembers}
         />
       )}
 
@@ -1291,6 +1316,7 @@ function RosterManagement({ team, onRefresh, onNavigateToConnectors, activeTab, 
           onClose={() => setEditingPlayer(null)}
           onPlayerUpdated={handlePlayerUpdated}
           getAvailableJerseyNumbers={getAvailableJerseyNumbers}
+          getTeamMembers={getTeamMembers}
         />
       )}
 
