@@ -5,7 +5,8 @@ import {
   formatSecondsAsTime,
   getPlayerLabel,
   formatPoints,
-  generateStatsText
+  generateStatsText,
+  getInitials
 } from '../formatUtils';
 import { calculateRolePoints } from '../rolePointUtils';
 import { PLAYER_ROLES } from '../../constants/playerConstants';
@@ -381,6 +382,34 @@ describe('generateStatsText', () => {
     const result = generateStatsText([playerWithLongName], 1, 0, 'Test');
     
     expect(result).toContain('Very Long Player Name That Might Cause Issues\t\tS\t0\t1.5\t0\t1.5\t');
+  });
+});
+
+describe('getInitials', () => {
+  it('should return first and last initials for full names', () => {
+    expect(getInitials('John Doe')).toBe('JD');
+  });
+
+  it('should return single initial for single names', () => {
+    expect(getInitials('John')).toBe('J');
+  });
+
+  it('should handle empty/null names', () => {
+    expect(getInitials('')).toBe('?');
+    expect(getInitials(null)).toBe('?');
+    expect(getInitials(undefined)).toBe('?');
+  });
+
+  it('should handle names with multiple parts', () => {
+    expect(getInitials('John Paul Jones')).toBe('JJ');
+  });
+
+  it('should handle names with extra whitespace', () => {
+    expect(getInitials('  John   Doe  ')).toBe('JD');
+  });
+
+  it('should return uppercase initials for lowercase names', () => {
+    expect(getInitials('john doe')).toBe('JD');
   });
 });
 
