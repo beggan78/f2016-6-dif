@@ -120,5 +120,8 @@
     "newestFirst": "Senaste först",
     "oldestFirst": "Äldsta först",
     "periodLabel": "Period {{period}}"
+  },
+  "defaults": {
+    "opponent": "Motståndare"
   }
 }

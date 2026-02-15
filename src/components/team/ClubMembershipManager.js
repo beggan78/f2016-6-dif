@@ -114,13 +114,13 @@ export function ClubMembershipManager() {
                   )}
                   <div className="flex items-center gap-2 mt-2">
                     <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                      membership.role === 'admin' 
-                        ? 'bg-purple-100 text-purple-800' 
+                      membership.role === 'admin'
+                        ? 'bg-purple-100 text-purple-800'
                         : membership.role === 'coach'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {membership.role}
+                      {t(`clubMembership.myClubs.roles.${membership.role}`, { defaultValue: membership.role })}
                     </span>
                     <span className="text-xs text-slate-500">
                       {t('clubMembership.myClubs.joined', { date: new Date(membership.joined_at).toLocaleDateString() })}
@@ -245,7 +245,7 @@ export function ClubMembershipManager() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => handleRejectRequest(request.id, 'Request declined')}
+                    onClick={() => handleRejectRequest(request.id, t('clubMembership.requests.declinedNotes'))}
                     disabled={loading}
                     Icon={XCircle}
                   >

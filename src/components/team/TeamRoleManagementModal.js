@@ -305,7 +305,7 @@ export function TeamRoleManagementModal({
                         {!canModifyRole ? (
                           <div className="px-3 py-2 bg-slate-600 border border-slate-500 rounded text-slate-300 text-sm flex items-center">
                             <Lock className="w-3 h-3 mr-2" />
-                            {currentRole}
+                            {t(`roleManagement.roles.${currentRole}`, { defaultValue: currentRole })}
                           </div>
                         ) : (
                           <Select

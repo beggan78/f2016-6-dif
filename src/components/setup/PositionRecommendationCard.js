@@ -20,6 +20,13 @@ const getPositionConfig = (positionKey) => {
   return { title: humanizePositionKey(positionKey), position: positionKey };
 };
 
+const getTranslatedPositionTitle = (position, config, t) => {
+  const normalizedKey = position.startsWith('substitute_') ? 'substitute' : position;
+  const translationKey = `periodSetup.positions.${normalizedKey}`;
+  const translated = t(translationKey, { defaultValue: '' });
+  return translated || config.title;
+};
+
 export function PositionRecommendationCard({
   recommendations,
   onAccept,
@@ -61,7 +68,7 @@ export function PositionRecommendationCard({
                   key={position}
                   className="flex items-center justify-between rounded-md bg-slate-800/60 px-2 py-1 text-sm text-slate-100"
                 >
-                  <span>{positionConfig.title}: {player?.displayName || t('positionRecommendations.unknown')}</span>
+                  <span>{getTranslatedPositionTitle(position, positionConfig, t)}: {player?.displayName || t('positionRecommendations.unknown')}</span>
                   <span className="text-xs text-slate-300">{t(`positionRecommendations.reasons.${data.reasonKey}`, data.reasonParams || {})}</span>
                 </li>
               );

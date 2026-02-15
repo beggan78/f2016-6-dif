@@ -105,6 +105,7 @@
     "defaultUser": "User",
     "unknownClub": "Unknown club",
     "unknownTeam": "Unknown team",
-    "thisTeam": "this team"
+    "thisTeam": "this team",
+    "notSet": "Not set"
   }
 }

@@ -209,7 +209,8 @@
       "leftMidfielder": "Vänster Mittfält",
       "rightMidfielder": "Höger Mittfält",
       "centerMidfielder": "Mittfält Center",
-      "goalie": "Målvakt"
+      "goalie": "Målvakt",
+      "substitute": "Avbytare"
     },
     "roles": {
       "defenders": "Backar",

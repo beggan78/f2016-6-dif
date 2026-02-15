@@ -419,7 +419,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
       });
 
       if (!deleteResult.success) {
-        throw new Error(deleteResult.error || 'Failed to update match');
+        throw new Error(deleteResult.error || t('loansView.messages.failedToUpdateMatch'));
       }
     }
 
@@ -430,7 +430,7 @@ export default function PlayerLoansView({ currentTeam, canManageTeam }) {
     });
 
     if (!createResult.success) {
-      throw new Error(createResult.error || 'Failed to record loan');
+      throw new Error(createResult.error || t('loansView.messages.failedToRecordLoan'));
     }
 
     const successKey = editingMatch

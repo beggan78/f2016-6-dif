@@ -398,7 +398,9 @@
       "loanDeleted": "Removed {{count}} player(s) from loan match.",
       "loadFailed": "Failed to load player loans",
       "rosterLoadFailed": "Failed to load roster for loans",
-      "deleteFailed": "Failed to delete loan match"
+      "deleteFailed": "Failed to delete loan match",
+      "failedToUpdateMatch": "Failed to update match",
+      "failedToRecordLoan": "Failed to record loan"
     },
     "deleteConfirmation": {
       "title": "Delete loan match",
@@ -534,7 +536,8 @@
       "error": {
         "loadFailed": "Failed to load team roster",
         "addFailed": "Failed to add player to roster",
-        "dismissFailed": "Failed to dismiss player"
+        "dismissFailed": "Failed to dismiss player",
+        "loanFailed": "Failed to record loan"
       }
     },
     "preferences": {
@@ -761,7 +764,14 @@
       "title": "My Clubs",
       "empty": "You're not a member of any clubs yet",
       "emptyHint": "Search for clubs to request membership",
-      "joined": "Joined {{date}}"
+      "joined": "Joined {{date}}",
+      "roles": {
+        "admin": "Admin",
+        "coach": "Coach",
+        "parent": "Parent",
+        "player": "Player",
+        "member": "Member"
+      }
     },
     "search": {
       "title": "Find Clubs",
@@ -780,7 +790,8 @@
       "wantsToJoin": "wants to join {{clubName}}",
       "requested": "Requested {{date}}",
       "reject": "Reject",
-      "approve": "Approve"
+      "approve": "Approve",
+      "declinedNotes": "Request declined"
     }
   },
   "teamSelector": {
@@ -846,7 +857,8 @@
     "planModal": {
       "title": "Plan Matches",
       "cancel": "Cancel",
-      "planSelected": "Plan Selected"
+      "planSelected": "Plan Selected",
+      "selectMatch": "Select {{opponent}}"
     }
   },
   "planMatches": {

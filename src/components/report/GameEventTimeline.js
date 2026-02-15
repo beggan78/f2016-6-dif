@@ -107,7 +107,7 @@ export function GameEventTimeline({
   getPlayerName,
   onGoalClick,
   ownTeamName = TEAM_CONFIG.OWN_TEAM_NAME,
-  opponentTeam = "Opponent",
+  opponentTeam,
   matchStartTime,
   filterType = 'all',
   selectedPlayerId = null,
@@ -118,6 +118,7 @@ export function GameEventTimeline({
   onSortOrderChange
 }) {
   const { t } = useTranslation('reports');
+  const resolvedOpponentTeam = opponentTeam || t('defaults.opponent');
 
   // Load sort preference: use initialSortOrder prop if provided, otherwise fall back to localStorage
   const [sortOrder, setSortOrder] = useState(() => {
@@ -433,10 +434,10 @@ export function GameEventTimeline({
 
         // Format with score and team only (no scorer for away team)
         if (awayOwnScore !== undefined && awayOpponentScore !== undefined) {
-          return t('events.goalScoredWithScore', { ownScore: awayOwnScore, opponentScore: awayOpponentScore, team: opponentTeam });
+          return t('events.goalScoredWithScore', { ownScore: awayOwnScore, opponentScore: awayOpponentScore, team: resolvedOpponentTeam });
         } else {
           // Fallback to old format if score data missing
-          return t('events.goalForTeam', { team: opponentTeam });
+          return t('events.goalForTeam', { team: resolvedOpponentTeam });
         }
       case EVENT_TYPES.SUBSTITUTION:
         const playersOffArray = eventData.playersOff || (eventData.outPlayerId ? [eventData.outPlayerId] : []);

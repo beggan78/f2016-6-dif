@@ -492,7 +492,7 @@ export function ProfileScreen({ onNavigateBack, onNavigateTo, pushNavigationStat
                       onClick={handleEdit}
                       variant="secondary"
                       size="sm"
-                      className={profileName === 'Not set' ? 'animate-glow-and-fade' : ''}
+                      className={profileName === t('formatting.notSet') ? 'animate-glow-and-fade' : ''}
                     >
                       {t('buttons.edit')}
                     </Button>
