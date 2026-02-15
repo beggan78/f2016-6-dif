@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { getInitials } from '../../utils/formatUtils';
 
 const SIZE_CLASSES = {
@@ -18,3 +19,8 @@ export function CoachChip({ name, size = 'md' }) {
     </span>
   );
 }
+
+CoachChip.propTypes = {
+  name: PropTypes.string,
+  size: PropTypes.oneOf(['sm', 'md']),
+};
