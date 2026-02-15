@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Check, X, HelpCircle } from 'lucide-react';
 import { Tooltip, CoachChip } from '../../shared';
 import { useTranslation } from 'react-i18next';
@@ -84,6 +85,32 @@ const DraggablePlayerCardComponent = ({
       </div>
     </div>
   );
+};
+
+DraggablePlayerCardComponent.propTypes = {
+  player: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    displayName: PropTypes.string.isRequired,
+    jerseyNumber: PropTypes.number,
+    practicesPerMatch: PropTypes.number,
+    attendanceRate: PropTypes.number,
+    relatedUser: PropTypes.shape({
+      id: PropTypes.string,
+      name: PropTypes.string
+    })
+  }),
+  isDragging: PropTypes.bool,
+  shift: PropTypes.number,
+  onPointerStart: PropTypes.func,
+  onClick: PropTypes.func,
+  isInMultipleMatches: PropTypes.bool,
+  isSelectedAndOnlyAvailableHere: PropTypes.bool,
+  isDragActivating: PropTypes.bool,
+  isSwapTarget: PropTypes.bool,
+  isSwapLanding: PropTypes.bool,
+  isBeingDisplaced: PropTypes.bool,
+  responseStatus: PropTypes.oneOf(['accepted', 'declined', 'no_response']),
+  sortMetric: PropTypes.string
 };
 
 export const DraggablePlayerCard = React.memo(

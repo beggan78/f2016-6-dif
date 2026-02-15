@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { Ban } from 'lucide-react';
 import { Tooltip, CoachChip } from '../../shared';
 import { useTranslation } from 'react-i18next';
@@ -123,3 +124,28 @@ export function PlayerSelector({
     </div>
   );
 }
+
+PlayerSelector.propTypes = {
+  players: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      displayName: PropTypes.string.isRequired,
+      jerseyNumber: PropTypes.number,
+      practicesPerMatch: PropTypes.number,
+      attendanceRate: PropTypes.number,
+      relatedUser: PropTypes.shape({
+        id: PropTypes.string,
+        name: PropTypes.string
+      })
+    })
+  ),
+  selectedIds: PropTypes.arrayOf(PropTypes.number),
+  unavailableIds: PropTypes.arrayOf(PropTypes.number),
+  providerUnavailableIds: PropTypes.arrayOf(PropTypes.number),
+  onToggleSelect: PropTypes.func.isRequired,
+  onToggleUnavailable: PropTypes.func,
+  isSelectedInOtherMatch: PropTypes.func,
+  isSelectedAndOnlyAvailableHere: PropTypes.func,
+  emptyMessage: PropTypes.string,
+  sortMetric: PropTypes.string
+};
